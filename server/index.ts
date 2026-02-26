@@ -266,10 +266,17 @@ function setupErrorHandler(app: express.Application) {
     {
       port,
       host: "0.0.0.0",
-      reusePort: true,
     },
     () => {
       log(`express server serving on port ${port}`);
     },
   );
+
+  server.on('close', () => {
+    log('Server closed');
+  });
+
+  server.on('error', (err) => {
+    console.error('Server error:', err);
+  });
 })();
