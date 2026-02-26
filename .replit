@@ -49,12 +49,12 @@ name = "Start App"
 author = "agent"
 mode = "parallel"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo 'App started via Project workflow'"
-
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sleep infinity"
 
 [[workflows.workflow]]
 name = "Start Backend"
