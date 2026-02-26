@@ -125,6 +125,11 @@ server/
 - New best: ascending fanfare
 - Level up: victory ascending
 
+## Web Pages (Express Server)
+- `/` — Landing page with QR code for Expo Go (served from server/templates/landing-page.html)
+- `/support` — Marketing + support page with features, game modes, FAQ, and contact email (served from server/templates/support-page.html)
+- `/api/*` — API routes
+
 ## Navigation
 - Stack-only (no tabs), all headerShown: false
 - Game uses router.replace to prevent back gesture mid-game

@@ -168,6 +168,15 @@ function configureExpoAndLanding(app: express.Application) {
     "landing-page.html",
   );
   const landingPageTemplate = fs.readFileSync(templatePath, "utf-8");
+
+  const supportTemplatePath = path.resolve(
+    process.cwd(),
+    "server",
+    "templates",
+    "support-page.html",
+  );
+  const supportPageTemplate = fs.readFileSync(supportTemplatePath, "utf-8");
+
   const appName = getAppName();
 
   log("Serving static Expo files with dynamic manifest routing");
@@ -175,6 +184,11 @@ function configureExpoAndLanding(app: express.Application) {
   app.use((req: Request, res: Response, next: NextFunction) => {
     if (req.path.startsWith("/api")) {
       return next();
+    }
+
+    if (req.path === "/support" || req.path === "/support/") {
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      return res.status(200).send(supportPageTemplate);
     }
 
     if (req.path !== "/" && req.path !== "/manifest") {
