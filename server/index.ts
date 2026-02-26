@@ -4,6 +4,17 @@ import { registerRoutes } from "./routes";
 import * as fs from "fs";
 import * as path from "path";
 
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION:', err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('UNHANDLED REJECTION:', reason);
+});
+process.on('SIGTERM', () => {
+  console.log('Received SIGTERM');
+  process.exit(0);
+});
+
 const app = express();
 const log = console.log;
 
