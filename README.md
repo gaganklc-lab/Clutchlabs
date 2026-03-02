@@ -1,6 +1,6 @@
 # ClutchTap — Reflex Challenge Game
 
-A fast-paced mobile reflex game built with React Native (Expo). Tap the right tiles following ever-changing rules under time pressure. Features multiple game modes, combo multipliers, achievement badges, power-ups, daily challenges, and polished visual effects.
+A fast-paced mobile reflex game built with React Native (Expo). Tap the right tiles following ever-changing rules under time pressure. Features multiple game modes, combo multipliers, achievement badges, power-ups, daily challenges, and polished visual effects — optimized for both iPhone and iPad.
 
 ## Features
 
@@ -50,6 +50,13 @@ A fast-paced mobile reflex game built with React Native (Expo). Tap the right ti
 ### Sharing
 - Emoji-formatted score cards for sharing results
 - "Challenge Friend" button with competitive messaging
+
+### iPad Support
+All 6 primary screens are fully optimized for iPad (App Store Guideline 4.0 compliant):
+- Content constrained to a 560pt max-width column, centered on wide viewports
+- Dynamic tile sizing via `useWindowDimensions` — the 4×3 game grid always fits correctly
+- `Dimensions` replaced with the `useWindowDimensions` hook throughout so layout recalculates on orientation change
+- iPhone layout is pixel-identical to before — no visual regressions
 
 ## Tech Stack
 
