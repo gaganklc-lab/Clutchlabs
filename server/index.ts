@@ -4,17 +4,6 @@ import { registerRoutes } from "./routes";
 import * as fs from "fs";
 import * as path from "path";
 
-process.on('uncaughtException', (err) => {
-  console.error('UNCAUGHT EXCEPTION:', err);
-});
-process.on('unhandledRejection', (reason) => {
-  console.error('UNHANDLED REJECTION:', reason);
-});
-process.on('SIGTERM', () => {
-  console.log('Received SIGTERM');
-  process.exit(0);
-});
-
 const app = express();
 const log = console.log;
 
@@ -179,15 +168,6 @@ function configureExpoAndLanding(app: express.Application) {
     "landing-page.html",
   );
   const landingPageTemplate = fs.readFileSync(templatePath, "utf-8");
-
-  const supportTemplatePath = path.resolve(
-    process.cwd(),
-    "server",
-    "templates",
-    "support-page.html",
-  );
-  const supportPageTemplate = fs.readFileSync(supportTemplatePath, "utf-8");
-
   const appName = getAppName();
 
   log("Serving static Expo files with dynamic manifest routing");
@@ -195,11 +175,6 @@ function configureExpoAndLanding(app: express.Application) {
   app.use((req: Request, res: Response, next: NextFunction) => {
     if (req.path.startsWith("/api")) {
       return next();
-    }
-
-    if (req.path === "/support" || req.path === "/support/") {
-      res.setHeader("Content-Type", "text/html; charset=utf-8");
-      return res.status(200).send(supportPageTemplate);
     }
 
     if (req.path !== "/" && req.path !== "/manifest") {
@@ -266,17 +241,10 @@ function setupErrorHandler(app: express.Application) {
     {
       port,
       host: "0.0.0.0",
+      reusePort: true,
     },
     () => {
       log(`express server serving on port ${port}`);
     },
   );
-
-  server.on('close', () => {
-    log('Server closed');
-  });
-
-  server.on('error', (err) => {
-    console.error('Server error:', err);
-  });
 })();
