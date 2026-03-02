@@ -4,8 +4,8 @@ import {
   Text,
   View,
   Pressable,
-  Dimensions,
   Platform,
+  useWindowDimensions,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -54,10 +54,8 @@ import ScreenFlash, { type FlashType } from "@/components/ScreenFlash";
 import TapRipple, { type RippleEvent } from "@/components/TapRipple";
 import AmbientParticles from "@/components/AmbientParticles";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const TILE_GAP = 10;
 const GRID_PADDING = 16;
-const TILE_SIZE = (SCREEN_WIDTH - GRID_PADDING * 2 - TILE_GAP * (GRID_COLS - 1)) / GRID_COLS;
 const FRENZY_THRESHOLD = 10;
 
 interface GameState {
@@ -101,6 +99,7 @@ function AnimatedTile({
   disabled,
   isFrenzy,
   comboLevel,
+  tileSize,
 }: {
   tile: TileColor;
   index: number;
@@ -109,6 +108,7 @@ function AnimatedTile({
   disabled: boolean;
   isFrenzy: boolean;
   comboLevel: number;
+  tileSize: number;
 }) {
   const scale = useSharedValue(1);
   const flashOpacity = useSharedValue(1);
@@ -152,7 +152,7 @@ function AnimatedTile({
     );
     if (tileRef.current) {
       tileRef.current.measure((_x, _y, _w, _h, pageX, pageY) => {
-        onPress(index, pageX + TILE_SIZE / 2, pageY + TILE_SIZE / 2);
+        onPress(index, pageX + tileSize / 2, pageY + tileSize / 2);
       });
     } else {
       onPress(index, 0, 0);
@@ -168,8 +168,8 @@ function AnimatedTile({
           style={[
             styles.tile,
             {
-              width: TILE_SIZE,
-              height: TILE_SIZE,
+              width: tileSize,
+              height: tileSize,
               shadowColor: tileGlowColor,
               shadowOpacity: 0.3 + glowIntensity,
               shadowRadius: 6 + comboLevel * 2,
@@ -407,6 +407,13 @@ function PowerUpBar({
 
 export default function GameScreen() {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
+  const contentMaxWidth = isTablet ? 560 : undefined;
+  const contentHorizontalPadding = isTablet ? 24 : 16;
+  const gridWidth = contentMaxWidth ? Math.min(width, contentMaxWidth) - contentHorizontalPadding * 2 : width - GRID_PADDING * 2;
+  const tileSize = (gridWidth - TILE_GAP * (GRID_COLS - 1)) / GRID_COLS;
+
   const params = useLocalSearchParams<{ difficulty?: string; daily?: string; mode?: string; theme?: string }>();
   const difficulty = (params.difficulty as Difficulty) || "normal";
   const isDaily = params.daily === "true";
@@ -959,93 +966,100 @@ export default function GameScreen() {
       {freezeActive && <View style={styles.freezeOverlay} />}
       {doubleActive && <View style={styles.doubleOverlay} />}
 
-      <View style={styles.gameHeader}>
-        <TimerBar timeLeft={gameState.timeLeft} total={diffConfig.duration} isFrenzy={isFrenzy} mode={mode} />
+      <View style={{ flex: 1, alignItems: "center" }}>
+        <View style={{ flex: 1, width: "100%", maxWidth: contentMaxWidth, paddingHorizontal: contentHorizontalPadding }}>
 
-        {isFrenzy && (
-          <View style={styles.frenzyBanner}>
-            <Ionicons name="flame" size={16} color={Colors.error} />
-            <Text style={styles.frenzyText}>FRENZY</Text>
-            <Ionicons name="flame" size={16} color={Colors.error} />
-          </View>
-        )}
+          <View style={styles.gameHeader}>
+            <TimerBar timeLeft={gameState.timeLeft} total={diffConfig.duration} isFrenzy={isFrenzy} mode={mode} />
 
-        {isDaily && (
-          <View style={styles.dailyBanner}>
-            <Ionicons name="calendar" size={14} color={Colors.warning} />
-            <Text style={styles.dailyText}>DAILY CHALLENGE</Text>
-          </View>
-        )}
-
-        {mode !== "regular" && !isDaily && (
-          <View style={styles.dailyBanner}>
-            <Ionicons name={mode === "endless" ? "infinite" : "leaf"} size={14} color={mode === "endless" ? Colors.accent : Colors.success} />
-            <Text style={[styles.dailyText, { color: mode === "endless" ? Colors.accent : Colors.success }]}>
-              {mode === "endless" ? "ENDLESS MODE" : "ZEN MODE"}
-            </Text>
-            {mode === "zen" && (
-              <Pressable onPress={handleQuitZen} style={styles.quitZenBtn}>
-                <Text style={styles.quitZenText}>EXIT</Text>
-              </Pressable>
+            {isFrenzy && (
+              <View style={styles.frenzyBanner}>
+                <Ionicons name="flame" size={16} color={Colors.error} />
+                <Text style={styles.frenzyText}>FRENZY</Text>
+                <Ionicons name="flame" size={16} color={Colors.error} />
+              </View>
             )}
-          </View>
-        )}
 
-        <View style={styles.statsRow}>
-          {mode !== "zen" && <LivesDisplay lives={gameState.lives} total={mode === "endless" ? diffConfig.lives : diffConfig.lives} />}
-          {mode === "zen" && <View style={styles.livesRow}><Text style={{ fontSize: 14, fontFamily: "Outfit_600SemiBold", color: Colors.success }}>PRACTICE</Text></View>}
-          <View style={styles.scoreArea}>
-            <Animated.View style={scorePopStyle}>
-              <Text style={styles.scoreText}>{mode === "zen" ? gameState.combo : gameState.score}</Text>
+            {isDaily && (
+              <View style={styles.dailyBanner}>
+                <Ionicons name="calendar" size={14} color={Colors.warning} />
+                <Text style={styles.dailyText}>DAILY CHALLENGE</Text>
+              </View>
+            )}
+
+            {mode !== "regular" && !isDaily && (
+              <View style={styles.dailyBanner}>
+                <Ionicons name={mode === "endless" ? "infinite" : "leaf"} size={14} color={mode === "endless" ? Colors.accent : Colors.success} />
+                <Text style={[styles.dailyText, { color: mode === "endless" ? Colors.accent : Colors.success }]}>
+                  {mode === "endless" ? "ENDLESS MODE" : "ZEN MODE"}
+                </Text>
+                {mode === "zen" && (
+                  <Pressable onPress={handleQuitZen} style={styles.quitZenBtn}>
+                    <Text style={styles.quitZenText}>EXIT</Text>
+                  </Pressable>
+                )}
+              </View>
+            )}
+
+            <View style={styles.statsRow}>
+              {mode !== "zen" && <LivesDisplay lives={gameState.lives} total={mode === "endless" ? diffConfig.lives : diffConfig.lives} />}
+              {mode === "zen" && <View style={styles.livesRow}><Text style={{ fontSize: 14, fontFamily: "Outfit_600SemiBold", color: Colors.success }}>PRACTICE</Text></View>}
+              <View style={styles.scoreArea}>
+                <Animated.View style={scorePopStyle}>
+                  <Text style={styles.scoreText}>{mode === "zen" ? gameState.combo : gameState.score}</Text>
+                </Animated.View>
+                {pointPopups.map((pp) => (
+                  <PointPopup key={pp.id} points={pp.points} />
+                ))}
+              </View>
+              {mode !== "zen" && <ComboStreak combo={gameState.combo} />}
+              {mode === "zen" && <View style={styles.comboContainer}><Text style={{ fontSize: 12, fontFamily: "Outfit_600SemiBold", color: Colors.textMuted }}>STREAK</Text></View>}
+            </View>
+
+            <Animated.View style={[
+              styles.ruleBanner,
+              ruleAnimStyle,
+              isFrenzy && frenzyBorderStyle,
+            ]}>
+              <Text style={styles.ruleText}>{gameState.rule.displayText}</Text>
             </Animated.View>
-            {pointPopups.map((pp) => (
-              <PointPopup key={pp.id} points={pp.points} />
-            ))}
           </View>
-          {mode !== "zen" && <ComboStreak combo={gameState.combo} />}
-          {mode === "zen" && <View style={styles.comboContainer}><Text style={{ fontSize: 12, fontFamily: "Outfit_600SemiBold", color: Colors.textMuted }}>STREAK</Text></View>}
-        </View>
 
-        <Animated.View style={[
-          styles.ruleBanner,
-          ruleAnimStyle,
-          isFrenzy && frenzyBorderStyle,
-        ]}>
-          <Text style={styles.ruleText}>{gameState.rule.displayText}</Text>
-        </Animated.View>
-      </View>
+          <Animated.View style={[styles.gridContainer, shakeStyle]}>
+            <View style={styles.grid}>
+              {gameState.tiles.map((tile, index) => (
+                <AnimatedTile
+                  key={index}
+                  tile={tile}
+                  index={index}
+                  isFlashing={gameState.flashingIndex === index}
+                  onPress={handleTileTap}
+                  disabled={!gameState.isPlaying}
+                  isFrenzy={isFrenzy}
+                  comboLevel={comboLevel}
+                  tileSize={tileSize}
+                />
+              ))}
+            </View>
+          </Animated.View>
 
-      <Animated.View style={[styles.gridContainer, shakeStyle]}>
-        <View style={styles.grid}>
-          {gameState.tiles.map((tile, index) => (
-            <AnimatedTile
-              key={index}
-              tile={tile}
-              index={index}
-              isFlashing={gameState.flashingIndex === index}
-              onPress={handleTileTap}
-              disabled={!gameState.isPlaying}
-              isFrenzy={isFrenzy}
-              comboLevel={comboLevel}
+          {mode !== "zen" && (
+            <PowerUpBar
+              inventory={powerUpInventory}
+              activeEffects={activeEffects}
+              onActivate={handleActivatePowerUp}
+              mode={mode}
             />
-          ))}
-        </View>
-      </Animated.View>
+          )}
 
-      {mode !== "zen" && (
-        <PowerUpBar
-          inventory={powerUpInventory}
-          activeEffects={activeEffects}
-          onActivate={handleActivatePowerUp}
-          mode={mode}
-        />
-      )}
+          {mode === "endless" && (
+            <View style={styles.endlessLevel}>
+              <Text style={styles.endlessLevelText}>Speed Lv.{endlessSpeedRef.current + 1}</Text>
+            </View>
+          )}
 
-      {mode === "endless" && (
-        <View style={styles.endlessLevel}>
-          <Text style={styles.endlessLevelText}>Speed Lv.{endlessSpeedRef.current + 1}</Text>
         </View>
-      )}
+      </View>
     </LinearGradient>
   );
 }
@@ -1262,7 +1276,6 @@ const styles = StyleSheet.create({
   gridContainer: {
     flex: 1,
     justifyContent: "center",
-    paddingHorizontal: GRID_PADDING,
   },
   grid: {
     flexDirection: "row",

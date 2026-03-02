@@ -6,6 +6,7 @@ import {
   Pressable,
   ScrollView,
   Platform,
+  useWindowDimensions,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -60,6 +61,11 @@ function AccuracyChart({ history }: { history: number[] }) {
 
 export default function StatsScreen() {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
+  const contentMaxWidth = isTablet ? 560 : undefined;
+  const contentHorizontalPadding = isTablet ? 24 : 16;
+
   const [gameStats, setGameStats] = useState<GameStats | null>(null);
   const [badgeStats, setBadgeStats] = useState<BadgeStats | null>(null);
   const [totalXP, setTotalXP] = useState(0);
@@ -105,6 +111,9 @@ export default function StatsScreen() {
       style={[s.container, { paddingTop: topInset }]}
     >
       <AmbientParticles count={8} />
+      <View style={{ flex: 1, alignItems: "center" }}>
+      <View style={{ flex: 1, width: "100%", maxWidth: contentMaxWidth, paddingHorizontal: contentHorizontalPadding }}>
+
       <View style={s.header}>
         <Pressable
           onPress={() => router.back()}
@@ -116,7 +125,7 @@ export default function StatsScreen() {
         <View style={{ width: 44 }} />
       </View>
 
-      <ScrollView style={s.scroll} contentContainerStyle={{ paddingBottom: bottomInset + 20 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingBottom: bottomInset + 20 }} showsVerticalScrollIndicator={false}>
         <View style={s.levelSection}>
           <View style={s.levelCircle}>
             <Text style={s.levelNum}>{levelInfo.level}</Text>
@@ -161,6 +170,9 @@ export default function StatsScreen() {
           <Text style={s.totalXPText}>{totalXP.toLocaleString()} Total XP</Text>
         </View>
       </ScrollView>
+
+      </View>
+      </View>
     </LinearGradient>
   );
 }
@@ -171,12 +183,10 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
     paddingVertical: 12,
   },
   backBtn: { width: 44, height: 44, justifyContent: "center", alignItems: "center" },
   headerTitle: { fontSize: 20, fontFamily: "Outfit_700Bold", color: Colors.text, letterSpacing: 2 },
-  scroll: { flex: 1, paddingHorizontal: 16 },
   levelSection: {
     flexDirection: "row",
     alignItems: "center",

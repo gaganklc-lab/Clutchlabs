@@ -6,6 +6,7 @@ import {
   FlatList,
   Pressable,
   Platform,
+  useWindowDimensions,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -87,6 +88,11 @@ function LeaderboardItem({ entry, rank }: { entry: LeaderboardEntry; rank: numbe
 
 export default function LeaderboardScreen() {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
+  const contentMaxWidth = isTablet ? 560 : undefined;
+  const contentHorizontalPadding = isTablet ? 24 : 16;
+
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
 
   useEffect(() => {
@@ -104,38 +110,44 @@ export default function LeaderboardScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: topInset }]}>
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.back();
-          }}
-          style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.6 : 1 }]}
-        >
-          <Ionicons name="chevron-back" size={24} color={Colors.text} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Leaderboard</Text>
-        <View style={{ width: 44 }} />
-      </View>
+      <View style={{ flex: 1, alignItems: "center" }}>
+        <View style={{ flex: 1, width: "100%", maxWidth: contentMaxWidth, paddingHorizontal: contentHorizontalPadding }}>
 
-      {entries.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Ionicons name="podium-outline" size={64} color={Colors.textMuted} />
-          <Text style={styles.emptyTitle}>No Scores Yet</Text>
-          <Text style={styles.emptyDesc}>Play a game to see your scores here</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={entries}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item, index }) => (
-            <LeaderboardItem entry={item} rank={index + 1} />
+          <View style={styles.header}>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.back();
+              }}
+              style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.6 : 1 }]}
+            >
+              <Ionicons name="chevron-back" size={24} color={Colors.text} />
+            </Pressable>
+            <Text style={styles.headerTitle}>Leaderboard</Text>
+            <View style={{ width: 44 }} />
+          </View>
+
+          {entries.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="podium-outline" size={64} color={Colors.textMuted} />
+              <Text style={styles.emptyTitle}>No Scores Yet</Text>
+              <Text style={styles.emptyDesc}>Play a game to see your scores here</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={entries}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item, index }) => (
+                <LeaderboardItem entry={item} rank={index + 1} />
+              )}
+              contentContainerStyle={{ paddingBottom: bottomInset + 20, paddingTop: 8 }}
+              showsVerticalScrollIndicator={false}
+              scrollEnabled={entries.length > 0}
+            />
           )}
-          contentContainerStyle={[styles.list, { paddingBottom: bottomInset + 20 }]}
-          showsVerticalScrollIndicator={false}
-          scrollEnabled={entries.length > 0}
-        />
-      )}
+
+        </View>
+      </View>
     </View>
   );
 }
@@ -149,7 +161,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
     paddingVertical: 12,
   },
   backBtn: {

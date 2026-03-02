@@ -4,10 +4,10 @@ import {
   Text,
   View,
   Pressable,
-  Dimensions,
   Modal,
   ScrollView,
   Platform,
+  useWindowDimensions,
 } from "react-native";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -53,8 +53,6 @@ import {
 } from "@/lib/storage";
 import { trackEvent } from "@/lib/analytics";
 import AmbientParticles from "@/components/AmbientParticles";
-
-const { width } = Dimensions.get("window");
 
 function FloatingTile({ delay, x, y, color, size }: { delay: number; x: number; y: number; color: string; size: number }) {
   const anim = useSharedValue(0);
@@ -193,6 +191,11 @@ function DailyRewardModal({
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
+  const contentMaxWidth = isTablet ? 560 : undefined;
+  const contentHorizontalPadding = isTablet ? 24 : 16;
+
   const [bestScore, setBestScore] = useState(0);
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -328,220 +331,226 @@ export default function HomeScreen() {
         <FloatingTile key={i} {...tile} />
       ))}
 
-      <View style={styles.topBar}>
-        <View style={styles.levelBadge}>
-          <Ionicons name="star" size={14} color={Colors.accent} />
-          <Text style={styles.levelText}>Lv.{levelInfo.level}</Text>
-          <View style={styles.levelProgressTrack}>
-            <View style={[styles.levelProgressFill, { width: `${levelInfo.progress * 100}%` }]} />
-          </View>
-        </View>
+      <View style={{ flex: 1, alignItems: "center" }}>
+        <View style={{ flex: 1, width: "100%", maxWidth: contentMaxWidth, paddingHorizontal: contentHorizontalPadding }}>
 
-        {loginStreak > 0 && (
-          <View style={styles.streakBadge}>
-            <Ionicons name="flame" size={14} color={Colors.secondary} />
-            <Text style={styles.streakText}>{loginStreak}</Text>
-          </View>
-        )}
+          <View style={styles.topBar}>
+            <View style={styles.levelBadge}>
+              <Ionicons name="star" size={14} color={Colors.accent} />
+              <Text style={styles.levelText}>Lv.{levelInfo.level}</Text>
+              <View style={styles.levelProgressTrack}>
+                <View style={[styles.levelProgressFill, { width: `${levelInfo.progress * 100}%` }]} />
+              </View>
+            </View>
 
-        <View style={styles.topBarRight}>
-          <Pressable
-            onPress={() => {
-              if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push("/stats");
-            }}
-            style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.6 : 1 }]}
-          >
-            <Ionicons name="stats-chart" size={22} color={Colors.textSecondary} />
-          </Pressable>
-          <Pressable
-            onPress={() => {
-              if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push("/leaderboard");
-            }}
-            style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.6 : 1 }]}
-          >
-            <Ionicons name="podium-outline" size={24} color={Colors.textSecondary} />
-          </Pressable>
-          <Pressable
-            onPress={() => {
-              if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push("/badges");
-            }}
-            style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.6 : 1 }]}
-          >
-            <Ionicons name="ribbon-outline" size={24} color={Colors.textSecondary} />
-          </Pressable>
-        </View>
-      </View>
+            {loginStreak > 0 && (
+              <View style={styles.streakBadge}>
+                <Ionicons name="flame" size={14} color={Colors.secondary} />
+                <Text style={styles.streakText}>{loginStreak}</Text>
+              </View>
+            )}
 
-      <View style={styles.center}>
-        <View style={styles.titleBlock}>
-          <Text style={styles.title}>CLUTCH</Text>
-          <Text style={styles.titleAccent}>TAP</Text>
-        </View>
-        <Text style={styles.subtitle}>REFLEX CHALLENGE</Text>
-        <Text style={styles.levelTitle}>{levelInfo.title}</Text>
-
-        {bestScore > 0 && (
-          <View style={styles.bestScoreContainer}>
-            <Ionicons name="trophy" size={16} color={Colors.warning} />
-            <Text style={styles.bestScoreText}>Best: {bestScore}</Text>
-          </View>
-        )}
-
-        <View style={styles.modePicker}>
-          {(["regular", "endless", "zen"] as GameMode[]).map((m) => {
-            const cfg = MODE_CONFIGS[m];
-            const isSelected = mode === m;
-            return (
+            <View style={styles.topBarRight}>
               <Pressable
-                key={m}
-                onPress={() => handleModeChange(m)}
-                style={({ pressed }) => [
-                  styles.modeOption,
-                  isSelected && { borderColor: cfg.color, backgroundColor: cfg.color + "18" },
-                  { opacity: pressed ? 0.7 : 1 },
-                ]}
+                onPress={() => {
+                  if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push("/stats");
+                }}
+                style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.6 : 1 }]}
               >
-                <Ionicons name={cfg.icon as any} size={16} color={isSelected ? cfg.color : Colors.textMuted} />
-                <Text style={[styles.modeLabel, isSelected && { color: cfg.color }]}>{cfg.label}</Text>
+                <Ionicons name="stats-chart" size={22} color={Colors.textSecondary} />
               </Pressable>
-            );
-          })}
-        </View>
+              <Pressable
+                onPress={() => {
+                  if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push("/leaderboard");
+                }}
+                style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.6 : 1 }]}
+              >
+                <Ionicons name="podium-outline" size={24} color={Colors.textSecondary} />
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push("/badges");
+                }}
+                style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.6 : 1 }]}
+              >
+                <Ionicons name="ribbon-outline" size={24} color={Colors.textSecondary} />
+              </Pressable>
+            </View>
+          </View>
 
-        {mode === "regular" && (
-          <View style={styles.difficultyPicker}>
-            {(["easy", "normal", "hard"] as Difficulty[]).map((d) => {
-              const config = DIFFICULTY_CONFIGS[d];
-              const isSelected = difficulty === d;
-              return (
-                <Pressable
-                  key={d}
-                  onPress={() => handleDifficultyChange(d)}
-                  style={({ pressed }) => [
-                    styles.difficultyOption,
-                    isSelected && { borderColor: config.color, backgroundColor: config.color + "18" },
-                    { opacity: pressed ? 0.7 : 1 },
-                  ]}
-                >
-                  <Ionicons
-                    name={config.icon as any}
-                    size={18}
-                    color={isSelected ? config.color : Colors.textMuted}
-                  />
-                  <Text
-                    style={[
-                      styles.difficultyLabel,
-                      isSelected && { color: config.color },
+          <View style={styles.center}>
+            <View style={styles.titleBlock}>
+              <Text style={styles.title}>CLUTCH</Text>
+              <Text style={styles.titleAccent}>TAP</Text>
+            </View>
+            <Text style={styles.subtitle}>REFLEX CHALLENGE</Text>
+            <Text style={styles.levelTitle}>{levelInfo.title}</Text>
+
+            {bestScore > 0 && (
+              <View style={styles.bestScoreContainer}>
+                <Ionicons name="trophy" size={16} color={Colors.warning} />
+                <Text style={styles.bestScoreText}>Best: {bestScore}</Text>
+              </View>
+            )}
+
+            <View style={styles.modePicker}>
+              {(["regular", "endless", "zen"] as GameMode[]).map((m) => {
+                const cfg = MODE_CONFIGS[m];
+                const isSelected = mode === m;
+                return (
+                  <Pressable
+                    key={m}
+                    onPress={() => handleModeChange(m)}
+                    style={({ pressed }) => [
+                      styles.modeOption,
+                      isSelected && { borderColor: cfg.color, backgroundColor: cfg.color + "18" },
+                      { opacity: pressed ? 0.7 : 1 },
                     ]}
                   >
-                    {config.label}
-                  </Text>
-                  {isSelected && (
-                    <Text style={[styles.difficultyDetail, { color: config.color }]}>
-                      {config.duration}s
-                    </Text>
-                  )}
-                </Pressable>
-              );
-            })}
-          </View>
-        )}
-
-        {mode !== "regular" && (
-          <Text style={[styles.modeDesc, { color: MODE_CONFIGS[mode].color }]}>
-            {MODE_CONFIGS[mode].description}
-          </Text>
-        )}
-
-        {(powerUps.shield > 0 || powerUps.time_freeze > 0 || powerUps.double_points > 0) && (
-          <View style={styles.powerUpPreview}>
-            {powerUps.shield > 0 && (
-              <View style={styles.puBadge}>
-                <Ionicons name="shield" size={14} color="#FFD700" />
-                <Text style={styles.puBadgeText}>{powerUps.shield}</Text>
-              </View>
-            )}
-            {powerUps.time_freeze > 0 && (
-              <View style={styles.puBadge}>
-                <Ionicons name="snow" size={14} color="#00BFFF" />
-                <Text style={styles.puBadgeText}>{powerUps.time_freeze}</Text>
-              </View>
-            )}
-            {powerUps.double_points > 0 && (
-              <View style={styles.puBadge}>
-                <Ionicons name="flash" size={14} color="#00E676" />
-                <Text style={styles.puBadgeText}>{powerUps.double_points}</Text>
-              </View>
-            )}
-          </View>
-        )}
-      </View>
-
-      <View style={styles.actions}>
-        <Animated.View style={playButtonStyle}>
-          <Pressable
-            onPress={handlePlay}
-            style={({ pressed }) => [styles.playBtn, { transform: [{ scale: pressed ? 0.95 : 1 }] }]}
-          >
-            <Animated.View style={[styles.playGlow, glowStyle]} />
-            <LinearGradient
-              colors={mode === "zen" ? [Colors.success, "#00C853"] : mode === "endless" ? [Colors.accent, "#5E35B1"] : [Colors.primary, "#00B8D4"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.playGradient}
-            >
-              <Ionicons name="play" size={32} color={Colors.background} />
-              <Text style={styles.playText}>PLAY</Text>
-            </LinearGradient>
-          </Pressable>
-        </Animated.View>
-
-        <Pressable
-          onPress={handleDailyChallenge}
-          style={({ pressed }) => [styles.dailyBtn, { transform: [{ scale: pressed ? 0.97 : 1 }] }]}
-        >
-          <LinearGradient
-            colors={[Colors.warning + "30", Colors.warning + "10"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.dailyGradient}
-          >
-            <Ionicons name="calendar" size={22} color={Colors.warning} />
-            <View>
-              <Text style={styles.dailyBtnText}>DAILY CHALLENGE</Text>
-              {dailyBest > 0 && (
-                <Text style={styles.dailyBestText}>Best today: {dailyBest}</Text>
-              )}
+                    <Ionicons name={cfg.icon as any} size={16} color={isSelected ? cfg.color : Colors.textMuted} />
+                    <Text style={[styles.modeLabel, isSelected && { color: cfg.color }]}>{cfg.label}</Text>
+                  </Pressable>
+                );
+              })}
             </View>
-            <Ionicons name="chevron-forward" size={18} color={Colors.warning} />
-          </LinearGradient>
-        </Pressable>
 
-        <View style={styles.secondaryRow}>
-          <Pressable
-            onPress={() => {
-              if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setShowHowToPlay(true);
-            }}
-            style={({ pressed }) => [styles.secondaryBtn, { opacity: pressed ? 0.7 : 1 }]}
-          >
-            <Feather name="help-circle" size={20} color={Colors.primary} />
-            <Text style={styles.secondaryText}>How to Play</Text>
-          </Pressable>
+            {mode === "regular" && (
+              <View style={styles.difficultyPicker}>
+                {(["easy", "normal", "hard"] as Difficulty[]).map((d) => {
+                  const config = DIFFICULTY_CONFIGS[d];
+                  const isSelected = difficulty === d;
+                  return (
+                    <Pressable
+                      key={d}
+                      onPress={() => handleDifficultyChange(d)}
+                      style={({ pressed }) => [
+                        styles.difficultyOption,
+                        isSelected && { borderColor: config.color, backgroundColor: config.color + "18" },
+                        { opacity: pressed ? 0.7 : 1 },
+                      ]}
+                    >
+                      <Ionicons
+                        name={config.icon as any}
+                        size={18}
+                        color={isSelected ? config.color : Colors.textMuted}
+                      />
+                      <Text
+                        style={[
+                          styles.difficultyLabel,
+                          isSelected && { color: config.color },
+                        ]}
+                      >
+                        {config.label}
+                      </Text>
+                      {isSelected && (
+                        <Text style={[styles.difficultyDetail, { color: config.color }]}>
+                          {config.duration}s
+                        </Text>
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
 
-          <Pressable
-            onPress={() => {
-              if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setShowSettings(true);
-            }}
-            style={({ pressed }) => [styles.secondaryBtn, { opacity: pressed ? 0.7 : 1 }]}
-          >
-            <Ionicons name="settings-outline" size={20} color={Colors.primary} />
-            <Text style={styles.secondaryText}>Settings</Text>
-          </Pressable>
+            {mode !== "regular" && (
+              <Text style={[styles.modeDesc, { color: MODE_CONFIGS[mode].color }]}>
+                {MODE_CONFIGS[mode].description}
+              </Text>
+            )}
+
+            {(powerUps.shield > 0 || powerUps.time_freeze > 0 || powerUps.double_points > 0) && (
+              <View style={styles.powerUpPreview}>
+                {powerUps.shield > 0 && (
+                  <View style={styles.puBadge}>
+                    <Ionicons name="shield" size={14} color="#FFD700" />
+                    <Text style={styles.puBadgeText}>{powerUps.shield}</Text>
+                  </View>
+                )}
+                {powerUps.time_freeze > 0 && (
+                  <View style={styles.puBadge}>
+                    <Ionicons name="snow" size={14} color="#00BFFF" />
+                    <Text style={styles.puBadgeText}>{powerUps.time_freeze}</Text>
+                  </View>
+                )}
+                {powerUps.double_points > 0 && (
+                  <View style={styles.puBadge}>
+                    <Ionicons name="flash" size={14} color="#00E676" />
+                    <Text style={styles.puBadgeText}>{powerUps.double_points}</Text>
+                  </View>
+                )}
+              </View>
+            )}
+          </View>
+
+          <View style={styles.actions}>
+            <Animated.View style={playButtonStyle}>
+              <Pressable
+                onPress={handlePlay}
+                style={({ pressed }) => [styles.playBtn, { transform: [{ scale: pressed ? 0.95 : 1 }] }]}
+              >
+                <Animated.View style={[styles.playGlow, glowStyle]} />
+                <LinearGradient
+                  colors={mode === "zen" ? [Colors.success, "#00C853"] : mode === "endless" ? [Colors.accent, "#5E35B1"] : [Colors.primary, "#00B8D4"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.playGradient}
+                >
+                  <Ionicons name="play" size={32} color={Colors.background} />
+                  <Text style={styles.playText}>PLAY</Text>
+                </LinearGradient>
+              </Pressable>
+            </Animated.View>
+
+            <Pressable
+              onPress={handleDailyChallenge}
+              style={({ pressed }) => [styles.dailyBtn, { transform: [{ scale: pressed ? 0.97 : 1 }] }]}
+            >
+              <LinearGradient
+                colors={[Colors.warning + "30", Colors.warning + "10"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.dailyGradient}
+              >
+                <Ionicons name="calendar" size={22} color={Colors.warning} />
+                <View>
+                  <Text style={styles.dailyBtnText}>DAILY CHALLENGE</Text>
+                  {dailyBest > 0 && (
+                    <Text style={styles.dailyBestText}>Best today: {dailyBest}</Text>
+                  )}
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={Colors.warning} />
+              </LinearGradient>
+            </Pressable>
+
+            <View style={styles.secondaryRow}>
+              <Pressable
+                onPress={() => {
+                  if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowHowToPlay(true);
+                }}
+                style={({ pressed }) => [styles.secondaryBtn, { opacity: pressed ? 0.7 : 1 }]}
+              >
+                <Feather name="help-circle" size={20} color={Colors.primary} />
+                <Text style={styles.secondaryText}>How to Play</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => {
+                  if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowSettings(true);
+                }}
+                style={({ pressed }) => [styles.secondaryBtn, { opacity: pressed ? 0.7 : 1 }]}
+              >
+                <Ionicons name="settings-outline" size={20} color={Colors.primary} />
+                <Text style={styles.secondaryText}>Settings</Text>
+              </Pressable>
+            </View>
+          </View>
+
         </View>
       </View>
 
@@ -729,7 +738,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
     paddingTop: 8,
   },
   topBarRight: {

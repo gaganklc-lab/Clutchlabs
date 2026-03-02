@@ -6,6 +6,7 @@ import {
   FlatList,
   Pressable,
   Platform,
+  useWindowDimensions,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -60,6 +61,11 @@ function BadgeItem({ badge, unlocked, index }: { badge: Badge; unlocked: boolean
 
 export default function BadgesScreen() {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
+  const contentMaxWidth = isTablet ? 560 : undefined;
+  const contentHorizontalPadding = isTablet ? 24 : 16;
+
   const [unlockedIds, setUnlockedIds] = useState<string[]>([]);
   const [stats, setStats] = useState<BadgeStats | null>(null);
 
@@ -88,67 +94,73 @@ export default function BadgesScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: topInset }]}>
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.back();
-          }}
-          style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.6 : 1 }]}
-        >
-          <Ionicons name="chevron-back" size={24} color={Colors.text} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Badges</Text>
-        <View style={{ width: 44 }} />
-      </View>
+      <View style={{ flex: 1, alignItems: "center" }}>
+        <View style={{ flex: 1, width: "100%", maxWidth: contentMaxWidth, paddingHorizontal: contentHorizontalPadding }}>
 
-      <View style={styles.progressBar}>
-        <Text style={styles.progressText}>
-          {unlockedIds.length} / {BADGES.length} Unlocked
-        </Text>
-        <View style={styles.progressTrack}>
-          <View
-            style={[
-              styles.progressFill,
-              { width: `${(unlockedIds.length / BADGES.length) * 100}%` },
-            ]}
+          <View style={styles.header}>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.back();
+              }}
+              style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.6 : 1 }]}
+            >
+              <Ionicons name="chevron-back" size={24} color={Colors.text} />
+            </Pressable>
+            <Text style={styles.headerTitle}>Badges</Text>
+            <View style={{ width: 44 }} />
+          </View>
+
+          <View style={styles.progressBar}>
+            <Text style={styles.progressText}>
+              {unlockedIds.length} / {BADGES.length} Unlocked
+            </Text>
+            <View style={styles.progressTrack}>
+              <View
+                style={[
+                  styles.progressFill,
+                  { width: `${(unlockedIds.length / BADGES.length) * 100}%` },
+                ]}
+              />
+            </View>
+          </View>
+
+          {stats && (
+            <View style={styles.statsRow}>
+              <View style={styles.miniStat}>
+                <Text style={styles.miniStatValue}>{stats.totalGames}</Text>
+                <Text style={styles.miniStatLabel}>Games</Text>
+              </View>
+              <View style={styles.miniStat}>
+                <Text style={styles.miniStatValue}>{stats.bestScore}</Text>
+                <Text style={styles.miniStatLabel}>Best</Text>
+              </View>
+              <View style={styles.miniStat}>
+                <Text style={styles.miniStatValue}>{stats.longestStreak}</Text>
+                <Text style={styles.miniStatLabel}>Streak</Text>
+              </View>
+            </View>
+          )}
+
+          <FlatList
+            data={sortedBadges}
+            keyExtractor={(item) => item.id}
+            numColumns={2}
+            columnWrapperStyle={styles.badgeRow}
+            renderItem={({ item, index }) => (
+              <BadgeItem
+                badge={item}
+                unlocked={unlockedIds.includes(item.id)}
+                index={index}
+              />
+            )}
+            contentContainerStyle={{ paddingBottom: bottomInset + 20, paddingTop: 8 }}
+            showsVerticalScrollIndicator={false}
+            scrollEnabled={sortedBadges.length > 0}
           />
+
         </View>
       </View>
-
-      {stats && (
-        <View style={styles.statsRow}>
-          <View style={styles.miniStat}>
-            <Text style={styles.miniStatValue}>{stats.totalGames}</Text>
-            <Text style={styles.miniStatLabel}>Games</Text>
-          </View>
-          <View style={styles.miniStat}>
-            <Text style={styles.miniStatValue}>{stats.bestScore}</Text>
-            <Text style={styles.miniStatLabel}>Best</Text>
-          </View>
-          <View style={styles.miniStat}>
-            <Text style={styles.miniStatValue}>{stats.longestStreak}</Text>
-            <Text style={styles.miniStatLabel}>Streak</Text>
-          </View>
-        </View>
-      )}
-
-      <FlatList
-        data={sortedBadges}
-        keyExtractor={(item) => item.id}
-        numColumns={2}
-        columnWrapperStyle={styles.badgeRow}
-        renderItem={({ item, index }) => (
-          <BadgeItem
-            badge={item}
-            unlocked={unlockedIds.includes(item.id)}
-            index={index}
-          />
-        )}
-        contentContainerStyle={[styles.list, { paddingBottom: bottomInset + 20 }]}
-        showsVerticalScrollIndicator={false}
-        scrollEnabled={sortedBadges.length > 0}
-      />
     </View>
   );
 }
@@ -162,7 +174,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
     paddingVertical: 12,
   },
   backBtn: {
@@ -177,7 +188,6 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   progressBar: {
-    paddingHorizontal: 20,
     marginBottom: 12,
   },
   progressText: {
@@ -200,9 +210,7 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: "row",
     justifyContent: "space-around",
-    paddingHorizontal: 20,
     paddingVertical: 12,
-    marginHorizontal: 16,
     marginBottom: 8,
     backgroundColor: Colors.surface,
     borderRadius: 14,

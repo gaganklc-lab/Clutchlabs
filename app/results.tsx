@@ -6,6 +6,7 @@ import {
   Pressable,
   Share,
   Platform,
+  useWindowDimensions,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -432,6 +433,10 @@ export default function ResultsScreen() {
 
   const topInset = Platform.OS === "web" ? 67 : insets.top;
   const bottomInset = Platform.OS === "web" ? 34 : insets.bottom;
+  const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
+  const contentMaxWidth = isTablet ? 560 : undefined;
+  const contentHorizontalPadding = isTablet ? 24 : 16;
 
   return (
     <LinearGradient
@@ -440,6 +445,9 @@ export default function ResultsScreen() {
     >
       <AmbientParticles count={10} />
       <Confetti active={showConfetti} />
+
+      <View style={{ flex: 1, alignItems: "center" }}>
+      <View style={{ flex: 1, width: "100%", maxWidth: contentMaxWidth, paddingHorizontal: contentHorizontalPadding }}>
 
       <Animated.View style={[styles.titleArea, titleStyle]}>
         {isNewBest ? (
@@ -574,6 +582,9 @@ export default function ResultsScreen() {
           </Pressable>
         </View>
       </Animated.View>
+
+      </View>
+      </View>
     </LinearGradient>
   );
 }
@@ -581,7 +592,6 @@ export default function ResultsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 24,
   },
   titleArea: {
     alignItems: "center",
