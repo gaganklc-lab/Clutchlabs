@@ -35,6 +35,8 @@ function RootLayoutNav() {
       <Stack.Screen name="leaderboard" options={{ animation: "slide_from_right" }} />
       <Stack.Screen name="badges" options={{ animation: "slide_from_right" }} />
       <Stack.Screen name="stats" options={{ animation: "slide_from_right" }} />
+      <Stack.Screen name="velocity" options={{ gestureEnabled: false, animation: "fade" }} />
+      <Stack.Screen name="velocity-results" options={{ gestureEnabled: false, animation: "slide_from_bottom" }} />
     </Stack>
   );
 }

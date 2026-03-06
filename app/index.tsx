@@ -202,6 +202,8 @@ export default function HomeScreen() {
   const [settings, setSettings] = useState({ soundEnabled: true, hapticsEnabled: true });
   const [difficulty, setDifficulty] = useState<Difficulty>("normal");
   const [mode, setMode] = useState<GameMode>("regular");
+  const [selectedGame, setSelectedGame] = useState<"clutchtap" | "velocity">("clutchtap");
+  const [velocityMode, setVelocityMode] = useState<GameMode>("regular");
   const [levelInfo, setLevelInfo] = useState({ level: 1, currentXP: 0, xpForNext: 100, progress: 0, title: "Beginner" });
   const [dailyBest, setDailyBest] = useState(0);
   const [selectedTheme, setSelectedTheme] = useState("default");
@@ -381,6 +383,35 @@ export default function HomeScreen() {
             </View>
           </View>
 
+          {/* Game Picker */}
+          <View style={styles.gamePicker}>
+            {([
+              { id: "clutchtap" as const, name: "ClutchTap", tagline: "Reflex Challenge", icon: "flash", color: Colors.primary },
+              { id: "velocity" as const, name: "Velocity", tagline: "Swipe to Dodge", icon: "speedometer", color: Colors.accent },
+            ]).map((g) => {
+              const isActive = selectedGame === g.id;
+              return (
+                <Pressable
+                  key={g.id}
+                  onPress={() => {
+                    setSelectedGame(g.id);
+                    if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                  style={({ pressed }) => [
+                    styles.gameCard,
+                    isActive && { borderColor: g.color, backgroundColor: g.color + "18" },
+                    { opacity: pressed ? 0.8 : isActive ? 1 : 0.5 },
+                  ]}
+                >
+                  <Ionicons name={g.icon as any} size={22} color={isActive ? g.color : Colors.textMuted} />
+                  <Text style={[styles.gameCardName, isActive && { color: g.color }]}>{g.name}</Text>
+                  <Text style={styles.gameCardTagline}>{g.tagline}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {selectedGame === "clutchtap" ? (
           <View style={styles.center}>
             <View style={styles.titleBlock}>
               <Text style={styles.title}>CLUTCH</Text>
@@ -485,8 +516,50 @@ export default function HomeScreen() {
               </View>
             )}
           </View>
+          ) : (
+          <View style={styles.center}>
+            <View style={styles.titleBlock}>
+              <Text style={[styles.title, { color: Colors.accent }]}>VELO</Text>
+              <Text style={[styles.titleAccent, { color: "#A78BFA" }]}>CITY</Text>
+            </View>
+            <Text style={styles.subtitle}>SWIPE TO DODGE</Text>
+            <Text style={[styles.levelTitle, { color: Colors.accent }]}>{levelInfo.title}</Text>
+
+            <View style={styles.modePicker}>
+              {(["regular", "endless", "zen"] as GameMode[]).map((m) => {
+                const cfg = MODE_CONFIGS[m];
+                const isSelected = velocityMode === m;
+                return (
+                  <Pressable
+                    key={m}
+                    onPress={() => {
+                      setVelocityMode(m);
+                      if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    }}
+                    style={({ pressed }) => [
+                      styles.modeOption,
+                      isSelected && { borderColor: cfg.color, backgroundColor: cfg.color + "18" },
+                      { opacity: pressed ? 0.7 : 1 },
+                    ]}
+                  >
+                    <Ionicons name={cfg.icon as any} size={16} color={isSelected ? cfg.color : Colors.textMuted} />
+                    <Text style={[styles.modeLabel, isSelected && { color: cfg.color }]}>{cfg.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Text style={[styles.modeDesc, { color: Colors.textSecondary, marginTop: 4 }]}>
+              {velocityMode === "regular" ? "Dodge obstacles for 30 seconds"
+                : velocityMode === "endless" ? "Survive as long as you can"
+                : "Practice dodging, no pressure"}
+            </Text>
+          </View>
+          )}
 
           <View style={styles.actions}>
+            {selectedGame === "clutchtap" ? (
+            <>
             <Animated.View style={playButtonStyle}>
               <Pressable
                 onPress={handlePlay}
@@ -525,6 +598,29 @@ export default function HomeScreen() {
                 <Ionicons name="chevron-forward" size={18} color={Colors.warning} />
               </LinearGradient>
             </Pressable>
+            </>
+            ) : (
+            <Animated.View style={playButtonStyle}>
+              <Pressable
+                onPress={() => {
+                  if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  router.push({ pathname: "/velocity", params: { mode: velocityMode } });
+                }}
+                style={({ pressed }) => [styles.playBtn, { transform: [{ scale: pressed ? 0.95 : 1 }] }]}
+              >
+                <Animated.View style={[styles.playGlow, { ...glowStyle, backgroundColor: Colors.accent + "40" }]} />
+                <LinearGradient
+                  colors={velocityMode === "zen" ? [Colors.success, "#00C853"] : velocityMode === "endless" ? [Colors.accent, "#5E35B1"] : ["#7B61FF", "#5E35B1"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.playGradient}
+                >
+                  <Ionicons name="play" size={32} color="#fff" />
+                  <Text style={styles.playText}>PLAY</Text>
+                </LinearGradient>
+              </Pressable>
+            </Animated.View>
+            )}
 
             <View style={styles.secondaryRow}>
               <Pressable
@@ -917,6 +1013,34 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Outfit_700Bold",
     color: Colors.textSecondary,
+  },
+  gamePicker: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 8,
+  },
+  gameCard: {
+    flex: 1,
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+  },
+  gameCardName: {
+    fontSize: 13,
+    fontFamily: "Outfit_700Bold",
+    color: Colors.textMuted,
+    letterSpacing: 0.5,
+  },
+  gameCardTagline: {
+    fontSize: 10,
+    fontFamily: "Outfit_400Regular",
+    color: Colors.textMuted,
+    opacity: 0.7,
   },
   actions: {
     paddingHorizontal: 32,
