@@ -29,7 +29,7 @@ import {
   addXP,
   addLeaderboardEntry,
   updateGameStats,
-} from "@/lib/storage";
+} from "@/lib/velocity-storage";
 import AmbientParticles from "@/components/AmbientParticles";
 
 function AnimatedScoreCounter({ target }: { target: number }) {

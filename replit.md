@@ -1,7 +1,10 @@
-# ClutchTap - Reflex Challenge Game
+# Clutch Labs — Multi-Variant Arcade Suite
 
 ## Overview
-A React Native (Expo) mobile game where players tap colored tiles following rotating rules under time pressure. Features multiple game modes, lives system, combo multiplier, local leaderboard, achievement badges, performance ranking, daily challenges, XP progression, tile themes, daily login rewards, power-ups, stats dashboard, and polished visual effects.
+A React Native (Expo) mobile arcade suite with two independently publishable games built from a shared codebase. Each game ships as its own App Store app with its own name, bundle identifier, and direct launch flow.
+
+- **ClutchTap** (`APP_VARIANT=clutchtap`): Rotating-rule reflex tap game. Tap colored tiles following rotating rules under time pressure. Features game modes, lives, combo multiplier, daily challenges, XP, tile themes, power-ups, badges, stats dashboard.
+- **Velocity** (`APP_VARIANT=velocity`): Swipe-to-dodge survival game. Dodge incoming obstacle walls by swiping in the correct direction. Features Regular/Endless/Zen modes, lives, combo scoring, particles, screen flash.
 
 ## Tech Stack
 - **Frontend**: Expo SDK 54, Expo Router (stack navigation), React Native Reanimated 4
@@ -130,3 +133,46 @@ server/
 - Game uses router.replace to prevent back gesture mid-game
 - Difficulty + mode + daily flag + theme passed as route params from home → game → results
 - Stats screen accessible from home top bar
+
+## Multi-Variant Architecture
+
+The project uses an environment-variable-driven variant system to build two independent apps from one codebase.
+
+### App Variant Config
+- `app.config.js` — reads `APP_VARIANT` at build time; sets app name, slug, bundle ID, scheme
+- `constants/appVariant.ts` — runtime variant detection via `expo-constants`; exports `APP_VARIANT`, `IS_CLUTCHTAP`, `IS_VELOCITY`
+- `app/index.tsx` — exports `IS_VELOCITY ? VelocityHome : ClutchTapHomeScreen`; production builds show only the correct game
+
+### Storage Namespacing
+- ClutchTap: all keys prefixed `clutchtap_` — `lib/storage.ts`
+- Velocity: all keys prefixed `velocity_` — `lib/velocity-storage.ts`
+- Scores, leaderboards, XP, and streaks are fully isolated between games
+
+### Build Commands
+
+```bash
+# Development (ClutchTap — default)
+APP_VARIANT=clutchtap npx expo start
+
+# Development (Velocity)
+APP_VARIANT=velocity npx expo start
+
+# EAS Build — ClutchTap (iOS)
+APP_VARIANT=clutchtap eas build --platform ios --profile production
+
+# EAS Build — Velocity (iOS)
+APP_VARIANT=velocity eas build --platform ios --profile production
+
+# EAS Build — ClutchTap (Android)
+APP_VARIANT=clutchtap eas build --platform android --profile production
+
+# EAS Build — Velocity (Android)
+APP_VARIANT=velocity eas build --platform android --profile production
+```
+
+### Adding Future Games
+1. Add a new entry to `VARIANTS` in `app.config.js`
+2. Add `IS_NEWGAME` to `constants/appVariant.ts`
+3. Create `lib/newgame-storage.ts` with namespaced keys
+4. Create a home screen component and game screen
+5. Update `app/index.tsx` default export with the new variant
