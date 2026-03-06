@@ -30,6 +30,7 @@ import {
   addXP,
   addLeaderboardEntry,
   updateGameStats,
+  getBestScore,
 } from "@/lib/velocity-storage";
 import AmbientParticles from "@/components/AmbientParticles";
 
@@ -104,6 +105,40 @@ function RankDisplay({ rankInfo, delay }: { rankInfo: RankInfo; delay: number })
       </View>
       <Text style={[rs.rankLabel, { color: rankInfo.color }]}>{rankInfo.label}</Text>
       <Text style={rs.rankDesc}>{rankInfo.description}</Text>
+    </Animated.View>
+  );
+}
+
+function NewBestBanner() {
+  const scale = useSharedValue(0.6);
+  const opacity = useSharedValue(0);
+  const shimmer = useSharedValue(0);
+
+  useEffect(() => {
+    scale.value = withSpring(1, { damping: 8, stiffness: 200 });
+    opacity.value = withTiming(1, { duration: 300 });
+    shimmer.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 700, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0.6, { duration: 700, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1,
+      true
+    );
+  }, []);
+
+  const bannerStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  const shimmerStyle = useAnimatedStyle(() => ({
+    opacity: shimmer.value,
+  }));
+
+  return (
+    <Animated.View style={[rs.newBestBanner, bannerStyle]}>
+      <Animated.Text style={[rs.newBestText, shimmerStyle]}>🎉 NEW PERSONAL BEST!</Animated.Text>
     </Animated.View>
   );
 }
@@ -186,6 +221,7 @@ export default function VelocityResultsScreen() {
   const bottomInset = Platform.OS === "web" ? 34 : insets.bottom;
 
   const [xpEarned, setXpEarned] = useState(0);
+  const [isNewBest, setIsNewBest] = useState(false);
   const processedRef = useRef(false);
 
   const isZen = mode === "zen";
@@ -212,6 +248,12 @@ export default function VelocityResultsScreen() {
     setXpEarned(xp);
 
     const process = async () => {
+      const prevBest = await getBestScore();
+      if (mode !== "zen" && score > prevBest) {
+        setIsNewBest(true);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+
       await addXP(xp);
       await updateGameStats(score, accuracy, difficulty, mode as any, timeSurvived);
 
@@ -236,19 +278,40 @@ export default function VelocityResultsScreen() {
   const handleShare = async () => {
     const modeLabel = mode === "regular" ? "Regular" : mode === "endless" ? "Endless" : "Zen";
     const diffLabel = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+    const challengePrefix = isNewBest
+      ? "🎉 NEW PERSONAL BEST in VELOCITY!"
+      : `⚡ VELOCITY — Rank ${rankInfo.rank} (${rankInfo.label})`;
     const text = [
-      "⚡ VELOCITY — Swipe to Dodge",
-      `🏆 Score: ${score.toLocaleString()} · Rank ${rankInfo.rank} (${rankInfo.label})`,
-      `🔥 Max Combo: ${maxCombo}x`,
-      `🎯 Accuracy: ${accuracy}%`,
-      `⏱ Time: ${timeSurvived}s`,
-      `📋 Mode: ${modeLabel} · ${diffLabel}`,
+      challengePrefix,
+      `🏆 Score: ${score.toLocaleString()}`,
+      `🔥 Max Combo: ${maxCombo}x · 🎯 Accuracy: ${accuracy}%`,
+      `⏱ ${timeSurvived}s survived · ${modeLabel} ${diffLabel}`,
       "",
-      "Can you beat me? Try Velocity in ClutchTap!",
+      `🎮 I scored ${score} — think you can beat me?`,
+      "Download ClutchLabs and play Velocity! #Velocity #ClutchLabs",
     ].join("\n");
 
     try {
       await Share.share({ message: text });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch {}
+  };
+
+  const handleChallengeShare = async () => {
+    const modeLabel = mode === "regular" ? "Regular" : mode === "endless" ? "Endless" : "Zen";
+    const diffLabel = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+    const text = [
+      `🏆 CHALLENGE: Beat my ${score.toLocaleString()} in Velocity!`,
+      `Mode: ${modeLabel} · Difficulty: ${diffLabel}`,
+      `My rank: ${rankInfo.rank} (${rankInfo.label}) with ${maxCombo}x combo`,
+      "",
+      "Download ClutchLabs → play Velocity → beat me. I dare you 😤",
+      "#Velocity #ClutchLabs #SwipeToDodge",
+    ].join("\n");
+
+    try {
+      await Share.share({ message: text });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch {}
   };
 
@@ -288,8 +351,13 @@ export default function VelocityResultsScreen() {
                 <Text style={rs.subtitleText}>{modeLabel}{diffLabel} Mode</Text>
               </Animated.View>
 
+              {/* New personal best banner */}
+              {isNewBest && (
+                <NewBestBanner />
+              )}
+
               {/* Score */}
-              <View style={rs.scoreSection}>
+              <View style={[rs.scoreSection, isNewBest && { borderColor: Colors.warning + "80" }]}>
                 <Text style={rs.scoreLabel}>SCORE</Text>
                 <AnimatedScoreCounter target={score} />
                 {maxCombo >= 3 && (
@@ -336,6 +404,21 @@ export default function VelocityResultsScreen() {
                   >
                     <Ionicons name="refresh" size={22} color="#fff" />
                     <Text style={rs.primaryBtnText}>Play Again</Text>
+                  </LinearGradient>
+                </Pressable>
+
+                <Pressable
+                  onPress={handleChallengeShare}
+                  style={({ pressed }) => [rs.challengeBtn, { opacity: pressed ? 0.85 : 1 }]}
+                >
+                  <LinearGradient
+                    colors={[Colors.secondary, "#C62828"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={rs.challengeBtnInner}
+                  >
+                    <Ionicons name="people" size={20} color="#fff" />
+                    <Text style={rs.challengeBtnText}>Challenge a Friend</Text>
                   </LinearGradient>
                 </Pressable>
 
@@ -560,5 +643,38 @@ const rs = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Outfit_500Medium",
     color: Colors.textSecondary,
+  },
+  newBestBanner: {
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    backgroundColor: Colors.warning + "20",
+    borderWidth: 1.5,
+    borderColor: Colors.warning + "80",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  newBestText: {
+    fontSize: 18,
+    fontFamily: "Outfit_700Bold",
+    color: Colors.warning,
+    letterSpacing: 1,
+  },
+  challengeBtn: {
+    borderRadius: 14,
+    overflow: "hidden",
+  },
+  challengeBtnInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+  },
+  challengeBtnText: {
+    fontSize: 15,
+    fontFamily: "Outfit_700Bold",
+    color: "#fff",
+    letterSpacing: 0.5,
   },
 });

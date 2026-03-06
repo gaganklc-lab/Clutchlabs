@@ -234,6 +234,52 @@ function SettingsModal({
   );
 }
 
+function HowToPlayModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const insets = useSafeAreaInsets();
+  const rules = [
+    { icon: "arrow-forward-circle" as const, color: VELOCITY_CYAN, title: "Read the Bar", desc: "A colored bar slides in from one edge of the screen. Dodge it by swiping away." },
+    { icon: "swap-horizontal" as const, color: VELOCITY_PURPLE, title: "Swipe to Dodge", desc: "If the bar comes from the TOP, swipe DOWN. From LEFT → swipe RIGHT. Simple!" },
+    { icon: "flash" as const, color: Colors.warning, title: "Swipe Anywhere", desc: "You can swipe anywhere on the whole screen — no need to aim at the play area." },
+    { icon: "heart" as const, color: Colors.secondary, title: "Lives System", desc: "Fail to dodge in time and you lose a life. Lose all lives and the game ends." },
+    { icon: "flame" as const, color: Colors.secondary, title: "Build Combos", desc: "Consecutive successful dodges build your combo multiplier — up to 5×!" },
+    { icon: "timer" as const, color: Colors.primary, title: "Regular Mode", desc: "Dodge as many bars as you can in 30 seconds. Watch out for FRENZY in the last 10!" },
+    { icon: "infinite" as const, color: Colors.success, title: "Endless Mode", desc: "Survive as long as possible. Speed increases every 20 seconds — how long can you last?" },
+    { icon: "leaf" as const, color: Colors.success, title: "Zen Mode", desc: "Infinite lives, no timer. Perfect for practice or just vibing." },
+    { icon: "skull-outline" as const, color: Colors.secondary, title: "Difficulty", desc: "Easy (5 lives, slow), Normal (3 lives), or Hard (2 lives, brutal speed). Pick your poison." },
+    { icon: "shield-outline" as const, color: "#2196F3", title: "Shield Power-up", desc: "Absorbs one missed dodge — like it never happened. Earned every 5 successful dodges." },
+    { icon: "hourglass-outline" as const, color: VELOCITY_CYAN, title: "Slow-Mo Power-up", desc: "Doubles obstacle travel time for 5 seconds. Breathe easy while it's active." },
+    { icon: "star" as const, color: Colors.warning, title: "Earn XP & Ranks", desc: "Every game earns XP. Get ranked S→D based on accuracy, combo, and score. S rank = 2× XP!" },
+  ];
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={styles.modalOverlay}>
+        <View style={[styles.modalContent, { paddingBottom: (Platform.OS === "web" ? 34 : insets.bottom) + 16 }]}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>How to Play</Text>
+            <Pressable onPress={onClose} style={({ pressed }) => [styles.closeBtn, { opacity: pressed ? 0.6 : 1 }]}>
+              <Ionicons name="close" size={24} color={Colors.text} />
+            </Pressable>
+          </View>
+          <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 440 }}>
+            {rules.map((rule, i) => (
+              <View key={i} style={styles.ruleItem}>
+                <View style={[styles.ruleIcon, { backgroundColor: rule.color + "20" }]}>
+                  <Ionicons name={rule.icon} size={20} color={rule.color} />
+                </View>
+                <View style={styles.ruleText}>
+                  <Text style={styles.ruleTitle}>{rule.title}</Text>
+                  <Text style={styles.ruleDesc}>{rule.desc}</Text>
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 export default function VelocityHome() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -249,6 +295,7 @@ export default function VelocityHome() {
   const [loginStreak, setLoginStreak] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [showReward, setShowReward] = useState(false);
+  const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [rewardData, setRewardData] = useState({ rewardXP: 0, streak: 0, milestoneBonus: 0, milestoneLabel: "" });
 
   const pulseAnim = useSharedValue(0);
@@ -458,6 +505,31 @@ export default function VelocityHome() {
           </View>
 
           <View style={styles.actions}>
+            {/* Secondary action row */}
+            <View style={styles.secondaryRow}>
+              <Pressable
+                onPress={() => {
+                  if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowHowToPlay(true);
+                }}
+                style={({ pressed }) => [styles.secondaryBtn, { opacity: pressed ? 0.7 : 1 }]}
+              >
+                <Ionicons name="help-circle-outline" size={18} color={VELOCITY_CYAN} />
+                <Text style={styles.secondaryBtnText}>How to Play</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => {
+                  if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push("/velocity-leaderboard");
+                }}
+                style={({ pressed }) => [styles.secondaryBtn, { opacity: pressed ? 0.7 : 1 }]}
+              >
+                <Ionicons name="trophy-outline" size={18} color={VELOCITY_PURPLE} />
+                <Text style={[styles.secondaryBtnText, { color: VELOCITY_PURPLE }]}>Leaderboard</Text>
+              </Pressable>
+            </View>
+
             <Animated.View style={playButtonStyle}>
               <Pressable
                 onPress={handlePlay}
@@ -481,6 +553,7 @@ export default function VelocityHome() {
         </View>
       </View>
 
+      <HowToPlayModal visible={showHowToPlay} onClose={() => setShowHowToPlay(false)} />
       <SettingsModal
         visible={showSettings}
         onClose={() => setShowSettings(false)}
@@ -684,8 +757,62 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   actions: {
-    paddingHorizontal: 32,
+    paddingHorizontal: 24,
     paddingBottom: 24,
+    gap: 10,
+  },
+  secondaryRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  secondaryBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+  },
+  secondaryBtnText: {
+    fontSize: 13,
+    fontFamily: "Outfit_600SemiBold",
+    color: VELOCITY_CYAN,
+    letterSpacing: 0.5,
+  },
+  ruleItem: {
+    flexDirection: "row",
+    gap: 12,
+    alignItems: "flex-start",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  ruleIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  ruleText: {
+    flex: 1,
+  },
+  ruleTitle: {
+    fontSize: 14,
+    fontFamily: "Outfit_700Bold",
+    color: Colors.text,
+    marginBottom: 2,
+  },
+  ruleDesc: {
+    fontSize: 13,
+    fontFamily: "Outfit_400Regular",
+    color: Colors.textMuted,
+    lineHeight: 18,
   },
   playBtn: {
     borderRadius: 20,

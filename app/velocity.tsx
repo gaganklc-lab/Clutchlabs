@@ -113,6 +113,7 @@ export default function VelocityScreen() {
   const [burstPos, setBurstPos] = useState<{ x: number; y: number } | null>(null);
   const [speedLevel, setSpeedLevel] = useState(1);
   const [isFrenzy, setIsFrenzy] = useState(false);
+  const frenzyStartedRef = useRef(false);
   const [shieldActive, setShieldActive] = useState(false);
   const [slowMoActive, setSlowMoActive] = useState(false);
   const [powerUpInventory, setPowerUpInventory] = useState<VelocityPowerUpInventory>({ shield: 0, slow_mo: 0 });
@@ -351,11 +352,12 @@ export default function VelocityScreen() {
       gameTimerRef.current = setInterval(() => {
         setTimeLeft((t) => {
           const next = t - 1;
-          if (next <= FRENZY_THRESHOLD && t > FRENZY_THRESHOLD) {
-            runOnJS(startFrenzy)();
+          if (next <= FRENZY_THRESHOLD && !frenzyStartedRef.current) {
+            frenzyStartedRef.current = true;
+            setTimeout(startFrenzy, 0);
           }
           if (next <= 0) {
-            endGame();
+            setTimeout(endGame, 0);
             return 0;
           }
           return next;
