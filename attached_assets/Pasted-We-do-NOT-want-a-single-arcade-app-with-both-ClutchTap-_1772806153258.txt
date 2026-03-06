@@ -1,0 +1,134 @@
+We do NOT want a single arcade app with both ClutchTap and Velocity visible together on the home screen.
+
+We want ONE shared codebase, but TWO independent mobile apps built from it:
+
+1) ClutchTap
+2) Velocity
+
+Each app should be separately buildable and publishable to the App Store using the same Expo React Native codebase.
+
+-----------------------------------
+GOAL
+-----------------------------------
+
+Refactor the existing project into a multi-variant app architecture.
+
+This means:
+
+- Shared codebase
+- Shared reusable systems
+- Separate app variants
+- Each build should show only one game
+- No in-app game picker for production builds
+
+-----------------------------------
+APP VARIANTS
+-----------------------------------
+
+Use an environment-based app variant system.
+
+Create support for:
+
+APP_VARIANT=clutchtap
+APP_VARIANT=velocity
+
+-----------------------------------
+BEHAVIOR
+-----------------------------------
+
+If APP_VARIANT=clutchtap:
+- app name = ClutchTap
+- app bundle identifier should be configurable for ClutchTap
+- app launches directly into ClutchTap flow
+- Velocity should NOT appear as a selectable card or game option
+
+If APP_VARIANT=velocity:
+- app name = Velocity
+- app bundle identifier should be configurable for Velocity
+- app launches directly into Velocity flow
+- ClutchTap should NOT appear as a selectable card or game option
+
+-----------------------------------
+REFACTOR REQUIREMENTS
+-----------------------------------
+
+1. Add a variant config system
+Create a small app variant config file such as:
+- constants/appVariant.ts
+or equivalent
+
+It should read from environment variables and expose:
+- app id
+- app name
+- primary route
+- bundle identifier key
+- icon/splash asset path placeholders if useful
+
+2. Refactor the current home/index screen
+Do NOT show both ClutchTap and Velocity cards by default.
+Instead:
+- if variant is clutchtap, go directly into the ClutchTap app home flow
+- if variant is velocity, go directly into the Velocity app home flow
+
+If useful, create variant-specific home screens:
+- /clutchtap-home
+- /velocity-home
+
+3. Keep shared reusable systems
+Continue using shared:
+- colors
+- sounds
+- analytics
+- particles
+- storage
+- leaderboard logic
+- XP/badges/stats systems where appropriate
+
+4. Namespace storage by game/app id
+Ensure best scores / leaderboards / stats are namespaced by gameId or app variant so the two apps do not overwrite each other.
+
+Examples:
+- bestScore:clutchtap
+- bestScore:velocity
+- leaderboard:clutchtap
+- leaderboard:velocity
+
+5. Prepare app config for separate builds
+Refactor app config so metadata can differ by variant:
+- app name
+- slug
+- ios bundle identifier
+- android package if present
+- icon path placeholder
+- splash placeholder if useful
+
+You can use app.config.js / app.config.ts if needed.
+
+6. Keep Velocity and ClutchTap as separate routes internally
+That is fine.
+But production behavior must expose only the correct one based on APP_VARIANT.
+
+-----------------------------------
+DO NOT DO
+-----------------------------------
+
+- Do not keep a shared game picker in production
+- Do not show both games in the same shipped app
+- Do not create a brand new project
+- Do not duplicate all shared code unnecessarily
+
+-----------------------------------
+DELIVERABLES
+-----------------------------------
+
+Please implement:
+1. app variant system
+2. direct launch behavior per variant
+3. namespaced storage per game/app
+4. app config refactor for separate app identities
+5. summary of files added and modified
+6. example commands for building:
+   - ClutchTap variant
+   - Velocity variant
+
+Keep the code modular and scalable so more future games can be added later.
