@@ -399,11 +399,18 @@ export default function HomeScreen() {
                   }}
                   style={({ pressed }) => [
                     styles.gameCard,
-                    isActive && { borderColor: g.color, backgroundColor: g.color + "18" },
-                    { opacity: pressed ? 0.8 : isActive ? 1 : 0.5 },
+                    isActive && {
+                      borderColor: g.color,
+                      backgroundColor: g.color + "18",
+                      shadowColor: g.color,
+                      shadowOpacity: 0.4,
+                      shadowRadius: 8,
+                      elevation: 4,
+                    },
+                    { opacity: pressed ? 0.8 : isActive ? 1 : 0.45 },
                   ]}
                 >
-                  <Ionicons name={g.icon as any} size={22} color={isActive ? g.color : Colors.textMuted} />
+                  <Ionicons name={g.icon as any} size={26} color={isActive ? g.color : Colors.textMuted} />
                   <Text style={[styles.gameCardName, isActive && { color: g.color }]}>{g.name}</Text>
                   <Text style={styles.gameCardTagline}>{g.tagline}</Text>
                 </Pressable>
@@ -1023,7 +1030,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     gap: 4,
-    paddingVertical: 12,
+    paddingVertical: 16,
     paddingHorizontal: 8,
     borderRadius: 14,
     borderWidth: 1.5,
@@ -1031,7 +1038,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
   },
   gameCardName: {
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: "Outfit_700Bold",
     color: Colors.textMuted,
     letterSpacing: 0.5,

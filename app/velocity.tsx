@@ -294,7 +294,7 @@ export default function VelocityScreen() {
         if (Math.abs(dx) >= Math.abs(dy)) {
           swipe = dx > 0 ? "right" : "left";
         } else {
-          swipe = dy > 0 ? "down" : "up";
+          swipe = dy > 0 ? "bottom" : "top";
         }
         const correct = OPPOSITE[obs.direction];
         if ((swipe as string) === correct) {
