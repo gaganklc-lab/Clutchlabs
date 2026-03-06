@@ -1,0 +1,145 @@
+We already have a working Expo React Native game called ClutchTap in this repository.
+
+Do NOT create a new project.
+
+Instead extend the existing codebase to add a second game called Velocity.
+
+Velocity should reuse as many existing ClutchTap systems as possible including:
+
+- colors from constants/colors
+- storage logic (leaderboard, XP, stats)
+- analytics tracking
+- soundManager
+- particle effects (ParticleBurst, ScreenFlash, AmbientParticles)
+- combo and scoring logic patterns
+- results screen pattern
+- navigation system using Expo Router
+- existing UI styling and fonts
+
+----------------------------------
+
+Create a new game called Velocity.
+
+Concept:
+Velocity is a swipe-to-dodge survival game.
+
+The player controls a glowing orb in the center of the screen.
+
+Obstacles spawn from one of four directions:
+- top
+- bottom
+- left
+- right
+
+The player must swipe in the opposite direction to dodge.
+
+Example:
+Obstacle from left → swipe right
+Obstacle from top → swipe down
+
+If correct:
+- obstacle avoided
+- score increases
+- combo increases
+- particle burst plays
+- success haptic
+
+If wrong:
+- player loses a life
+- combo resets
+- error flash + haptic
+
+----------------------------------
+
+Add these routes using Expo Router:
+
+/velocity
+/velocity-results
+
+----------------------------------
+
+Gameplay features
+
+Countdown:
+Reuse the ClutchTap countdown overlay (3,2,1,GO).
+
+Player:
+Glowing orb in the center.
+
+Obstacle system:
+Start with simple laser walls or spikes that move toward the center.
+
+Difficulty ramp:
+Obstacle spawn speed increases over time.
+
+Lives:
+3 lives by default.
+
+Game modes:
+regular (30 seconds)
+endless
+zen practice mode
+
+----------------------------------
+
+Scoring
+
+successful dodge = 10 points
+combo increases multiplier
+score = base points × combo multiplier
+
+Track:
+
+score
+max combo
+mistakes
+elapsed time
+
+----------------------------------
+
+Results screen
+
+Reuse the existing results logic if possible.
+
+Show:
+
+Score
+Max combo
+Accuracy
+Time survived
+
+Save leaderboard entry using existing storage utilities.
+
+Add XP reward similar to ClutchTap.
+
+----------------------------------
+
+UI style
+
+Match ClutchTap visual style:
+
+dark neon background
+cyan / purple glow
+rounded UI cards
+particle effects
+premium arcade aesthetic
+
+----------------------------------
+
+Home screen
+
+Add a new game card for Velocity on the main menu so users can choose:
+
+ClutchTap
+Velocity
+
+----------------------------------
+
+Keep the code modular so future Clutch Labs games can be added easily.
+
+After implementation provide:
+
+1. files created
+2. files modified
+3. explanation of reusable systems used
+4. suggested improvements for future versions
