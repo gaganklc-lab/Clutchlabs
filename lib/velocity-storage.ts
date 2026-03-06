@@ -12,6 +12,8 @@ const KEYS = {
   GAME_STATS: "velocity_game_stats",
   ENDLESS_BEST: "velocity_endless_best",
   SETTINGS: "velocity_settings",
+  DIFFICULTY: "velocity_difficulty",
+  POWERUPS: "velocity_powerups",
 };
 
 export interface LeaderboardEntry {
@@ -20,6 +22,7 @@ export interface LeaderboardEntry {
   combo: number;
   avgReaction: number;
   date: string;
+  rank?: string;
 }
 
 export interface VelocitySettings {
@@ -51,6 +54,15 @@ const DEFAULT_GAME_STATS: VelocityGameStats = {
   gamesThisWeek: 0,
   weekStart: "",
 };
+
+export type VelocityDifficulty = "easy" | "normal" | "hard";
+
+export interface VelocityPowerUpInventory {
+  shield: number;
+  slow_mo: number;
+}
+
+const DEFAULT_POWERUPS: VelocityPowerUpInventory = { shield: 0, slow_mo: 0 };
 
 export async function getBestScore(): Promise<number> {
   const val = await AsyncStorage.getItem(KEYS.BEST_SCORE);
@@ -97,6 +109,38 @@ export async function getGameMode(): Promise<GameMode> {
 
 export async function saveGameMode(mode: GameMode): Promise<void> {
   await AsyncStorage.setItem(KEYS.GAME_MODE, mode);
+}
+
+export async function getDifficulty(): Promise<VelocityDifficulty> {
+  const val = await AsyncStorage.getItem(KEYS.DIFFICULTY);
+  return (val as VelocityDifficulty) || "normal";
+}
+
+export async function saveDifficulty(difficulty: VelocityDifficulty): Promise<void> {
+  await AsyncStorage.setItem(KEYS.DIFFICULTY, difficulty);
+}
+
+export async function getVelocityPowerUps(): Promise<VelocityPowerUpInventory> {
+  const val = await AsyncStorage.getItem(KEYS.POWERUPS);
+  return val ? { ...DEFAULT_POWERUPS, ...JSON.parse(val) } : { ...DEFAULT_POWERUPS };
+}
+
+export async function saveVelocityPowerUps(inventory: VelocityPowerUpInventory): Promise<void> {
+  await AsyncStorage.setItem(KEYS.POWERUPS, JSON.stringify(inventory));
+}
+
+export async function useVelocityPowerUp(type: keyof VelocityPowerUpInventory): Promise<boolean> {
+  const inventory = await getVelocityPowerUps();
+  if (inventory[type] <= 0) return false;
+  inventory[type] -= 1;
+  await saveVelocityPowerUps(inventory);
+  return true;
+}
+
+export async function earnVelocityPowerUp(type: keyof VelocityPowerUpInventory): Promise<void> {
+  const inventory = await getVelocityPowerUps();
+  inventory[type] += 1;
+  await saveVelocityPowerUps(inventory);
 }
 
 export async function getSettings(): Promise<VelocitySettings> {

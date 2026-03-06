@@ -17,6 +17,7 @@ import Animated, {
   withTiming,
   withSpring,
   withDelay,
+  withRepeat,
   withSequence,
   Easing,
 } from "react-native-reanimated";
@@ -31,6 +32,81 @@ import {
   updateGameStats,
 } from "@/lib/velocity-storage";
 import AmbientParticles from "@/components/AmbientParticles";
+
+const VELOCITY_CYAN = Colors.accent;
+const VELOCITY_PURPLE = "#7B61FF";
+
+type RankLetter = "S" | "A" | "B" | "C" | "D";
+
+interface RankInfo {
+  rank: RankLetter;
+  label: string;
+  color: string;
+  description: string;
+  xpMultiplier: number;
+}
+
+function calculateVelocityRank(score: number, accuracy: number, maxCombo: number, isZen: boolean): RankInfo {
+  if (isZen) {
+    return { rank: "S", label: "ZEN", color: Colors.success, description: "Practice complete!", xpMultiplier: 1 };
+  }
+  if (accuracy >= 90 && maxCombo >= 10 && score >= 150) {
+    return { rank: "S", label: "FLAWLESS", color: "#FFD700", description: "Near-perfect dodging!", xpMultiplier: 2 };
+  }
+  if (accuracy >= 75 && score >= 80) {
+    return { rank: "A", label: "SHARP", color: Colors.accent, description: "Excellent reactions!", xpMultiplier: 1.5 };
+  }
+  if (accuracy >= 60 && score >= 40) {
+    return { rank: "B", label: "SOLID", color: VELOCITY_PURPLE, description: "Good performance", xpMultiplier: 1 };
+  }
+  if (accuracy >= 40) {
+    return { rank: "C", label: "DECENT", color: Colors.warning, description: "Keep practicing", xpMultiplier: 1 };
+  }
+  return { rank: "D", label: "LEARNING", color: Colors.secondary, description: "You'll get there!", xpMultiplier: 1 };
+}
+
+function RankDisplay({ rankInfo, delay }: { rankInfo: RankInfo; delay: number }) {
+  const scale = useSharedValue(0);
+  const opacity = useSharedValue(0);
+  const glowScale = useSharedValue(1);
+
+  useEffect(() => {
+    scale.value = withDelay(delay, withSpring(1, { damping: 10, stiffness: 180 }));
+    opacity.value = withDelay(delay, withTiming(1, { duration: 400 }));
+    glowScale.value = withDelay(
+      delay + 300,
+      withRepeat(
+        withSequence(
+          withTiming(1.2, { duration: 900, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1, { duration: 900, easing: Easing.inOut(Easing.ease) })
+        ),
+        -1,
+        true
+      )
+    );
+  }, []);
+
+  const rankStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  const glowStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: glowScale.value }],
+    opacity: 0.3,
+  }));
+
+  return (
+    <Animated.View style={[rs.rankContainer, rankStyle]}>
+      <Animated.View style={[rs.rankGlow, { backgroundColor: rankInfo.color }, glowStyle]} />
+      <View style={[rs.rankCircle, { borderColor: rankInfo.color }]}>
+        <Text style={[rs.rankLetter, { color: rankInfo.color }]}>{rankInfo.rank}</Text>
+      </View>
+      <Text style={[rs.rankLabel, { color: rankInfo.color }]}>{rankInfo.label}</Text>
+      <Text style={rs.rankDesc}>{rankInfo.description}</Text>
+    </Animated.View>
+  );
+}
 
 function AnimatedScoreCounter({ target }: { target: number }) {
   const [display, setDisplay] = useState(0);
@@ -89,6 +165,7 @@ export default function VelocityResultsScreen() {
     totalDodges: string;
     timeSurvived: string;
     mode: string;
+    difficulty: string;
   }>();
 
   const score = parseInt(params.score ?? "0");
@@ -97,6 +174,7 @@ export default function VelocityResultsScreen() {
   const totalDodges = parseInt(params.totalDodges ?? "0");
   const timeSurvived = parseInt(params.timeSurvived ?? "0");
   const mode = params.mode ?? "regular";
+  const difficulty = params.difficulty ?? "normal";
 
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -110,9 +188,12 @@ export default function VelocityResultsScreen() {
   const [xpEarned, setXpEarned] = useState(0);
   const processedRef = useRef(false);
 
+  const isZen = mode === "zen";
   const accuracy = totalDodges + mistakes > 0
     ? Math.round((totalDodges / (totalDodges + mistakes)) * 100)
     : 100;
+
+  const rankInfo = calculateVelocityRank(score, accuracy, maxCombo, isZen);
 
   const containerOpacity = useSharedValue(0);
   const headerScale = useSharedValue(0.85);
@@ -126,12 +207,13 @@ export default function VelocityResultsScreen() {
     if (processedRef.current) return;
     processedRef.current = true;
 
-    const xp = Math.max(20, Math.round(score / 10) + maxCombo * 2);
+    const baseXP = Math.max(20, Math.round(score / 10) + maxCombo * 2);
+    const xp = Math.round(baseXP * rankInfo.xpMultiplier);
     setXpEarned(xp);
 
     const process = async () => {
       await addXP(xp);
-      await updateGameStats(score, accuracy, "normal", mode as any, timeSurvived);
+      await updateGameStats(score, accuracy, difficulty, mode as any, timeSurvived);
 
       if (mode !== "zen") {
         await addLeaderboardEntry({
@@ -140,10 +222,11 @@ export default function VelocityResultsScreen() {
           combo: maxCombo,
           avgReaction: 0,
           date: new Date().toISOString(),
+          rank: rankInfo.rank,
         });
       }
 
-      trackEvent("velocity_results_viewed", { score, maxCombo, mode, accuracy });
+      trackEvent("velocity_results_viewed", { score, maxCombo, mode, accuracy, rank: rankInfo.rank });
     };
 
     process();
@@ -152,13 +235,14 @@ export default function VelocityResultsScreen() {
 
   const handleShare = async () => {
     const modeLabel = mode === "regular" ? "Regular" : mode === "endless" ? "Endless" : "Zen";
+    const diffLabel = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
     const text = [
       "⚡ VELOCITY — Swipe to Dodge",
-      `🏆 Score: ${score.toLocaleString()}`,
+      `🏆 Score: ${score.toLocaleString()} · Rank ${rankInfo.rank} (${rankInfo.label})`,
       `🔥 Max Combo: ${maxCombo}x`,
       `🎯 Accuracy: ${accuracy}%`,
       `⏱ Time: ${timeSurvived}s`,
-      `📋 Mode: ${modeLabel}`,
+      `📋 Mode: ${modeLabel} · ${diffLabel}`,
       "",
       "Can you beat me? Try Velocity in ClutchTap!",
     ].join("\n");
@@ -175,6 +259,9 @@ export default function VelocityResultsScreen() {
   const headerStyle = useAnimatedStyle(() => ({
     transform: [{ scale: headerScale.value }],
   }));
+
+  const modeLabel = mode === "regular" ? "Regular" : mode === "endless" ? "Endless" : "Zen";
+  const diffLabel = difficulty !== "normal" ? ` · ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}` : "";
 
   return (
     <LinearGradient
@@ -195,12 +282,10 @@ export default function VelocityResultsScreen() {
               {/* Header */}
               <Animated.View style={[rs.header, headerStyle]}>
                 <View style={rs.titleRow}>
-                  <Ionicons name="speedometer" size={28} color={Colors.accent} />
+                  <Ionicons name="speedometer" size={28} color={VELOCITY_CYAN} />
                   <Text style={rs.titleText}>VELOCITY</Text>
                 </View>
-                <Text style={rs.subtitleText}>
-                  {mode === "regular" ? "Regular" : mode === "endless" ? "Endless" : "Zen"} Mode
-                </Text>
+                <Text style={rs.subtitleText}>{modeLabel}{diffLabel} Mode</Text>
               </Animated.View>
 
               {/* Score */}
@@ -212,11 +297,17 @@ export default function VelocityResultsScreen() {
                 )}
               </View>
 
+              {/* Rank */}
+              <RankDisplay rankInfo={rankInfo} delay={400} />
+
               {/* XP Badge */}
               {xpEarned > 0 && (
                 <View style={rs.xpBadge}>
                   <Ionicons name="star" size={16} color={Colors.warning} />
                   <Text style={rs.xpText}>+{xpEarned} XP Earned</Text>
+                  {rankInfo.xpMultiplier > 1 && (
+                    <Text style={rs.xpMultiplier}>{rankInfo.xpMultiplier}× rank bonus</Text>
+                  )}
                 </View>
               )}
 
@@ -225,7 +316,7 @@ export default function VelocityResultsScreen() {
                 <StatCard label="Max Combo" value={`${maxCombo}x`} icon="flame" color={Colors.secondary} />
                 <StatCard label="Accuracy" value={`${accuracy}%`} icon="checkmark-circle" color={Colors.success} />
                 <StatCard label="Time" value={`${timeSurvived}s`} icon="timer" color={Colors.primary} />
-                <StatCard label="Dodges" value={`${totalDodges}`} icon="shield-checkmark" color={Colors.accent} />
+                <StatCard label="Dodges" value={`${totalDodges}`} icon="shield-checkmark" color={VELOCITY_CYAN} />
               </View>
 
               {/* Buttons */}
@@ -233,12 +324,12 @@ export default function VelocityResultsScreen() {
                 <Pressable
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                    router.replace({ pathname: "/velocity", params: { mode } });
+                    router.replace({ pathname: "/velocity", params: { mode, difficulty } });
                   }}
                   style={({ pressed }) => [rs.primaryBtn, { transform: [{ scale: pressed ? 0.97 : 1 }] }]}
                 >
                   <LinearGradient
-                    colors={["#7B61FF", "#5E35B1"]}
+                    colors={[VELOCITY_PURPLE, "#5E35B1"]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={rs.primaryBtnInner}
@@ -252,8 +343,8 @@ export default function VelocityResultsScreen() {
                   onPress={handleShare}
                   style={({ pressed }) => [rs.secondaryBtn, { opacity: pressed ? 0.75 : 1 }]}
                 >
-                  <Ionicons name="share-social-outline" size={20} color={Colors.primary} />
-                  <Text style={rs.secondaryBtnText}>Share Score</Text>
+                  <Ionicons name="share-social-outline" size={20} color={VELOCITY_CYAN} />
+                  <Text style={[rs.secondaryBtnText, { color: VELOCITY_CYAN }]}>Share Score</Text>
                 </Pressable>
 
                 <Pressable
@@ -297,7 +388,7 @@ const rs = StyleSheet.create({
   titleText: {
     fontSize: 34,
     fontFamily: "Outfit_800ExtraBold",
-    color: Colors.accent,
+    color: VELOCITY_CYAN,
     letterSpacing: 4,
   },
   subtitleText: {
@@ -314,7 +405,7 @@ const rs = StyleSheet.create({
     borderRadius: 20,
     paddingVertical: 24,
     borderWidth: 1,
-    borderColor: Colors.accent + "40",
+    borderColor: VELOCITY_CYAN + "40",
   },
   scoreLabel: {
     fontSize: 12,
@@ -334,6 +425,42 @@ const rs = StyleSheet.create({
     color: Colors.secondary,
     marginTop: 2,
   },
+  rankContainer: {
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 4,
+  },
+  rankGlow: {
+    position: "absolute",
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    top: -10,
+  },
+  rankCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 3,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.surface,
+  },
+  rankLetter: {
+    fontSize: 40,
+    fontFamily: "Outfit_800ExtraBold",
+    lineHeight: 48,
+  },
+  rankLabel: {
+    fontSize: 14,
+    fontFamily: "Outfit_700Bold",
+    letterSpacing: 3,
+  },
+  rankDesc: {
+    fontSize: 12,
+    fontFamily: "Outfit_400Regular",
+    color: Colors.textMuted,
+  },
   xpBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -345,11 +472,18 @@ const rs = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
+    flexWrap: "wrap",
+    justifyContent: "center",
   },
   xpText: {
     fontSize: 14,
     fontFamily: "Outfit_700Bold",
     color: Colors.warning,
+  },
+  xpMultiplier: {
+    fontSize: 11,
+    fontFamily: "Outfit_600SemiBold",
+    color: Colors.warning + "BB",
   },
   statsGrid: {
     flexDirection: "row",
@@ -408,13 +542,12 @@ const rs = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: Colors.primary + "60",
-    backgroundColor: Colors.primary + "10",
+    borderColor: VELOCITY_CYAN + "60",
+    backgroundColor: VELOCITY_CYAN + "10",
   },
   secondaryBtnText: {
     fontSize: 15,
     fontFamily: "Outfit_600SemiBold",
-    color: Colors.primary,
   },
   homeBtn: {
     flexDirection: "row",

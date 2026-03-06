@@ -36,13 +36,22 @@ import {
   getLoginStreak,
   checkAndUpdateLoginStreak,
   saveSettings,
+  getDifficulty,
+  saveDifficulty,
   type VelocitySettings,
+  type VelocityDifficulty,
 } from "@/lib/velocity-storage";
 import { trackEvent } from "@/lib/analytics";
 import AmbientParticles from "@/components/AmbientParticles";
 
 const VELOCITY_CYAN = Colors.accent;
 const VELOCITY_PURPLE = "#7B61FF";
+
+const DIFFICULTY_CONFIGS: Record<VelocityDifficulty, { label: string; icon: string; color: string; desc: string }> = {
+  easy: { label: "Easy", icon: "leaf-outline", color: Colors.success, desc: "More time, 5 lives" },
+  normal: { label: "Normal", icon: "flash-outline", color: VELOCITY_CYAN, desc: "Balanced challenge" },
+  hard: { label: "Hard", icon: "skull-outline", color: Colors.secondary, desc: "Fast, 2 lives, brutal" },
+};
 
 function FloatingOrb({ delay, x, y, color, size }: { delay: number; x: number; y: number; color: string; size: number }) {
   const anim = useSharedValue(0);
@@ -235,6 +244,7 @@ export default function VelocityHome() {
   const [bestScore, setBestScore] = useState(0);
   const [settings, setSettings] = useState<VelocitySettings>({ soundEnabled: true, hapticsEnabled: true });
   const [mode, setMode] = useState<GameMode>("regular");
+  const [difficulty, setDifficulty] = useState<VelocityDifficulty>("normal");
   const [levelInfo, setLevelInfo] = useState({ level: 1, currentXP: 0, xpForNext: 100, progress: 0, title: "Beginner" });
   const [loginStreak, setLoginStreak] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
@@ -266,18 +276,20 @@ export default function VelocityHome() {
   }, []);
 
   const loadData = async () => {
-    const [score, s, xp, m, login] = await Promise.all([
+    const [score, s, xp, m, login, diff] = await Promise.all([
       getBestScore(),
       getSettings(),
       getTotalXP(),
       getGameMode(),
       getLoginStreak(),
+      getDifficulty(),
     ]);
     setBestScore(score);
     setSettings(s);
     setLevelInfo(getLevelInfo(xp));
     setMode(m);
     setLoginStreak(login.streak);
+    setDifficulty(diff);
 
     const reward = await checkAndUpdateLoginStreak();
     if (reward.isNewDay && reward.rewardXP > 0) {
@@ -296,9 +308,15 @@ export default function VelocityHome() {
     if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
+  const handleDifficultyChange = async (d: VelocityDifficulty) => {
+    setDifficulty(d);
+    await saveDifficulty(d);
+    if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
   const handlePlay = () => {
     if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push({ pathname: "/velocity", params: { mode } });
+    router.push({ pathname: "/velocity", params: { mode, difficulty } });
   };
 
   const playButtonStyle = useAnimatedStyle(() => ({
@@ -386,6 +404,7 @@ export default function VelocityHome() {
               </View>
             )}
 
+            {/* Mode picker */}
             <View style={styles.modePicker}>
               {(["regular", "endless", "zen"] as GameMode[]).map((m) => {
                 const cfg = MODE_CONFIGS[m];
@@ -408,6 +427,34 @@ export default function VelocityHome() {
             </View>
 
             <Text style={[styles.modeDesc, { color: Colors.textSecondary, marginTop: 4 }]}>{modeDesc}</Text>
+
+            {/* Difficulty picker */}
+            {mode !== "zen" && (
+              <View style={styles.difficultySection}>
+                <Text style={styles.difficultyHeader}>DIFFICULTY</Text>
+                <View style={styles.difficultyPicker}>
+                  {(["easy", "normal", "hard"] as VelocityDifficulty[]).map((d) => {
+                    const cfg = DIFFICULTY_CONFIGS[d];
+                    const isSelected = difficulty === d;
+                    return (
+                      <Pressable
+                        key={d}
+                        onPress={() => handleDifficultyChange(d)}
+                        style={({ pressed }) => [
+                          styles.diffOption,
+                          isSelected && { borderColor: cfg.color, backgroundColor: cfg.color + "18" },
+                          { opacity: pressed ? 0.7 : 1 },
+                        ]}
+                      >
+                        <Ionicons name={cfg.icon as any} size={15} color={isSelected ? cfg.color : Colors.textMuted} />
+                        <Text style={[styles.diffLabel, isSelected && { color: cfg.color }]}>{cfg.label}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                <Text style={styles.diffDesc}>{DIFFICULTY_CONFIGS[difficulty].desc}</Text>
+              </View>
+            )}
           </View>
 
           <View style={styles.actions}>
@@ -419,7 +466,7 @@ export default function VelocityHome() {
               >
                 <Animated.View style={[styles.playGlow, { backgroundColor: VELOCITY_CYAN + "40" }, glowStyle]} />
                 <LinearGradient
-                  colors={mode === "zen" ? [Colors.success, "#00C853"] : mode === "endless" ? [VELOCITY_CYAN, "#5E35B1"] : [VELOCITY_PURPLE, "#5E35B1"]}
+                  colors={mode === "zen" ? [Colors.success, "#00C853"] : difficulty === "hard" ? [Colors.secondary, "#C62828"] : mode === "endless" ? [VELOCITY_CYAN, "#5E35B1"] : [VELOCITY_PURPLE, "#5E35B1"]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.playGradient}
@@ -594,7 +641,47 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Outfit_400Regular",
     textAlign: "center",
-    marginBottom: 8,
+    marginBottom: 12,
+  },
+  difficultySection: {
+    alignItems: "center",
+    width: "100%",
+    gap: 6,
+  },
+  difficultyHeader: {
+    fontSize: 10,
+    fontFamily: "Outfit_600SemiBold",
+    color: Colors.textMuted,
+    letterSpacing: 3,
+  },
+  difficultyPicker: {
+    flexDirection: "row",
+    gap: 8,
+    width: "100%",
+  },
+  diffOption: {
+    flex: 1,
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 3,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+  },
+  diffLabel: {
+    fontSize: 10,
+    fontFamily: "Outfit_600SemiBold",
+    color: Colors.textMuted,
+    letterSpacing: 0.3,
+  },
+  diffDesc: {
+    fontSize: 12,
+    fontFamily: "Outfit_400Regular",
+    color: Colors.textMuted,
+    textAlign: "center",
   },
   actions: {
     paddingHorizontal: 32,
@@ -718,19 +805,20 @@ const styles = StyleSheet.create({
     color: Colors.warning,
   },
   rewardClaimBtn: {
-    marginTop: 8,
     width: "100%",
-    borderRadius: 16,
+    borderRadius: 14,
     overflow: "hidden",
+    marginTop: 8,
   },
   rewardClaimGradient: {
-    paddingVertical: 16,
+    paddingVertical: 14,
     alignItems: "center",
+    justifyContent: "center",
   },
   rewardClaimText: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: "Outfit_800ExtraBold",
-    color: "#000",
+    color: "#fff",
     letterSpacing: 2,
   },
   modalContent: {
@@ -738,10 +826,9 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
-    paddingTop: 16,
     width: "100%",
-    maxWidth: 560,
-    alignSelf: "center",
+    position: "absolute",
+    bottom: 0,
   },
   modalHeader: {
     flexDirection: "row",
@@ -762,8 +849,8 @@ const styles = StyleSheet.create({
   },
   settingRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
@@ -779,15 +866,15 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   toggle: {
-    width: 50,
+    width: 48,
     height: 28,
     borderRadius: 14,
     backgroundColor: Colors.surfaceLight,
-    padding: 3,
     justifyContent: "center",
+    paddingHorizontal: 3,
   },
   toggleOn: {
-    backgroundColor: Colors.accent,
+    backgroundColor: VELOCITY_CYAN,
   },
   toggleKnob: {
     width: 22,
@@ -796,7 +883,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.textMuted,
   },
   toggleKnobOn: {
-    backgroundColor: Colors.background,
+    backgroundColor: "#fff",
     marginLeft: "auto" as any,
   },
 });
