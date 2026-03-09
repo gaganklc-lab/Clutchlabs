@@ -1,0 +1,251 @@
+Upgrade Velocity from a polished arcade prototype into a more product-complete game by improving:
+1. progression
+2. results/reward loop
+3. unlockable cosmetics
+4. rank / replay motivation
+
+Do NOT rebuild the game.
+Do NOT break ClutchTap.
+Do NOT break existing Velocity gameplay, controls, storage, routes, or app variant setup.
+
+Goal:
+Make Velocity feel more like a real game product with reasons to return, unlock, improve, and replay.
+
+==================================================
+A) ADD A SIMPLE VELOCITY PROGRESSION LOOP
+==================================================
+
+Create a lightweight progression layer for Velocity only.
+
+Requirements:
+- do not build a huge inventory system
+- keep it simple and maintainable
+- store data in velocity-specific storage
+- progression should feel rewarding but not overly complex
+
+Add:
+
+1. Velocity player level / XP progression
+- if XP system already exists in velocity storage, reuse it
+- otherwise add a simple velocity-specific XP tracker
+- reward XP after each run based on:
+  - score
+  - max combo
+  - near misses / total dodges if useful
+  - mode (endless can reward slightly more)
+- show current Velocity level and progress where appropriate
+
+2. Rank / title system
+Add Velocity-specific ranks/titles such as:
+- Rookie
+- Runner
+- Phantom
+- Surge
+- Overdrive
+- Legend
+
+Keep it simple:
+- map title/rank based on best score, level, or combined performance
+- show the current rank clearly in the UI
+
+==================================================
+B) UNLOCKABLE COSMETICS
+==================================================
+
+Add a simple unlock system for cosmetics.
+
+Cosmetic types:
+1. orb styles
+2. trail styles
+3. arena themes (optional if scope allows)
+
+Keep initial scope manageable.
+
+At minimum add:
+- 3 orb styles
+- 3 trail styles
+
+Examples:
+Orb styles:
+- Core Blue
+- Neon Pulse
+- Overdrive Gold
+
+Trail styles:
+- Cyan Trail
+- Violet Trail
+- Gold Spark
+
+Unlock conditions can be based on:
+- reaching certain levels
+- achieving a combo threshold
+- surviving certain time in endless mode
+- reaching score milestones
+
+Requirements:
+- save unlocked items in velocity-specific storage
+- save currently equipped orb style and trail style
+- provide sensible defaults
+- do not overcomplicate the data model
+
+==================================================
+C) EQUIP / CUSTOMIZE FLOW
+==================================================
+
+Add a simple way to preview and equip unlocked cosmetics.
+
+Best place:
+- Velocity home screen or a small Velocity settings/customization panel
+
+Requirements:
+- player can see unlocked orb styles
+- player can see unlocked trail styles
+- locked items should show their unlock condition
+- equipped style should be clearly marked
+- keep the UI lightweight and premium
+
+Do NOT build a huge cosmetics shop.
+Just a clean unlock/equip interface.
+
+==================================================
+D) RESULTS SCREEN UPGRADE
+==================================================
+
+Upgrade Velocity results to feel much more rewarding.
+
+Current results should be expanded to include:
+1. Score
+2. Max combo
+3. Time survived
+4. Rank/title
+5. XP earned this run
+6. Progress toward next level
+7. New best indicator if applicable
+8. Unlock summary if something new was unlocked
+9. Clear replay CTA
+
+If player unlocked something during the run, show a clean reward card such as:
+- New Orb Unlocked: Neon Pulse
+- New Trail Unlocked: Gold Spark
+- New Rank: Overdrive
+
+The results screen should make the user want another run immediately.
+
+==================================================
+E) POST-RUN REWARD SUMMARY
+==================================================
+
+After a run, calculate and show:
+- XP earned
+- whether a new personal best was reached
+- whether a new cosmetic was unlocked
+- whether a new title/rank was reached
+
+Keep this concise and visually satisfying.
+
+==================================================
+F) VELOCITY STORAGE EXTENSIONS
+==================================================
+
+Extend velocity-specific storage safely.
+
+Add whatever new keys are needed for:
+- XP
+- level
+- unlocked orb styles
+- unlocked trail styles
+- equipped orb style
+- equipped trail style
+- best score if not already there
+- rank/title if stored
+
+Important:
+- namespacing must remain Velocity-specific
+- do not collide with ClutchTap storage
+
+==================================================
+G) APPLY COSMETICS TO GAMEPLAY
+==================================================
+
+Make cosmetics visible in the actual Velocity game.
+
+At minimum:
+- equipped orb style changes orb appearance
+- equipped trail style changes trail appearance
+
+Keep gameplay unchanged.
+Only visuals should change.
+
+==================================================
+H) VELOCITY HOME SCREEN IMPROVEMENTS
+==================================================
+
+Upgrade the Velocity home screen to reflect progression.
+
+Add:
+- current Velocity level
+- current rank/title
+- best score
+- small cosmetic preview if possible
+- access to customization/unlock area
+
+Keep layout clean and premium.
+
+==================================================
+I) ENDLESS MODE REWARD MOTIVATION
+==================================================
+
+Make endless mode feel more rewarding.
+
+Examples:
+- unlock certain cosmetics by reaching speed level milestones
+- unlock titles by surviving longer
+- reward bonus XP for endless progression
+
+This should make endless mode feel meaningful, not just a score mode.
+
+==================================================
+J) UI STYLE
+==================================================
+
+Keep all new UI consistent with Velocity’s identity:
+- premium neon arcade
+- cyan / purple / energy accents
+- clean rounded cards
+- readable text hierarchy
+- do not clutter the screen
+
+==================================================
+K) KEEP EXISTING FUNCTIONALITY SAFE
+==================================================
+
+Do NOT break:
+- swipe controls
+- keyboard controls
+- tablet layout
+- power-ups
+- score/combo/lives
+- frenzy mode
+- results route
+- analytics
+- shared architecture
+- app variant switching
+
+==================================================
+L) DELIVERABLES
+==================================================
+
+After implementation provide:
+
+1. files created
+2. files modified
+3. progression model used
+4. how XP and levels work
+5. what orb styles were added
+6. what trail styles were added
+7. how unlock conditions work
+8. what changed in the results screen
+9. what changed in Velocity home/customization
+10. any recommended future expansions
+
+Keep the implementation compact, maintainable, and product-oriented.
