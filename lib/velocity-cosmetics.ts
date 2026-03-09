@@ -104,11 +104,15 @@ export async function getUnlockedCosmetics(): Promise<{
 }> {
   const val = await AsyncStorage.getItem(KEYS.UNLOCKED_COSMETICS);
   if (!val) return { ...DEFAULT_UNLOCKED };
-  const parsed = JSON.parse(val);
-  return {
-    orbs: parsed.orbs ?? [...DEFAULT_UNLOCKED.orbs],
-    trails: parsed.trails ?? [...DEFAULT_UNLOCKED.trails],
-  };
+  try {
+    const parsed = JSON.parse(val);
+    return {
+      orbs: parsed.orbs ?? [...DEFAULT_UNLOCKED.orbs],
+      trails: parsed.trails ?? [...DEFAULT_UNLOCKED.trails],
+    };
+  } catch {
+    return { ...DEFAULT_UNLOCKED };
+  }
 }
 
 export async function saveUnlockedCosmetics(data: {

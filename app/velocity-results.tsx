@@ -349,7 +349,7 @@ export default function VelocityResultsScreen() {
       trackEvent("velocity_results_viewed", { score, maxCombo, mode, accuracy, rank: rankInfo.rank });
     };
 
-    process();
+    process().catch(err => console.error("[velocity-results] process error:", err));
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   }, []);
 
