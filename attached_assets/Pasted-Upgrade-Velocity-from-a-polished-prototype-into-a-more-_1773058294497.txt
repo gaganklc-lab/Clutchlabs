@@ -1,0 +1,265 @@
+Upgrade Velocity from a polished prototype into a more production-grade arcade game.
+
+Do NOT rebuild the game from scratch.
+Do NOT break the current gameplay loop.
+Do NOT break ClutchTap or the shared codebase.
+Keep the current routes, storage, results flow, and variant architecture.
+
+Goal:
+Improve presentation, game feel, and progression so Velocity feels like a premium mobile arcade game rather than a simple prototype.
+
+Focus on:
+1. stronger visual identity
+2. better game feel / juice
+3. better progression / replay motivation
+
+==================================================
+A) VISUAL IDENTITY UPGRADE
+==================================================
+
+Current visuals are functional but still too simple.
+Make Velocity feel like a distinctive premium game world.
+
+Target theme:
+"Neon Survival Arena" / "Cyber Reflex Arena"
+
+Please improve the playfield visuals with:
+
+1. Enhanced arena background
+- keep VelocityBackgroundFX, but make it feel richer
+- add subtle animated neon grid / arena rings / lane energy
+- add depth/parallax feel without making it noisy
+- make the background feel alive, fast, and premium
+
+2. Arena framing
+- make the play area look like a deliberate game arena
+- stronger border styling
+- subtle glow around arena edges
+- better visual contrast between play area and surrounding background
+
+3. Mode-based tone shifts
+- regular mode: cyan / purple premium arcade
+- endless mode: more intense / hotter / overdrive feeling as speed increases
+- zen mode: calmer and cleaner tone
+
+Do not overdo brightness. Keep it premium and readable.
+
+==================================================
+B) ORB VISUAL / MOVEMENT UPGRADE
+==================================================
+
+The orb should feel like the hero object.
+
+Improve orb presentation with:
+
+1. Better orb styling
+- layered glow
+- inner core + outer aura if useful
+- stronger premium look
+
+2. Better dodge movement
+- keep the current dash, but make it feel more alive
+- add slight squash/stretch during dodge
+- subtle directional tilt or energy pull if useful
+- keep movement tight and responsive
+
+3. Combo aura
+- as combo rises, orb glow intensity increases
+- high combo should feel visibly more powerful
+- do this without clutter
+
+4. Failure feel
+- miss should feel heavier
+- stronger destabilization / shake / energy disruption
+
+==================================================
+C) OBSTACLE VISUAL UPGRADE
+==================================================
+
+Current line obstacles are too plain for a production-grade game.
+
+Keep the same obstacle logic, but improve the visuals so they feel like premium energy hazards.
+
+Examples:
+- neon laser walls
+- segmented energy beams
+- charged light bars
+- animated beam cores with glow edges
+
+Requirements:
+- obstacle source direction must stay obvious
+- telegraph must stay readable
+- preserve current gameplay logic
+- preserve top/bottom and left/right behavior
+
+Add subtle charge-up styling if possible:
+- beam appears to energize before crossing
+- glow intensifies as it approaches center
+
+==================================================
+D) SUCCESS / FAILURE GAME FEEL
+==================================================
+
+Great arcade games feel good every second.
+
+Please improve the feedback loop:
+
+1. On success
+- keep dash + trail + burst + flash
+- add score popup near orb or impact area (e.g. +10, +15, +25)
+- make combo streaks feel more rewarding
+- near miss should feel extra satisfying
+
+2. On failure
+- stronger hit flash
+- stronger impact feel
+- orb destabilization / shake
+- more weight in the visual response
+
+3. Combo feedback
+- add small combo status emphasis
+- when combo reaches thresholds (5, 10, etc.), make it feel special
+- example: stronger aura, stronger text treatment, special mini pulse
+
+==================================================
+E) SCORE POPUPS / MICRO-FEEDBACK
+==================================================
+
+Add score popups and micro-feedback text.
+
+Examples:
+- +10
+- +15
+- +25
+- NEAR MISS
+- CLUTCH
+- FRENZY
+
+Requirements:
+- keep them lightweight
+- avoid clutter
+- animate them cleanly
+- make them feel premium, not noisy
+
+==================================================
+F) PROGRESSION / REPLAY MOTIVATION
+==================================================
+
+Velocity needs more reason to replay.
+
+Add a lightweight progression layer using the existing storage/meta systems if possible.
+
+Please add one or more of these, keeping scope reasonable:
+
+1. Unlockable orb styles or trail styles
+- even simple unlockable visual variants are fine
+
+2. Velocity-specific rank / title
+- e.g. Runner, Phantom, Surge, Overdrive, Legend
+
+3. Post-run unlock summary
+- e.g. "New best", "Combo milestone", "Unlocked trail", etc.
+
+4. Endless mode escalation feedback
+- clearly communicate when the player reaches a new speed/phase
+
+Do not build a huge inventory system unless needed.
+Prefer a simple but motivating progression layer.
+
+==================================================
+G) ENDLESS MODE ESCALATION
+==================================================
+
+Make endless mode feel more intentional and dramatic.
+
+As speed increases:
+- visuals should shift slightly
+- arena intensity increases
+- danger feels more serious
+
+Examples:
+- stronger arena glow
+- faster background motion
+- warmer color accents
+- more dramatic level-up feedback
+
+This should make endless mode feel like phases, not just repetition.
+
+==================================================
+H) AUDIO-READY VISUAL CUES
+==================================================
+
+Even if you do not add brand new sound files, make the visuals ready for stronger audio pairing.
+
+Examples:
+- more obvious warning telegraph
+- stronger success hit
+- clearer near-miss event
+- frenzy mode transitions that feel “audio-worthy”
+
+==================================================
+I) UI / MENUS / RESULTS POLISH
+==================================================
+
+Also improve surrounding presentation if needed:
+
+1. In-game HUD polish
+- cleaner hierarchy
+- premium readability
+- better spacing if helpful
+
+2. Results screen polish (only if easy and safe)
+- stronger victory / defeat feel
+- better score emphasis
+- better replay CTA feel
+
+Do not rewrite the results system entirely.
+Only polish if straightforward.
+
+==================================================
+J) PERFORMANCE
+==================================================
+
+Keep it smooth on:
+- phone
+- tablet
+- web preview
+
+Avoid excessive particles or heavy rendering.
+Use limited counts and efficient animations.
+
+==================================================
+K) PRESERVE ALL EXISTING FUNCTIONALITY
+==================================================
+
+Do NOT break:
+- swipe controls
+- keyboard controls
+- tablet layout
+- countdown
+- score
+- combo
+- lives
+- frenzy
+- power-ups
+- results route
+- velocity storage
+- analytics
+- variant setup
+
+==================================================
+L) DELIVERABLES
+==================================================
+
+After implementation, provide:
+
+1. files created
+2. files modified
+3. what changed visually in the arena
+4. what changed for orb styling and movement
+5. what changed for obstacles
+6. what micro-feedback / score popups were added
+7. what progression / replay layer was added
+8. any recommended next steps
+
+Keep the final result coherent, premium, and production-feeling.
