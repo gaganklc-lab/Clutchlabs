@@ -31,7 +31,15 @@ import {
   addLeaderboardEntry,
   updateGameStats,
   getBestScore,
+  getTotalXP,
 } from "@/lib/velocity-storage";
+import {
+  getVelocityTitle,
+  getTitleColor,
+  getNextTitle,
+  getCurrentTierXP,
+  getTitleInfo,
+} from "@/lib/velocity-progression";
 import AmbientParticles from "@/components/AmbientParticles";
 
 const VELOCITY_CYAN = Colors.accent;
@@ -222,6 +230,7 @@ export default function VelocityResultsScreen() {
 
   const [xpEarned, setXpEarned] = useState(0);
   const [isNewBest, setIsNewBest] = useState(false);
+  const [totalXP, setTotalXP] = useState(0);
   const processedRef = useRef(false);
 
   const isZen = mode === "zen";
@@ -256,6 +265,9 @@ export default function VelocityResultsScreen() {
 
       await addXP(xp);
       await updateGameStats(score, accuracy, difficulty, mode as any, timeSurvived);
+
+      const newTotal = await getTotalXP();
+      setTotalXP(newTotal);
 
       if (mode !== "zen") {
         await addLeaderboardEntry({
@@ -372,12 +384,38 @@ export default function VelocityResultsScreen() {
               {xpEarned > 0 && (
                 <View style={rs.xpBadge}>
                   <Ionicons name="star" size={16} color={Colors.warning} />
-                  <Text style={rs.xpText}>+{xpEarned} XP Earned</Text>
+                  <Text style={rs.xpText}>+{xpEarned} XP</Text>
                   {rankInfo.xpMultiplier > 1 && (
-                    <Text style={rs.xpMultiplier}>{rankInfo.xpMultiplier}× rank bonus</Text>
+                    <Text style={rs.xpMultiplier}>{rankInfo.xpMultiplier}× bonus</Text>
                   )}
                 </View>
               )}
+
+              {/* Title progression */}
+              {totalXP > 0 && (() => {
+                const title = getVelocityTitle(totalXP);
+                const titleColor = getTitleColor(title);
+                const nextT = getNextTitle(totalXP);
+                const tierXP = getCurrentTierXP(totalXP);
+                const progress = tierXP.needed > 0 ? tierXP.current / tierXP.needed : 1;
+                return (
+                  <View style={rs.titleSection}>
+                    <Text style={[rs.playerTitle, { color: titleColor }]}>{title.toUpperCase()}</Text>
+                    <Text style={rs.titleDesc}>{getTitleInfo(title).description}</Text>
+                    {nextT && (
+                      <View style={rs.progressRow}>
+                        <View style={rs.progressBar}>
+                          <View style={[rs.progressFill, { width: `${Math.min(progress * 100, 100)}%` as any, backgroundColor: titleColor }]} />
+                        </View>
+                        <Text style={rs.progressLabel}>{tierXP.current}/{tierXP.needed} XP → {nextT.title}</Text>
+                      </View>
+                    )}
+                    {!nextT && (
+                      <Text style={[rs.progressLabel, { color: "#FFD700" }]}>MAX RANK ACHIEVED</Text>
+                    )}
+                  </View>
+                );
+              })()}
 
               {/* Stat cards */}
               <View style={rs.statsGrid}>
@@ -394,16 +432,16 @@ export default function VelocityResultsScreen() {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                     router.replace({ pathname: "/velocity", params: { mode, difficulty } });
                   }}
-                  style={({ pressed }) => [rs.primaryBtn, { transform: [{ scale: pressed ? 0.97 : 1 }] }]}
+                  style={({ pressed }) => [rs.primaryBtn, { transform: [{ scale: pressed ? 0.96 : 1 }], opacity: 1 }]}
                 >
                   <LinearGradient
-                    colors={[VELOCITY_PURPLE, "#5E35B1"]}
+                    colors={["#00E5FF", "#0072FF"]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={rs.primaryBtnInner}
                   >
-                    <Ionicons name="refresh" size={22} color="#fff" />
-                    <Text style={rs.primaryBtnText}>Play Again</Text>
+                    <Ionicons name="play" size={22} color="#fff" />
+                    <Text style={rs.primaryBtnText}>PLAY AGAIN</Text>
                   </LinearGradient>
                 </Pressable>
 
@@ -515,34 +553,81 @@ const rs = StyleSheet.create({
   },
   rankGlow: {
     position: "absolute",
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    top: -10,
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    top: -15,
   },
   rankCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 3,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    borderWidth: 3.5,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: Colors.surface,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 8,
   },
   rankLetter: {
-    fontSize: 40,
+    fontSize: 48,
     fontFamily: "Outfit_800ExtraBold",
-    lineHeight: 48,
+    lineHeight: 56,
   },
   rankLabel: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: "Outfit_700Bold",
-    letterSpacing: 3,
+    letterSpacing: 4,
   },
   rankDesc: {
     fontSize: 12,
     fontFamily: "Outfit_400Regular",
     color: Colors.textMuted,
+  },
+  titleSection: {
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  playerTitle: {
+    fontSize: 24,
+    fontFamily: "Outfit_800ExtraBold",
+    letterSpacing: 5,
+  },
+  titleDesc: {
+    fontSize: 12,
+    fontFamily: "Outfit_400Regular",
+    color: Colors.textMuted,
+    letterSpacing: 0.5,
+  },
+  progressRow: {
+    alignSelf: "stretch",
+    gap: 4,
+    marginTop: 4,
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: Colors.border,
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: 4,
+    borderRadius: 2,
+  },
+  progressLabel: {
+    fontSize: 10,
+    fontFamily: "Outfit_500Medium",
+    color: Colors.textMuted,
+    letterSpacing: 0.5,
+    textAlign: "center",
   },
   xpBadge: {
     flexDirection: "row",

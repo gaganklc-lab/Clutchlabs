@@ -893,7 +893,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.warning + "15",
   },
   rewardDayPast: {
-    borderColor: Colors.textMuted + "50",
+    borderColor: Colors.border,
     opacity: 0.6,
   },
   rewardDayNum: {

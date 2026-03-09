@@ -35,6 +35,7 @@ import ParticleBurst, { type BurstEvent } from "@/components/ParticleBurst";
 import EdgeWarning from "@/components/EdgeWarning";
 import OrbTrail, { TrailSegment } from "@/components/OrbTrail";
 import VelocityBackgroundFX from "@/components/VelocityBackgroundFX";
+import ScorePopup, { type PopupEvent } from "@/components/ScorePopup";
 import {
   getVelocityPowerUps,
   useVelocityPowerUp,
@@ -133,6 +134,8 @@ export default function VelocityScreen() {
   const [trailSegments, setTrailSegments] = useState<TrailSegment[]>([]);
   const [showNearMiss, setShowNearMiss] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [popups, setPopups] = useState<PopupEvent[]>([]);
+  const [showPhaseUp, setShowPhaseUp] = useState<number | null>(null);
 
   const isPlayingRef = useRef(false);
   const scoreRef = useRef(0);
@@ -158,11 +161,14 @@ export default function VelocityScreen() {
   const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nearMissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tutorialTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const phaseUpTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tutorialDismissedRef = useRef(false);
 
   const obstacleProgress = useSharedValue(0);
   const orbShake = useSharedValue(0);
   const orbScale = useSharedValue(1);
+  const orbScaleX = useSharedValue(1);
+  const orbScaleY = useSharedValue(1);
   const orbDashX = useSharedValue(0);
   const orbDashY = useSharedValue(0);
   const comboGlow = useSharedValue(0);
@@ -170,6 +176,7 @@ export default function VelocityScreen() {
   const shockwaveOpacity = useSharedValue(0);
   const directionPulse = useSharedValue(0);
   const frenzyPulse = useSharedValue(0);
+  const arenaGlow = useSharedValue(0);
 
   const screenCenterX = contentMaxWidth ? Math.min(width, contentMaxWidth) / 2 : width / 2;
   const screenCenterY = (height - topInset - bottomInset) / 2;
@@ -188,13 +195,17 @@ export default function VelocityScreen() {
     if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
     if (nearMissTimerRef.current) clearTimeout(nearMissTimerRef.current);
     if (tutorialTimerRef.current) clearTimeout(tutorialTimerRef.current);
+    if (phaseUpTimerRef.current) clearTimeout(phaseUpTimerRef.current);
     cancelAnimation(obstacleProgress);
     cancelAnimation(frenzyPulse);
     cancelAnimation(orbDashX);
     cancelAnimation(orbDashY);
+    cancelAnimation(orbScaleX);
+    cancelAnimation(orbScaleY);
     cancelAnimation(comboGlow);
     cancelAnimation(shockwaveScale);
     cancelAnimation(shockwaveOpacity);
+    cancelAnimation(arenaGlow);
   }, []);
 
   const endGame = useCallback(() => {
@@ -321,12 +332,15 @@ export default function VelocityScreen() {
     soundManager.play("wrong");
 
     orbShake.value = withSequence(
-      withTiming(-14, { duration: 50 }),
-      withTiming(14, { duration: 50 }),
-      withTiming(-10, { duration: 50 }),
-      withTiming(10, { duration: 50 }),
-      withTiming(0, { duration: 50 })
+      withTiming(-18, { duration: 45 }),
+      withTiming(18, { duration: 45 }),
+      withTiming(-13, { duration: 45 }),
+      withTiming(13, { duration: 45 }),
+      withTiming(-7, { duration: 45 }),
+      withTiming(0, { duration: 45 })
     );
+    orbScaleX.value = withSequence(withTiming(1.35, { duration: 80 }), withSpring(1, { damping: 6, stiffness: 180 }));
+    orbScaleY.value = withSequence(withTiming(0.65, { duration: 80 }), withSpring(1, { damping: 6, stiffness: 180 }));
     comboGlow.value = withTiming(0, { duration: 200 });
 
     if (livesRef.current <= 0 && mode !== "zen") {
@@ -375,19 +389,27 @@ export default function VelocityScreen() {
       setShowTutorial(false);
     }
 
-    comboGlow.value = withTiming(Math.min(comboRef.current * 5, 36), { duration: 200 });
+    comboGlow.value = withTiming(Math.min(comboRef.current * 5, 50), { duration: 200 });
 
     const DASH = 44;
     if (lastDir) {
       const OPPOSITE_DIR = OPPOSITE[lastDir];
       if (OPPOSITE_DIR === "right") {
         orbDashX.value = withSequence(withTiming(DASH, { duration: 90 }), withDelay(50, withSpring(0, { damping: 8, stiffness: 220 })));
+        orbScaleX.value = withSequence(withTiming(1.4, { duration: 80 }), withSpring(1, { damping: 7, stiffness: 200 }));
+        orbScaleY.value = withSequence(withTiming(0.7, { duration: 80 }), withSpring(1, { damping: 7, stiffness: 200 }));
       } else if (OPPOSITE_DIR === "left") {
         orbDashX.value = withSequence(withTiming(-DASH, { duration: 90 }), withDelay(50, withSpring(0, { damping: 8, stiffness: 220 })));
+        orbScaleX.value = withSequence(withTiming(1.4, { duration: 80 }), withSpring(1, { damping: 7, stiffness: 200 }));
+        orbScaleY.value = withSequence(withTiming(0.7, { duration: 80 }), withSpring(1, { damping: 7, stiffness: 200 }));
       } else if (OPPOSITE_DIR === "bottom") {
         orbDashY.value = withSequence(withTiming(DASH, { duration: 90 }), withDelay(50, withSpring(0, { damping: 8, stiffness: 220 })));
+        orbScaleX.value = withSequence(withTiming(0.7, { duration: 80 }), withSpring(1, { damping: 7, stiffness: 200 }));
+        orbScaleY.value = withSequence(withTiming(1.4, { duration: 80 }), withSpring(1, { damping: 7, stiffness: 200 }));
       } else if (OPPOSITE_DIR === "top") {
         orbDashY.value = withSequence(withTiming(-DASH, { duration: 90 }), withDelay(50, withSpring(0, { damping: 8, stiffness: 220 })));
+        orbScaleX.value = withSequence(withTiming(0.7, { duration: 80 }), withSpring(1, { damping: 7, stiffness: 200 }));
+        orbScaleY.value = withSequence(withTiming(1.4, { duration: 80 }), withSpring(1, { damping: 7, stiffness: 200 }));
       }
 
       const trailOffX = OPPOSITE_DIR === "right" ? 22 : OPPOSITE_DIR === "left" ? -22 : 0;
@@ -408,6 +430,20 @@ export default function VelocityScreen() {
 
     const burstId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
     setBursts(prev => [...prev, { x: screenCenterX, y: screenCenterY, color: Colors.primary, id: burstId }]);
+
+    const popupId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
+    const isMilestone = comboRef.current === 5 || comboRef.current === 10 || comboRef.current === 15 || comboRef.current === 20;
+    if (nearMiss) {
+      setPopups(prev => [...prev, { id: popupId, label: "NEAR MISS", color: "#FFFFFF", x: screenCenterX, y: screenCenterY - 30 }]);
+    } else if (isMilestone) {
+      const milestoneLabel = comboRef.current >= 15 ? "FRENZY!" : "CLUTCH!";
+      const milestoneColor = comboRef.current >= 15 ? Colors.secondary : Colors.warning;
+      setPopups(prev => [...prev, { id: popupId, label: milestoneLabel, color: milestoneColor, x: screenCenterX, y: screenCenterY - 30 }]);
+    } else {
+      const label = gained >= 25 ? `+${gained}` : gained >= 15 ? `+${gained}` : `+${gained}`;
+      const popupColor = gained >= 25 ? "#FFD700" : gained >= 15 ? Colors.warning : Colors.accent;
+      setPopups(prev => [...prev, { id: popupId, label: label, color: popupColor, x: screenCenterX, y: screenCenterY - 20 }]);
+    }
 
     Haptics.impactAsync(nearMiss ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Light);
     soundManager.play("tap");
@@ -462,6 +498,9 @@ export default function VelocityScreen() {
         baseSpawnDurationRef.current = spawnDurationRef.current;
         speedLevelRef.current += 1;
         setSpeedLevel(speedLevelRef.current);
+        setShowPhaseUp(speedLevelRef.current);
+        if (phaseUpTimerRef.current) clearTimeout(phaseUpTimerRef.current);
+        phaseUpTimerRef.current = setTimeout(() => setShowPhaseUp(null), 1800);
       }, diffCfg.rampInterval);
     }
 
@@ -502,6 +541,14 @@ export default function VelocityScreen() {
 
     return cleanup;
   }, []);
+
+  useEffect(() => {
+    if (activeObstacle) {
+      arenaGlow.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.ease) });
+    } else {
+      arenaGlow.value = withTiming(0, { duration: 400, easing: Easing.in(Easing.ease) });
+    }
+  }, [activeObstacle]);
 
   useEffect(() => {
     if (Platform.OS !== "web") return;
@@ -588,9 +635,37 @@ export default function VelocityScreen() {
       { translateX: orbShake.value + orbDashX.value },
       { translateY: orbDashY.value },
       { scale: orbScale.value },
+      { scaleX: orbScaleX.value },
+      { scaleY: orbScaleY.value },
     ],
-    shadowRadius: 20 + comboGlow.value,
-    shadowOpacity: 0.85 + Math.min(comboGlow.value / 80, 0.15),
+    shadowRadius: 18 + comboGlow.value,
+    shadowOpacity: 0.9 + Math.min(comboGlow.value / 70, 0.1),
+  }));
+
+  const orbAuraStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: orbShake.value + orbDashX.value },
+      { translateY: orbDashY.value },
+      { scale: orbScale.value * (1 + comboGlow.value / 220) },
+    ],
+    opacity: 0.12 + Math.min(comboGlow.value / 200, 0.2),
+  }));
+
+  const orbMidStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: orbShake.value + orbDashX.value },
+      { translateY: orbDashY.value },
+      { scale: orbScale.value },
+      { scaleX: orbScaleX.value },
+      { scaleY: orbScaleY.value },
+    ],
+    opacity: 0.6 + Math.min(comboGlow.value / 150, 0.3),
+  }));
+
+  const arenaGlowStyle = useAnimatedStyle(() => ({
+    shadowOpacity: interpolate(arenaGlow.value, [0, 1], [0.1, 0.6]),
+    shadowRadius: interpolate(arenaGlow.value, [0, 1], [4, 18]),
+    borderWidth: interpolate(arenaGlow.value, [0, 1], [1, 2]),
   }));
 
   const shockwaveStyle = useAnimatedStyle(() => ({
@@ -618,7 +693,7 @@ export default function VelocityScreen() {
         colors={[Colors.backgroundGradientStart, Colors.backgroundGradientEnd]}
         style={[styles.container, { paddingTop: topInset, paddingBottom: bottomInset }]}
       >
-        <VelocityBackgroundFX isFrenzy={isFrenzy} />
+        <VelocityBackgroundFX isFrenzy={isFrenzy} mode={mode} speedLevel={speedLevel} />
         <AmbientParticles count={8} />
 
         {(['top', 'bottom', 'left', 'right'] as Direction[]).map((dir) => (
@@ -641,14 +716,26 @@ export default function VelocityScreen() {
             <View style={styles.hud}>
               <View style={styles.hudLeft}>
                 {mode !== "zen" && Array.from({ length: maxLivesDisplay }).map((_, i) => (
-                  <Text key={i} style={[styles.heart, { color: heartColor(i) }]}>♥</Text>
+                  <View
+                    key={i}
+                    style={[
+                      styles.lifePip,
+                      { backgroundColor: i < lives ? Colors.secondary : Colors.border + "60" },
+                      i < lives && { shadowColor: Colors.secondary, shadowOpacity: 0.8, shadowRadius: 4, elevation: 3 },
+                    ]}
+                  />
                 ))}
                 {mode === "zen" && (
-                  <Text style={[styles.heart, { color: Colors.success }]}>∞</Text>
+                  <View style={[styles.lifePip, styles.zenPip]} />
                 )}
               </View>
 
               <View style={styles.hudCenter}>
+                <View style={styles.modeBadge}>
+                  <Text style={styles.modeBadgeText}>
+                    {mode === "regular" ? "REGULAR" : mode === "endless" ? "ENDLESS" : "ZEN"}
+                  </Text>
+                </View>
                 <Text style={styles.scoreText}>{score}</Text>
                 {combo >= 2 && (
                   <Text style={[
@@ -666,8 +753,11 @@ export default function VelocityScreen() {
                   <Text style={[styles.timerText, timeLeft <= FRENZY_THRESHOLD && { color: Colors.secondary }]}>{timeLeft}s</Text>
                 ) : mode === "endless" ? (
                   <>
-                    <Text style={[styles.timerText, { color: DIFFICULTY_SETTINGS[difficulty]?.lives ? Colors.accent : Colors.accent }]}>LV{speedLevel}</Text>
-                    <Text style={[styles.timerText, { fontSize: 12, color: Colors.textMuted }]}>{totalDodges} dodges</Text>
+                    <Text style={[
+                      styles.timerText,
+                      { color: speedLevel >= 5 ? Colors.secondary : speedLevel >= 3 ? Colors.warning : Colors.accent },
+                    ]}>LV{speedLevel}</Text>
+                    <Text style={[styles.timerText, { fontSize: 11, color: Colors.textMuted }]}>{totalDodges}</Text>
                   </>
                 ) : (
                   <Text style={styles.timerText}>{totalDodges}</Text>
@@ -726,7 +816,7 @@ export default function VelocityScreen() {
             </View>
 
             {/* Play area */}
-            <Animated.View style={[styles.playArea, isFrenzy && frenzyBorderStyle]}>
+            <Animated.View style={[styles.playArea, arenaGlowStyle, isFrenzy && frenzyBorderStyle]}>
               {/* Obstacles */}
               {activeObstacle && (
                 <ObstacleView
@@ -755,7 +845,11 @@ export default function VelocityScreen() {
               {/* Orb trail */}
               <OrbTrail segments={trailSegments} />
 
-              {/* Player orb */}
+              {/* Outer orb aura */}
+              <Animated.View style={[styles.orbAura, orbAuraStyle]} pointerEvents="none" />
+              {/* Mid orb glow */}
+              <Animated.View style={[styles.orbMid, orbMidStyle]} pointerEvents="none" />
+              {/* Player orb core */}
               <Animated.View style={[styles.orb, orbAnimStyle]} />
 
               {/* Near-miss label */}
@@ -786,12 +880,29 @@ export default function VelocityScreen() {
               {!activeObstacle && isPlaying && (
                 <Text style={styles.waitText}>Incoming...</Text>
               )}
+
+              {/* Phase-up announcement (endless mode) */}
+              {showPhaseUp !== null && mode === "endless" && (
+                <View style={styles.phaseUpOverlay} pointerEvents="none">
+                  <Text style={styles.phaseUpText}>PHASE {showPhaseUp}</Text>
+                  <Text style={styles.phaseUpSub}>Speed increasing</Text>
+                </View>
+              )}
+
+              {/* Score popups */}
+              <ScorePopup
+                popups={popups}
+                onComplete={(id) => setPopups(prev => prev.filter(p => p.id !== id))}
+              />
             </Animated.View>
 
             {/* Swipe hint below play area */}
             <View style={styles.hintRow}>
               {activeObstacle ? (
-                <Text style={styles.hintLabel}>
+                <Text style={[
+                  styles.hintLabel,
+                  { color: OBSTACLE_COLOR[activeObstacle.direction] + "CC" },
+                ]}>
                   {Platform.OS === "web"
                     ? `DODGE ${DODGE_LABEL[OPPOSITE[activeObstacle.direction]]}`
                     : `SWIPE ${DODGE_LABEL[OPPOSITE[activeObstacle.direction]]}`}
@@ -846,72 +957,126 @@ function ObstacleView({
   areaHeight: number;
   slowMo: boolean;
 }) {
-  const THICK = 22;
   const halfW = contentWidth / 2;
   const halfH = areaHeight / 2;
   const color = OBSTACLE_COLOR[obstacle.direction];
   const glowColor = slowMo ? Colors.accent : color;
 
-  const topStyle = useAnimatedStyle(() => ({
-    position: "absolute",
-    left: 0,
-    right: 0,
-    height: THICK,
-    top: progress.value * halfH - THICK / 2,
-    borderRadius: 6,
-    backgroundColor: color,
+  const dir = obstacle.direction;
+  const CORE = 14;
+  const GLOW = 36;
+
+  const topGlowStyle = useAnimatedStyle(() => ({
+    position: "absolute", left: 0, right: 0, height: GLOW,
+    top: progress.value * halfH - GLOW / 2,
+    borderRadius: 10, backgroundColor: glowColor + "35",
     shadowColor: glowColor,
-    shadowOpacity: interpolate(progress.value, [0, 0.5, 1], [0.6, 1, 1]),
-    shadowRadius: interpolate(progress.value, [0, 0.5, 1], [8, 18, 22]),
-    elevation: 8,
+    shadowOpacity: interpolate(progress.value, [0, 0.5, 1], [0.4, 0.8, 1]),
+    shadowRadius: interpolate(progress.value, [0, 0.5, 1], [12, 24, 32]),
+    elevation: 4,
+  }));
+  const topCoreStyle = useAnimatedStyle(() => ({
+    position: "absolute", left: 0, right: 0, height: CORE,
+    top: progress.value * halfH - CORE / 2,
+    borderRadius: 6, backgroundColor: color, overflow: "hidden",
+    shadowColor: glowColor,
+    shadowOpacity: interpolate(progress.value, [0, 0.5, 1], [0.7, 1, 1]),
+    shadowRadius: interpolate(progress.value, [0, 0.5, 1], [6, 16, 26]),
+    elevation: 10,
   }));
 
-  const bottomStyle = useAnimatedStyle(() => ({
-    position: "absolute",
-    left: 0,
-    right: 0,
-    height: THICK,
-    bottom: progress.value * halfH - THICK / 2,
-    borderRadius: 6,
-    backgroundColor: color,
+  const bottomGlowStyle = useAnimatedStyle(() => ({
+    position: "absolute", left: 0, right: 0, height: GLOW,
+    bottom: progress.value * halfH - GLOW / 2,
+    borderRadius: 10, backgroundColor: glowColor + "35",
     shadowColor: glowColor,
-    shadowOpacity: interpolate(progress.value, [0, 0.5, 1], [0.6, 1, 1]),
-    shadowRadius: interpolate(progress.value, [0, 0.5, 1], [8, 18, 22]),
-    elevation: 8,
+    shadowOpacity: interpolate(progress.value, [0, 0.5, 1], [0.4, 0.8, 1]),
+    shadowRadius: interpolate(progress.value, [0, 0.5, 1], [12, 24, 32]),
+    elevation: 4,
+  }));
+  const bottomCoreStyle = useAnimatedStyle(() => ({
+    position: "absolute", left: 0, right: 0, height: CORE,
+    bottom: progress.value * halfH - CORE / 2,
+    borderRadius: 6, backgroundColor: color, overflow: "hidden",
+    shadowColor: glowColor,
+    shadowOpacity: interpolate(progress.value, [0, 0.5, 1], [0.7, 1, 1]),
+    shadowRadius: interpolate(progress.value, [0, 0.5, 1], [6, 16, 26]),
+    elevation: 10,
   }));
 
-  const leftStyle = useAnimatedStyle(() => ({
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    width: THICK,
-    left: progress.value * halfW - THICK / 2,
-    borderRadius: 6,
-    backgroundColor: color,
+  const leftGlowStyle = useAnimatedStyle(() => ({
+    position: "absolute", top: 0, bottom: 0, width: GLOW,
+    left: progress.value * halfW - GLOW / 2,
+    borderRadius: 10, backgroundColor: glowColor + "35",
     shadowColor: glowColor,
-    shadowOpacity: interpolate(progress.value, [0, 0.5, 1], [0.6, 1, 1]),
-    shadowRadius: interpolate(progress.value, [0, 0.5, 1], [8, 18, 22]),
-    elevation: 8,
+    shadowOpacity: interpolate(progress.value, [0, 0.5, 1], [0.4, 0.8, 1]),
+    shadowRadius: interpolate(progress.value, [0, 0.5, 1], [12, 24, 32]),
+    elevation: 4,
+  }));
+  const leftCoreStyle = useAnimatedStyle(() => ({
+    position: "absolute", top: 0, bottom: 0, width: CORE,
+    left: progress.value * halfW - CORE / 2,
+    borderRadius: 6, backgroundColor: color, overflow: "hidden",
+    shadowColor: glowColor,
+    shadowOpacity: interpolate(progress.value, [0, 0.5, 1], [0.7, 1, 1]),
+    shadowRadius: interpolate(progress.value, [0, 0.5, 1], [6, 16, 26]),
+    elevation: 10,
   }));
 
-  const rightStyle = useAnimatedStyle(() => ({
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    width: THICK,
-    right: progress.value * halfW - THICK / 2,
-    borderRadius: 6,
-    backgroundColor: color,
+  const rightGlowStyle = useAnimatedStyle(() => ({
+    position: "absolute", top: 0, bottom: 0, width: GLOW,
+    right: progress.value * halfW - GLOW / 2,
+    borderRadius: 10, backgroundColor: glowColor + "35",
     shadowColor: glowColor,
-    shadowOpacity: interpolate(progress.value, [0, 0.5, 1], [0.6, 1, 1]),
-    shadowRadius: interpolate(progress.value, [0, 0.5, 1], [8, 18, 22]),
-    elevation: 8,
+    shadowOpacity: interpolate(progress.value, [0, 0.5, 1], [0.4, 0.8, 1]),
+    shadowRadius: interpolate(progress.value, [0, 0.5, 1], [12, 24, 32]),
+    elevation: 4,
+  }));
+  const rightCoreStyle = useAnimatedStyle(() => ({
+    position: "absolute", top: 0, bottom: 0, width: CORE,
+    right: progress.value * halfW - CORE / 2,
+    borderRadius: 6, backgroundColor: color, overflow: "hidden",
+    shadowColor: glowColor,
+    shadowOpacity: interpolate(progress.value, [0, 0.5, 1], [0.7, 1, 1]),
+    shadowRadius: interpolate(progress.value, [0, 0.5, 1], [6, 16, 26]),
+    elevation: 10,
   }));
 
-  if (obstacle.direction === "top") return <Animated.View style={topStyle} />;
-  if (obstacle.direction === "bottom") return <Animated.View style={bottomStyle} />;
-  if (obstacle.direction === "left") return <Animated.View style={leftStyle} />;
-  return <Animated.View style={rightStyle} />;
+  const shineStyleH = useAnimatedStyle(() => ({
+    position: "absolute", top: 2, left: 0, right: 0, height: 3, borderRadius: 2,
+    backgroundColor: "#ffffff",
+    opacity: interpolate(progress.value, [0, 0.6, 1], [0.1, 0.45, 0.65]),
+  }));
+  const shineStyleV = useAnimatedStyle(() => ({
+    position: "absolute", top: 0, bottom: 0, left: 2, width: 3, borderRadius: 2,
+    backgroundColor: "#ffffff",
+    opacity: interpolate(progress.value, [0, 0.6, 1], [0.1, 0.45, 0.65]),
+  }));
+
+  if (dir === "top") return (
+    <>
+      <Animated.View style={topGlowStyle} />
+      <Animated.View style={topCoreStyle}><Animated.View style={shineStyleH} /></Animated.View>
+    </>
+  );
+  if (dir === "bottom") return (
+    <>
+      <Animated.View style={bottomGlowStyle} />
+      <Animated.View style={bottomCoreStyle}><Animated.View style={shineStyleH} /></Animated.View>
+    </>
+  );
+  if (dir === "left") return (
+    <>
+      <Animated.View style={leftGlowStyle} />
+      <Animated.View style={leftCoreStyle}><Animated.View style={shineStyleV} /></Animated.View>
+    </>
+  );
+  return (
+    <>
+      <Animated.View style={rightGlowStyle} />
+      <Animated.View style={rightCoreStyle}><Animated.View style={shineStyleV} /></Animated.View>
+    </>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -1031,26 +1196,108 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 1,
     borderColor: Colors.border,
-    backgroundColor: Colors.surface + "30",
+    backgroundColor: Colors.surface + "18",
     overflow: "hidden",
+    shadowColor: Colors.accent,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 4,
   },
   directionArrowContainer: {
     position: "absolute",
     alignSelf: "center",
     opacity: 0.85,
   },
+  orbAura: {
+    position: "absolute",
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: Colors.primary + "30",
+    shadowColor: Colors.primary,
+    shadowOpacity: 0.6,
+    shadowRadius: 30,
+    elevation: 2,
+    zIndex: 8,
+  },
+  orbMid: {
+    position: "absolute",
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: Colors.primary + "55",
+    shadowColor: Colors.primary,
+    shadowOpacity: 0.8,
+    shadowRadius: 16,
+    elevation: 6,
+    zIndex: 9,
+  },
   orb: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: Colors.primary + "E0",
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: Colors.primary,
     shadowColor: Colors.primary,
     shadowOpacity: 1,
-    shadowRadius: 20,
-    elevation: 12,
+    shadowRadius: 18,
+    elevation: 14,
     borderWidth: 2,
-    borderColor: "#fff",
+    borderColor: "#ffffff90",
     zIndex: 10,
+  },
+  lifePip: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 3,
+  },
+  zenPip: {
+    backgroundColor: Colors.success,
+    shadowColor: Colors.success,
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  modeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    backgroundColor: Colors.accent + "18",
+    borderWidth: 1,
+    borderColor: Colors.accent + "40",
+    marginBottom: 2,
+  },
+  modeBadgeText: {
+    fontSize: 8,
+    fontFamily: "Outfit_700Bold",
+    color: Colors.accent,
+    letterSpacing: 2,
+  },
+  phaseUpOverlay: {
+    position: "absolute",
+    top: "35%",
+    alignSelf: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.78)",
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: Colors.warning + "80",
+    zIndex: 28,
+    gap: 2,
+  },
+  phaseUpText: {
+    fontSize: 28,
+    fontFamily: "Outfit_800ExtraBold",
+    color: Colors.warning,
+    letterSpacing: 4,
+  },
+  phaseUpSub: {
+    fontSize: 11,
+    fontFamily: "Outfit_500Medium",
+    color: Colors.textMuted,
+    letterSpacing: 2,
+    textTransform: "uppercase",
   },
   slowMoLabel: {
     position: "absolute",
