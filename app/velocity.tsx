@@ -31,7 +31,7 @@ import { trackEvent } from "@/lib/analytics";
 import { soundManager } from "@/lib/sounds";
 import AmbientParticles from "@/components/AmbientParticles";
 import ScreenFlash from "@/components/ScreenFlash";
-import ParticleBurst from "@/components/ParticleBurst";
+import ParticleBurst, { type BurstEvent } from "@/components/ParticleBurst";
 import EdgeWarning from "@/components/EdgeWarning";
 import OrbTrail, { TrailSegment } from "@/components/OrbTrail";
 import VelocityBackgroundFX from "@/components/VelocityBackgroundFX";
@@ -65,6 +65,13 @@ const DIRECTION_ICON: Record<Direction, string> = {
   bottom: "arrow-up",
   left: "arrow-forward",
   right: "arrow-back",
+};
+
+const DODGE_LABEL: Record<Direction, string> = {
+  top: "UP",
+  bottom: "DOWN",
+  left: "LEFT",
+  right: "RIGHT",
 };
 
 interface DifficultyConfig {
@@ -113,8 +120,8 @@ export default function VelocityScreen() {
   const [mistakes, setMistakes] = useState(0);
   const [maxCombo, setMaxCombo] = useState(0);
   const [activeObstacle, setActiveObstacle] = useState<Obstacle | null>(null);
-  const [showFlash, setShowFlash] = useState<"success" | "error" | null>(null);
-  const [burstPos, setBurstPos] = useState<{ x: number; y: number } | null>(null);
+  const [showFlash, setShowFlash] = useState<"success" | "error" | "near_miss" | null>(null);
+  const [bursts, setBursts] = useState<BurstEvent[]>([]);
   const [speedLevel, setSpeedLevel] = useState(1);
   const [isFrenzy, setIsFrenzy] = useState(false);
   const frenzyStartedRef = useRef(false);
@@ -125,6 +132,7 @@ export default function VelocityScreen() {
   const [warningDirection, setWarningDirection] = useState<Direction | null>(null);
   const [trailSegments, setTrailSegments] = useState<TrailSegment[]>([]);
   const [showNearMiss, setShowNearMiss] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   const isPlayingRef = useRef(false);
   const scoreRef = useRef(0);
@@ -149,6 +157,8 @@ export default function VelocityScreen() {
   const powerUpMsgTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nearMissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tutorialTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tutorialDismissedRef = useRef(false);
 
   const obstacleProgress = useSharedValue(0);
   const orbShake = useSharedValue(0);
@@ -177,6 +187,7 @@ export default function VelocityScreen() {
     if (powerUpMsgTimerRef.current) clearTimeout(powerUpMsgTimerRef.current);
     if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
     if (nearMissTimerRef.current) clearTimeout(nearMissTimerRef.current);
+    if (tutorialTimerRef.current) clearTimeout(tutorialTimerRef.current);
     cancelAnimation(obstacleProgress);
     cancelAnimation(frenzyPulse);
     cancelAnimation(orbDashX);
@@ -359,6 +370,11 @@ export default function VelocityScreen() {
       nearMissTimerRef.current = setTimeout(() => setShowNearMiss(false), 900);
     }
 
+    if (!tutorialDismissedRef.current) {
+      tutorialDismissedRef.current = true;
+      setShowTutorial(false);
+    }
+
     comboGlow.value = withTiming(Math.min(comboRef.current * 5, 36), { duration: 200 });
 
     const DASH = 44;
@@ -387,11 +403,11 @@ export default function VelocityScreen() {
     shockwaveScale.value = withTiming(3.8, { duration: 380, easing: Easing.out(Easing.ease) });
     shockwaveOpacity.value = withTiming(0, { duration: 380, easing: Easing.in(Easing.ease) });
 
-    setShowFlash(nearMiss ? "near_miss" as any : "success");
+    setShowFlash(nearMiss ? "near_miss" : "success");
     setTimeout(() => setShowFlash(null), nearMiss ? 280 : 200);
 
-    setBurstPos({ x: screenCenterX, y: screenCenterY });
-    setTimeout(() => setBurstPos(null), 600);
+    const burstId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
+    setBursts(prev => [...prev, { x: screenCenterX, y: screenCenterY, color: Colors.primary, id: burstId }]);
 
     Haptics.impactAsync(nearMiss ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Light);
     soundManager.play("tap");
@@ -448,6 +464,11 @@ export default function VelocityScreen() {
         setSpeedLevel(speedLevelRef.current);
       }, diffCfg.rampInterval);
     }
+
+    setShowTutorial(true);
+    tutorialTimerRef.current = setTimeout(() => {
+      if (!tutorialDismissedRef.current) setShowTutorial(false);
+    }, 3000);
 
     spawnTimerRef.current = setTimeout(spawnObstacle, 500);
   }, [mode, endGame, spawnObstacle, startFrenzy, diffCfg]);
@@ -744,6 +765,16 @@ export default function VelocityScreen() {
                 </View>
               )}
 
+              {/* First-time tutorial overlay */}
+              {showTutorial && isPlaying && (
+                <View style={styles.tutorialOverlay} pointerEvents="none">
+                  <Text style={styles.tutorialLine1}>Dodge away from the incoming line</Text>
+                  <Text style={styles.tutorialLine2}>
+                    {Platform.OS === "web" ? "Arrow keys or WASD" : "Swipe in the safe direction"}
+                  </Text>
+                </View>
+              )}
+
               {/* Slow-mo label */}
               {slowMoActive && (
                 <View style={styles.slowMoLabel}>
@@ -762,12 +793,12 @@ export default function VelocityScreen() {
               {activeObstacle ? (
                 <Text style={styles.hintLabel}>
                   {Platform.OS === "web"
-                    ? `PRESS ${OPPOSITE[activeObstacle.direction].toUpperCase()} / SWIPE ${OPPOSITE[activeObstacle.direction].toUpperCase()}`
-                    : `SWIPE ${OPPOSITE[activeObstacle.direction].toUpperCase()}`}
+                    ? `DODGE ${DODGE_LABEL[OPPOSITE[activeObstacle.direction]]}`
+                    : `SWIPE ${DODGE_LABEL[OPPOSITE[activeObstacle.direction]]}`}
                 </Text>
               ) : (
                 <Text style={styles.hintLabel}>
-                  {Platform.OS === "web" ? "ARROW KEYS / WASD · SWIPE TO DODGE" : "SWIPE ANYWHERE"}
+                  {Platform.OS === "web" ? "ARROW KEYS / WASD" : "SWIPE TO DODGE"}
                 </Text>
               )}
             </View>
@@ -791,9 +822,12 @@ export default function VelocityScreen() {
 
         {/* Flash and particles */}
         {showFlash === "success" && <ScreenFlash color={Colors.success + "40"} />}
-        {(showFlash as any) === "near_miss" && <ScreenFlash color={"#ffffff55"} />}
+        {showFlash === "near_miss" && <ScreenFlash color={"#ffffff55"} />}
         {showFlash === "error" && <ScreenFlash color={Colors.secondary + "50"} />}
-        {burstPos && <ParticleBurst x={burstPos.x} y={burstPos.y} color={Colors.primary} />}
+        <ParticleBurst
+          bursts={bursts}
+          onBurstComplete={(id) => setBursts(prev => prev.filter(b => b.id !== id))}
+        />
       </LinearGradient>
     </View>
   );
@@ -1117,5 +1151,34 @@ const styles = StyleSheet.create({
     fontFamily: "Outfit_800ExtraBold",
     color: Colors.warning,
     letterSpacing: 2,
+  },
+  tutorialOverlay: {
+    position: "absolute",
+    bottom: 18,
+    alignSelf: "center",
+    backgroundColor: "rgba(0,0,0,0.72)",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: "center",
+    gap: 3,
+    zIndex: 30,
+    maxWidth: "90%",
+  },
+  tutorialLine1: {
+    fontSize: 12,
+    fontFamily: "Outfit_600SemiBold",
+    color: Colors.text,
+    textAlign: "center",
+    letterSpacing: 0.3,
+  },
+  tutorialLine2: {
+    fontSize: 11,
+    fontFamily: "Outfit_500Medium",
+    color: Colors.textMuted,
+    textAlign: "center",
+    letterSpacing: 0.3,
   },
 });
