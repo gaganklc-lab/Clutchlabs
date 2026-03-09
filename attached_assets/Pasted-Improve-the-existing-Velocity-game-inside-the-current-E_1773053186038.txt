@@ -1,0 +1,293 @@
+Improve the existing Velocity game inside the current Expo React Native codebase.
+
+Do NOT create a new project.
+Do NOT break ClutchTap.
+Do NOT remove the current shared codebase / variant architecture.
+
+Goal:
+Make Velocity feel like a polished production-ready game across:
+- mobile (primary)
+- tablet
+- desktop/web fallback for testing
+
+The current prototype has the core mechanic working, but it needs:
+1. clearer dodge feedback
+2. desktop controls
+3. tablet-friendly layout
+4. better visual effects / game feel
+
+==================================================
+CORE GAME DESIGN TO PRESERVE
+==================================================
+
+Velocity is a swipe-to-dodge survival game.
+
+Player orb starts in the center.
+Obstacles come from one of four directions:
+- top
+- bottom
+- left
+- right
+
+Correct dodge rule:
+- obstacle from top -> dodge down
+- obstacle from bottom -> dodge up
+- obstacle from left -> dodge right
+- obstacle from right -> dodge left
+
+Keep this rule exactly.
+
+==================================================
+1) MOBILE INPUT
+==================================================
+
+Keep swipe gestures for iOS/Android mobile using the existing gameplay logic.
+
+Requirements:
+- swipe threshold should feel responsive but not too sensitive
+- preserve current success/fail game logic
+- preserve haptics
+- preserve score/combo/lives/results logic
+
+==================================================
+2) DESKTOP / WEB FALLBACK CONTROLS
+==================================================
+
+Add keyboard support for laptop/web testing.
+
+Support:
+- ArrowUp = dodge up
+- ArrowDown = dodge down
+- ArrowLeft = dodge left
+- ArrowRight = dodge right
+- W = up
+- A = left
+- S = down
+- D = right
+
+Requirements:
+- keyboard input must use the SAME dodge resolution logic as swipe
+- enable only on web/desktop
+- do not break mobile controls
+- show a small hint on web:
+  "Use arrow keys or WASD to dodge"
+
+If possible, also support mouse drag swipe on web, but keyboard is the priority.
+
+==================================================
+3) TABLET SUPPORT
+==================================================
+
+Make the Velocity game look good on iPad / tablet.
+
+Requirements:
+- center content with a max content width
+- do not stretch game UI edge-to-edge on tablet
+- keep the play area large but intentional
+- preserve safe margins
+- increase spacing slightly on tablet
+- ensure HUD, hint text, power-up bar, and play area do not feel crowded
+
+Use useWindowDimensions() and tablet detection:
+- isTablet = width >= 768
+
+Recommended:
+- contentMaxWidth around 560–640
+- contentHorizontalPadding larger on tablet
+
+==================================================
+4) VISUAL DODGE FEEDBACK
+==================================================
+
+The orb must visibly dodge.
+
+Currently the game logic works, but the orb does not clearly move when the player succeeds.
+
+Add:
+- orb dash animation on successful dodge
+- dash in the actual dodge direction
+- return smoothly to center after a short delay
+- preserve failure shake animation
+
+Examples:
+- obstacle from left + correct right dodge -> orb visibly dashes right
+- obstacle from top + correct down dodge -> orb visibly dashes down
+
+Requirements:
+- keep dash fast and satisfying
+- do not make the orb stay permanently off-center
+- reset orb cleanly between obstacles
+
+==================================================
+5) ORB TRAIL EFFECT
+==================================================
+
+Add a neon trail behind the orb during successful dodge movement.
+
+Requirements:
+- trail appears only during dash
+- trail fades quickly
+- trail color matches orb theme
+- max active trail segments should be limited for performance
+- subtle glow is preferred over excessive clutter
+
+Create a reusable trail component if useful.
+
+==================================================
+6) EDGE WARNING INDICATORS
+==================================================
+
+Before an obstacle arrives, show a clear directional warning.
+
+Add edge warning indicators:
+- top edge glows if obstacle is coming from top
+- bottom edge glows if obstacle is coming from bottom
+- left edge glows if obstacle is coming from left
+- right edge glows if obstacle is coming from right
+
+Requirements:
+- warning visible ~300–500ms before obstacle movement
+- warning color should match obstacle color
+- pulse animation using Reanimated
+- do not overdo brightness
+- keep readable and premium
+
+If current center arrow cue remains, that is fine, but edge warning should make source direction obvious.
+
+==================================================
+7) OBSTACLE READABILITY
+==================================================
+
+Keep the current line-based obstacle style if desired, but improve clarity.
+
+Requirements:
+- make source direction obvious
+- obstacle telegraph + actual movement should be easy to understand
+- retain horizontal obstacle for top/bottom and vertical obstacle for left/right if that works best
+- use stronger glow / contrast during approach
+- preserve current obstacle logic
+
+Optional:
+- near-center intensity increase
+- obstacle glow grows as it approaches
+
+==================================================
+8) ADDITIONAL GAME FEEL / EFFECTS
+==================================================
+
+Add premium arcade polish.
+
+Please add these effects:
+
+A. Near-miss effect
+- if a dodge happens close to impact timing, show:
+  - stronger flash
+  - stronger burst
+  - optional "NEAR MISS" text
+  - optional small bonus score
+
+B. Combo escalation visuals
+- as combo rises:
+  - orb glow intensifies
+  - combo text becomes more alive
+  - subtle aura around orb
+
+C. Frenzy mode polish
+- when frenzy starts:
+  - stronger border pulse
+  - more intense background energy
+  - more dramatic UI emphasis
+
+D. Dynamic background enhancement
+- subtle moving grid / lane / cyber energy effect behind the play area
+- keep it lightweight and not distracting
+
+E. Better success feedback
+- success should feel satisfying:
+  - dash
+  - trail
+  - flash
+  - burst
+  - score pop
+  - optional tiny shockwave ring
+
+==================================================
+9) ON-SCREEN TUTORIAL / HINTS
+==================================================
+
+Make the mechanic easier to understand, especially for first-time players.
+
+At game start or during the first few rounds, show:
+- "Swipe away from the incoming line"
+- or "Dodge opposite the incoming side"
+
+On web:
+- "Use arrow keys / WASD"
+
+During gameplay:
+- keep the existing hint row, but make it clearer and premium
+
+==================================================
+10) PRESERVE EXISTING SYSTEMS
+==================================================
+
+Do NOT break or remove:
+- score
+- combo
+- lives
+- countdown
+- results flow
+- velocity-results route
+- analytics
+- sounds
+- haptics
+- velocity storage
+- power-ups
+- frenzy mode
+- shared styling / colors
+- app variant architecture
+
+Keep all current routes working.
+
+==================================================
+11) PERFORMANCE
+==================================================
+
+Keep the game smooth on:
+- phone
+- iPad/tablet
+- desktop browser preview
+
+Avoid excessive particle counts or heavy effects.
+Limit trail objects and expensive animations.
+
+==================================================
+12) FILES / IMPLEMENTATION
+==================================================
+
+Modify the existing Velocity game implementation rather than rebuilding it.
+
+You may add reusable components if useful, such as:
+- EdgeWarning
+- OrbTrail
+- NearMissText
+- VelocityBackgroundFX
+
+But keep the architecture clean and modular.
+
+==================================================
+13) DELIVERABLES
+==================================================
+
+After implementation provide:
+
+1. files created
+2. files modified
+3. how mobile input works
+4. how desktop/web keyboard input works
+5. how tablet layout is handled
+6. how orb dash + trail work
+7. what additional visual effects were added
+8. any recommended next improvements
+
+Keep the final result polished, readable, and launchable.

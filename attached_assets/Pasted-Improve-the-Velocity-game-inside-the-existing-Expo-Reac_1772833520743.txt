@@ -1,0 +1,161 @@
+Improve the Velocity game inside the existing Expo React Native codebase.
+
+Do NOT create a new project.
+Do NOT modify ClutchTap logic.
+
+Enhance the Velocity gameplay with three upgrades:
+
+1. Desktop/Web keyboard controls
+2. Edge warning indicators for incoming obstacles
+3. Player orb neon trail effect
+
+These upgrades must reuse the current architecture and should not break mobile swipe gestures.
+
+----------------------------------
+
+1️⃣ Add Keyboard Controls (Desktop/Web)
+
+Currently Velocity uses swipe gestures for movement.
+
+Add keyboard controls so the game can be tested on laptops.
+
+Supported keys:
+
+ArrowUp → dodge up  
+ArrowDown → dodge down  
+ArrowLeft → dodge left  
+ArrowRight → dodge right  
+
+Also support:
+
+W → up  
+A → left  
+S → down  
+D → right
+
+Implementation details:
+
+• Use a keydown event listener
+• Only enable keyboard controls on web or desktop
+• Keyboard input must call the SAME dodge handler used by swipe gestures
+• Do not change existing mobile gesture logic
+
+Optional UI hint for web:
+
+Show a small hint text at the bottom:
+
+"Use arrow keys to dodge"
+
+Only display this when Platform.OS === "web".
+
+----------------------------------
+
+2️⃣ Add Edge Warning Indicators
+
+Before an obstacle spawns, show a directional warning flash.
+
+Example:
+
+Obstacle coming from LEFT:
+• flash a red glow along the left edge
+• pulse once for ~200ms
+
+Obstacle from TOP:
+• flash glow along top edge
+
+Implementation:
+
+Create a reusable component:
+
+components/EdgeWarning.tsx
+
+Props:
+direction: "left" | "right" | "top" | "bottom"
+visible: boolean
+
+Visual style:
+
+• glowing neon edge bar
+• color based on obstacle color
+• quick pulse animation using Reanimated
+• fade in → fade out
+
+This warning should appear about 300–500ms before the obstacle moves.
+
+----------------------------------
+
+3️⃣ Add Player Orb Trail Effect
+
+When the player dodges, leave a short neon trail behind the orb.
+
+Create a component:
+
+components/OrbTrail.tsx
+
+Behavior:
+
+• each dodge spawns a trail segment
+• segments fade out after ~400ms
+• slightly scale down over time
+• same color as the player orb
+
+Use:
+
+• Animated opacity
+• slight blur/glow effect
+
+Maximum active segments: 6–8.
+
+----------------------------------
+
+4️⃣ Integrate Into Velocity Game Screen
+
+Modify:
+
+app/velocity.tsx
+
+Add:
+
+• keyboard listener for arrow keys
+• EdgeWarning component
+• OrbTrail component
+
+Ensure:
+
+• swipe gestures still work on mobile
+• keyboard works on web
+• no performance issues
+
+----------------------------------
+
+5️⃣ Maintain Existing Systems
+
+Do not change:
+
+• analytics tracking
+• storage logic
+• XP system
+• results screen
+• leaderboard
+• particle burst system
+• scoring
+
+----------------------------------
+
+6️⃣ Visual Style
+
+Match Velocity aesthetic:
+
+• neon cyan / purple glow
+• dark background
+• arcade feel
+• smooth animations
+
+----------------------------------
+
+After implementing provide:
+
+1. files created
+2. files modified
+3. explanation of keyboard + swipe coexistence
+4. explanation of trail animation
