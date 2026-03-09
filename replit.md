@@ -4,7 +4,7 @@
 A React Native (Expo) mobile arcade suite with two independently publishable games built from a shared codebase. Each game ships as its own App Store app with its own name, bundle identifier, and direct launch flow.
 
 - **ClutchTap** (`APP_VARIANT=clutchtap`): Rotating-rule reflex tap game. Tap colored tiles following rotating rules under time pressure. Features game modes, lives, combo multiplier, daily challenges, XP, tile themes, power-ups, badges, stats dashboard.
-- **Velocity** (`APP_VARIANT=velocity`): Swipe-to-dodge survival game. Dodge incoming obstacle walls by swiping in the correct direction. Features Regular/Endless/Zen modes, lives, combo scoring, particles, screen flash.
+- **Velocity** (`APP_VARIANT=velocity`): Swipe-to-dodge survival game. Dodge incoming obstacle walls by swiping in the correct direction. Features Regular/Endless/Zen modes, lives, combo scoring, edge warnings, orb dash+trail, near-miss detection, keyboard controls (web), combo glow escalation, frenzy mode polish, animated grid background, shockwave ring effect, S/A/B/C/D rank, personal best detection, viral challenge sharing, leaderboard.
 
 ## Tech Stack
 - **Frontend**: Expo SDK 54, Expo Router (stack navigation), React Native Reanimated 4

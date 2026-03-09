@@ -16,6 +16,8 @@ import Animated, {
   withRepeat,
   withSequence,
   withTiming,
+  withDelay,
+  withSpring,
   cancelAnimation,
   runOnJS,
   Easing,
@@ -30,9 +32,11 @@ import { soundManager } from "@/lib/sounds";
 import AmbientParticles from "@/components/AmbientParticles";
 import ScreenFlash from "@/components/ScreenFlash";
 import ParticleBurst from "@/components/ParticleBurst";
+import EdgeWarning from "@/components/EdgeWarning";
+import OrbTrail, { TrailSegment } from "@/components/OrbTrail";
+import VelocityBackgroundFX from "@/components/VelocityBackgroundFX";
 import {
   getVelocityPowerUps,
-  saveVelocityPowerUps,
   useVelocityPowerUp,
   earnVelocityPowerUp,
   type VelocityPowerUpInventory,
@@ -118,6 +122,9 @@ export default function VelocityScreen() {
   const [slowMoActive, setSlowMoActive] = useState(false);
   const [powerUpInventory, setPowerUpInventory] = useState<VelocityPowerUpInventory>({ shield: 0, slow_mo: 0 });
   const [powerUpMessage, setPowerUpMessage] = useState<string | null>(null);
+  const [warningDirection, setWarningDirection] = useState<Direction | null>(null);
+  const [trailSegments, setTrailSegments] = useState<TrailSegment[]>([]);
+  const [showNearMiss, setShowNearMiss] = useState(false);
 
   const isPlayingRef = useRef(false);
   const scoreRef = useRef(0);
@@ -140,10 +147,17 @@ export default function VelocityScreen() {
   const slowMoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dodgesSinceRewardRef = useRef(0);
   const powerUpMsgTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nearMissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const obstacleProgress = useSharedValue(0);
   const orbShake = useSharedValue(0);
   const orbScale = useSharedValue(1);
+  const orbDashX = useSharedValue(0);
+  const orbDashY = useSharedValue(0);
+  const comboGlow = useSharedValue(0);
+  const shockwaveScale = useSharedValue(0);
+  const shockwaveOpacity = useSharedValue(0);
   const directionPulse = useSharedValue(0);
   const frenzyPulse = useSharedValue(0);
 
@@ -161,8 +175,15 @@ export default function VelocityScreen() {
     if (rampTimerRef.current) clearInterval(rampTimerRef.current);
     if (slowMoTimerRef.current) clearTimeout(slowMoTimerRef.current);
     if (powerUpMsgTimerRef.current) clearTimeout(powerUpMsgTimerRef.current);
+    if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
+    if (nearMissTimerRef.current) clearTimeout(nearMissTimerRef.current);
     cancelAnimation(obstacleProgress);
     cancelAnimation(frenzyPulse);
+    cancelAnimation(orbDashX);
+    cancelAnimation(orbDashY);
+    cancelAnimation(comboGlow);
+    cancelAnimation(shockwaveScale);
+    cancelAnimation(shockwaveOpacity);
   }, []);
 
   const endGame = useCallback(() => {
@@ -215,28 +236,38 @@ export default function VelocityScreen() {
     const dir = dirs[Math.floor(Math.random() * dirs.length)];
     const id = Date.now().toString() + Math.random().toString(36).substr(2, 5);
     const obs: Obstacle = { id, direction: dir };
-    activeObstacleRef.current = obs;
-    setActiveObstacle(obs);
 
-    directionPulse.value = 0;
-    directionPulse.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 400, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0.7, { duration: 400, easing: Easing.inOut(Easing.ease) })
-      ),
-      -1,
-      false
-    );
+    setWarningDirection(dir);
 
-    obstacleProgress.value = 0;
-    obstacleProgress.value = withTiming(1, {
-      duration: spawnDurationRef.current,
-      easing: Easing.linear,
-    }, (finished) => {
-      if (finished) {
-        runOnJS(handleMissInternal)();
+    warningTimerRef.current = setTimeout(() => {
+      if (!isPlayingRef.current || gameOverRef.current) {
+        setWarningDirection(null);
+        return;
       }
-    });
+      setWarningDirection(null);
+      activeObstacleRef.current = obs;
+      setActiveObstacle(obs);
+
+      directionPulse.value = 0;
+      directionPulse.value = withRepeat(
+        withSequence(
+          withTiming(1, { duration: 400, easing: Easing.inOut(Easing.ease) }),
+          withTiming(0.7, { duration: 400, easing: Easing.inOut(Easing.ease) })
+        ),
+        -1,
+        false
+      );
+
+      obstacleProgress.value = 0;
+      obstacleProgress.value = withTiming(1, {
+        duration: spawnDurationRef.current,
+        easing: Easing.linear,
+      }, (finished) => {
+        if (finished) {
+          runOnJS(handleMissInternal)();
+        }
+      });
+    }, 350);
   }, []);
 
   const handleMissInternal = useCallback(() => {
@@ -285,6 +316,7 @@ export default function VelocityScreen() {
       withTiming(10, { duration: 50 }),
       withTiming(0, { duration: 50 })
     );
+    comboGlow.value = withTiming(0, { duration: 200 });
 
     if (livesRef.current <= 0 && mode !== "zen") {
       endGame();
@@ -296,6 +328,10 @@ export default function VelocityScreen() {
 
   const handleSuccessInternal = useCallback(() => {
     if (!isPlayingRef.current || gameOverRef.current) return;
+
+    const lastDir = activeObstacleRef.current?.direction;
+    const nearMiss = obstacleProgress.value >= 0.72;
+
     cancelAnimation(obstacleProgress);
     obstacleProgress.value = 0;
     cancelAnimation(directionPulse);
@@ -312,17 +348,52 @@ export default function VelocityScreen() {
     }
 
     const multiplier = Math.min(1 + (comboRef.current - 1) * 0.5, 5);
-    const gained = Math.round(10 * multiplier);
+    let gained = Math.round(10 * multiplier);
+    if (nearMiss) gained += 5;
     scoreRef.current += gained;
     setScore(scoreRef.current);
 
-    setShowFlash("success");
-    setTimeout(() => setShowFlash(null), 200);
+    if (nearMiss) {
+      if (nearMissTimerRef.current) clearTimeout(nearMissTimerRef.current);
+      setShowNearMiss(true);
+      nearMissTimerRef.current = setTimeout(() => setShowNearMiss(false), 900);
+    }
+
+    comboGlow.value = withTiming(Math.min(comboRef.current * 5, 36), { duration: 200 });
+
+    const DASH = 44;
+    if (lastDir) {
+      const OPPOSITE_DIR = OPPOSITE[lastDir];
+      if (OPPOSITE_DIR === "right") {
+        orbDashX.value = withSequence(withTiming(DASH, { duration: 90 }), withDelay(50, withSpring(0, { damping: 8, stiffness: 220 })));
+      } else if (OPPOSITE_DIR === "left") {
+        orbDashX.value = withSequence(withTiming(-DASH, { duration: 90 }), withDelay(50, withSpring(0, { damping: 8, stiffness: 220 })));
+      } else if (OPPOSITE_DIR === "bottom") {
+        orbDashY.value = withSequence(withTiming(DASH, { duration: 90 }), withDelay(50, withSpring(0, { damping: 8, stiffness: 220 })));
+      } else if (OPPOSITE_DIR === "top") {
+        orbDashY.value = withSequence(withTiming(-DASH, { duration: 90 }), withDelay(50, withSpring(0, { damping: 8, stiffness: 220 })));
+      }
+
+      const trailOffX = OPPOSITE_DIR === "right" ? 22 : OPPOSITE_DIR === "left" ? -22 : 0;
+      const trailOffY = OPPOSITE_DIR === "bottom" ? 22 : OPPOSITE_DIR === "top" ? -22 : 0;
+      const trailColor = OBSTACLE_COLOR[lastDir];
+      const segId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
+      setTrailSegments(prev => [...prev, { id: segId, offsetX: trailOffX, offsetY: trailOffY, color: trailColor, size: 26 }].slice(-6));
+      setTimeout(() => setTrailSegments(prev => prev.filter(s => s.id !== segId)), 500);
+    }
+
+    shockwaveScale.value = 1;
+    shockwaveOpacity.value = nearMiss ? 0.9 : 0.55;
+    shockwaveScale.value = withTiming(3.8, { duration: 380, easing: Easing.out(Easing.ease) });
+    shockwaveOpacity.value = withTiming(0, { duration: 380, easing: Easing.in(Easing.ease) });
+
+    setShowFlash(nearMiss ? "near_miss" as any : "success");
+    setTimeout(() => setShowFlash(null), nearMiss ? 280 : 200);
 
     setBurstPos({ x: screenCenterX, y: screenCenterY });
     setTimeout(() => setBurstPos(null), 600);
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(nearMiss ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Light);
     soundManager.play("tap");
 
     tryEarnPowerUp();
@@ -411,6 +482,30 @@ export default function VelocityScreen() {
     return cleanup;
   }, []);
 
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    const KEY_TO_DIR: Record<string, Direction> = {
+      ArrowUp: "top", ArrowDown: "bottom", ArrowLeft: "left", ArrowRight: "right",
+      w: "top", a: "left", s: "bottom", d: "right",
+      W: "top", A: "left", S: "bottom", D: "right",
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      const dir = KEY_TO_DIR[e.key];
+      if (!dir) return;
+      e.preventDefault();
+      const obs = activeObstacleRef.current;
+      if (!obs || !isPlayingRef.current || gameOverRef.current) return;
+      const correct = OPPOSITE[obs.direction];
+      if (dir === correct) {
+        handleSuccessInternal();
+      } else {
+        handleMissInternal();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [handleSuccessInternal, handleMissInternal]);
+
   const handleActivateShield = useCallback(async () => {
     if (!isPlayingRef.current || shieldActiveRef.current) return;
     const success = await useVelocityPowerUp("shield");
@@ -469,10 +564,19 @@ export default function VelocityScreen() {
 
   const orbAnimStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateX: orbShake.value },
+      { translateX: orbShake.value + orbDashX.value },
+      { translateY: orbDashY.value },
       { scale: orbScale.value },
     ],
+    shadowRadius: 20 + comboGlow.value,
+    shadowOpacity: 0.85 + Math.min(comboGlow.value / 80, 0.15),
   }));
+
+  const shockwaveStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: shockwaveScale.value }],
+    opacity: shockwaveOpacity.value,
+  }));
+
 
   const directionArrowStyle = useAnimatedStyle(() => ({
     transform: [{ scale: interpolate(directionPulse.value, [0, 1], [0.9, 1.18]) }],
@@ -493,10 +597,21 @@ export default function VelocityScreen() {
         colors={[Colors.backgroundGradientStart, Colors.backgroundGradientEnd]}
         style={[styles.container, { paddingTop: topInset, paddingBottom: bottomInset }]}
       >
+        <VelocityBackgroundFX isFrenzy={isFrenzy} />
         <AmbientParticles count={8} />
+
+        {(['top', 'bottom', 'left', 'right'] as Direction[]).map((dir) => (
+          <EdgeWarning
+            key={dir}
+            direction={dir}
+            visible={warningDirection === dir}
+            color={OBSTACLE_COLOR[dir]}
+          />
+        ))}
 
         {shieldActive && <View style={styles.shieldOverlay} />}
         {slowMoActive && <View style={styles.slowMoOverlay} />}
+        {isFrenzy && mode === "regular" && <View style={styles.frenzyOverlay} />}
 
         <View style={{ flex: 1, alignItems: "center" }}>
           <View style={{ flex: 1, width: "100%", maxWidth: contentMaxWidth, paddingHorizontal: contentHorizontalPadding }}>
@@ -515,7 +630,13 @@ export default function VelocityScreen() {
               <View style={styles.hudCenter}>
                 <Text style={styles.scoreText}>{score}</Text>
                 {combo >= 2 && (
-                  <Text style={styles.comboText}>{combo}x COMBO</Text>
+                  <Text style={[
+                    styles.comboText,
+                    combo >= 10 && { color: Colors.secondary, fontSize: 14, letterSpacing: 2 },
+                    combo >= 5 && combo < 10 && { color: Colors.warning, fontSize: 12 },
+                  ]}>
+                    {combo >= 10 ? `🔥 ${combo}× COMBO` : `${combo}× COMBO`}
+                  </Text>
                 )}
               </View>
 
@@ -535,9 +656,9 @@ export default function VelocityScreen() {
 
             {/* Frenzy banner */}
             {isFrenzy && mode === "regular" && (
-              <View style={styles.frenzyBanner}>
-                <Text style={styles.frenzyText}>⚡ FRENZY ⚡</Text>
-              </View>
+              <Animated.View style={[styles.frenzyBanner, frenzyBorderStyle]}>
+                <Text style={styles.frenzyText}>🔥 FRENZY MODE 🔥</Text>
+              </Animated.View>
             )}
 
             {/* Power-up bar */}
@@ -607,8 +728,21 @@ export default function VelocityScreen() {
                 </Animated.View>
               )}
 
+              {/* Shockwave ring */}
+              <Animated.View style={[styles.shockwaveRing, shockwaveStyle]} pointerEvents="none" />
+
+              {/* Orb trail */}
+              <OrbTrail segments={trailSegments} />
+
               {/* Player orb */}
               <Animated.View style={[styles.orb, orbAnimStyle]} />
+
+              {/* Near-miss label */}
+              {showNearMiss && (
+                <View style={styles.nearMissContainer} pointerEvents="none">
+                  <Text style={styles.nearMissText}>NEAR MISS +5</Text>
+                </View>
+              )}
 
               {/* Slow-mo label */}
               {slowMoActive && (
@@ -626,11 +760,15 @@ export default function VelocityScreen() {
             {/* Swipe hint below play area */}
             <View style={styles.hintRow}>
               {activeObstacle ? (
-                <>
-                  <Text style={styles.hintLabel}>SWIPE {OPPOSITE[activeObstacle.direction].toUpperCase()}</Text>
-                </>
+                <Text style={styles.hintLabel}>
+                  {Platform.OS === "web"
+                    ? `PRESS ${OPPOSITE[activeObstacle.direction].toUpperCase()} / SWIPE ${OPPOSITE[activeObstacle.direction].toUpperCase()}`
+                    : `SWIPE ${OPPOSITE[activeObstacle.direction].toUpperCase()}`}
+                </Text>
               ) : (
-                <Text style={styles.hintLabel}>SWIPE ANYWHERE</Text>
+                <Text style={styles.hintLabel}>
+                  {Platform.OS === "web" ? "ARROW KEYS / WASD · SWIPE TO DODGE" : "SWIPE ANYWHERE"}
+                </Text>
               )}
             </View>
 
@@ -653,6 +791,7 @@ export default function VelocityScreen() {
 
         {/* Flash and particles */}
         {showFlash === "success" && <ScreenFlash color={Colors.success + "40"} />}
+        {(showFlash as any) === "near_miss" && <ScreenFlash color={"#ffffff55"} />}
         {showFlash === "error" && <ScreenFlash color={Colors.secondary + "50"} />}
         {burstPos && <ParticleBurst x={burstPos.x} y={burstPos.y} color={Colors.primary} />}
       </LinearGradient>
@@ -790,12 +929,23 @@ const styles = StyleSheet.create({
   frenzyBanner: {
     alignItems: "center",
     marginBottom: 4,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.secondary + "60",
+    backgroundColor: Colors.secondary + "10",
   },
   frenzyText: {
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: "Outfit_800ExtraBold",
     color: Colors.secondary,
-    letterSpacing: 4,
+    letterSpacing: 3,
+  },
+  frenzyOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255, 45, 111, 0.07)",
+    zIndex: 1,
+    pointerEvents: "none" as any,
   },
   powerUpBar: {
     flexDirection: "row",
@@ -936,5 +1086,36 @@ const styles = StyleSheet.create({
     letterSpacing: 3,
     marginTop: 8,
     textTransform: "uppercase",
+  },
+  shockwaveRing: {
+    position: "absolute",
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 2.5,
+    borderColor: Colors.primary,
+    shadowColor: Colors.primary,
+    shadowOpacity: 0.9,
+    shadowRadius: 12,
+    elevation: 6,
+    zIndex: 5,
+  },
+  nearMissContainer: {
+    position: "absolute",
+    top: "25%",
+    alignSelf: "center",
+    backgroundColor: Colors.warning + "25",
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: Colors.warning + "80",
+    zIndex: 20,
+  },
+  nearMissText: {
+    fontSize: 13,
+    fontFamily: "Outfit_800ExtraBold",
+    color: Colors.warning,
+    letterSpacing: 2,
   },
 });
