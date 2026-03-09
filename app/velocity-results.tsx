@@ -40,6 +40,13 @@ import {
   getCurrentTierXP,
   getTitleInfo,
 } from "@/lib/velocity-progression";
+import {
+  checkAndUnlockCosmetics,
+  getOrbStyle,
+  getTrailStyle,
+  type OrbStyleId,
+  type TrailStyleId,
+} from "@/lib/velocity-cosmetics";
 import AmbientParticles from "@/components/AmbientParticles";
 
 const VELOCITY_CYAN = Colors.accent;
@@ -177,6 +184,57 @@ function AnimatedScoreCounter({ target }: { target: number }) {
   );
 }
 
+function UnlockRewardCard({ unlocks }: { unlocks: { orbs: OrbStyleId[]; trails: TrailStyleId[] } }) {
+  const scale = useSharedValue(0.8);
+  const opacity = useSharedValue(0);
+
+  useEffect(() => {
+    scale.value = withDelay(600, withSpring(1, { damping: 10, stiffness: 160 }));
+    opacity.value = withDelay(600, withTiming(1, { duration: 400 }));
+  }, []);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  return (
+    <Animated.View style={[rs.unlockCard, animStyle]}>
+      <View style={rs.unlockHeader}>
+        <Ionicons name="trophy" size={18} color={Colors.warning} />
+        <Text style={rs.unlockTitle}>NEW UNLOCK!</Text>
+      </View>
+      {unlocks.orbs.map((id) => {
+        const orb = getOrbStyle(id);
+        return (
+          <View key={id} style={rs.unlockItem}>
+            <View style={[rs.unlockColorDot, { backgroundColor: orb.colors.core, shadowColor: orb.colors.core }]} />
+            <View style={rs.unlockItemInfo}>
+              <Text style={rs.unlockItemName}>{orb.name}</Text>
+              <Text style={rs.unlockItemType}>New Orb Style</Text>
+            </View>
+            <Ionicons name="sparkles" size={14} color={Colors.warning} />
+          </View>
+        );
+      })}
+      {unlocks.trails.map((id) => {
+        const trail = getTrailStyle(id);
+        return (
+          <View key={id} style={rs.unlockItem}>
+            <View style={[rs.unlockColorDot, { backgroundColor: trail.color, shadowColor: trail.color }]} />
+            <View style={rs.unlockItemInfo}>
+              <Text style={rs.unlockItemName}>{trail.name}</Text>
+              <Text style={rs.unlockItemType}>New Trail Style</Text>
+            </View>
+            <Ionicons name="sparkles" size={14} color={Colors.warning} />
+          </View>
+        );
+      })}
+      <Text style={rs.unlockHint}>Equip from the Customize menu</Text>
+    </Animated.View>
+  );
+}
+
 function StatCard({ label, value, icon, color }: { label: string; value: string; icon: string; color: string }) {
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(20);
@@ -207,6 +265,7 @@ export default function VelocityResultsScreen() {
     mistakes: string;
     totalDodges: string;
     timeSurvived: string;
+    speedLevel: string;
     mode: string;
     difficulty: string;
   }>();
@@ -216,6 +275,7 @@ export default function VelocityResultsScreen() {
   const mistakes = parseInt(params.mistakes ?? "0");
   const totalDodges = parseInt(params.totalDodges ?? "0");
   const timeSurvived = parseInt(params.timeSurvived ?? "0");
+  const speedLevel = parseInt(params.speedLevel ?? "0");
   const mode = params.mode ?? "regular";
   const difficulty = params.difficulty ?? "normal";
 
@@ -231,6 +291,7 @@ export default function VelocityResultsScreen() {
   const [xpEarned, setXpEarned] = useState(0);
   const [isNewBest, setIsNewBest] = useState(false);
   const [totalXP, setTotalXP] = useState(0);
+  const [newUnlocks, setNewUnlocks] = useState<{ orbs: OrbStyleId[]; trails: TrailStyleId[] }>({ orbs: [], trails: [] });
   const processedRef = useRef(false);
 
   const isZen = mode === "zen";
@@ -268,6 +329,11 @@ export default function VelocityResultsScreen() {
 
       const newTotal = await getTotalXP();
       setTotalXP(newTotal);
+
+      const unlocks = await checkAndUnlockCosmetics({ score, maxCombo, totalXP: newTotal, speedLevel, mode });
+      if (unlocks.newOrbs.length > 0 || unlocks.newTrails.length > 0) {
+        setNewUnlocks(unlocks);
+      }
 
       if (mode !== "zen") {
         await addLeaderboardEntry({
@@ -389,6 +455,11 @@ export default function VelocityResultsScreen() {
                     <Text style={rs.xpMultiplier}>{rankInfo.xpMultiplier}× bonus</Text>
                   )}
                 </View>
+              )}
+
+              {/* Unlock reward card */}
+              {(newUnlocks.orbs.length > 0 || newUnlocks.trails.length > 0) && (
+                <UnlockRewardCard unlocks={newUnlocks} />
               )}
 
               {/* Title progression */}
@@ -755,6 +826,61 @@ const rs = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     paddingVertical: 14,
+  },
+  unlockCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: Colors.warning + "70",
+    padding: 16,
+    gap: 10,
+  },
+  unlockHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  unlockTitle: {
+    fontSize: 14,
+    fontFamily: "Outfit_800ExtraBold",
+    color: Colors.warning,
+    letterSpacing: 3,
+  },
+  unlockItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 4,
+  },
+  unlockColorDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    shadowOpacity: 0.9,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  unlockItemInfo: {
+    flex: 1,
+  },
+  unlockItemName: {
+    fontSize: 13,
+    fontFamily: "Outfit_700Bold",
+    color: Colors.text,
+  },
+  unlockItemType: {
+    fontSize: 10,
+    fontFamily: "Outfit_500Medium",
+    color: Colors.textMuted,
+    letterSpacing: 0.5,
+  },
+  unlockHint: {
+    fontSize: 10,
+    fontFamily: "Outfit_400Regular",
+    color: Colors.textMuted,
+    textAlign: "center",
+    marginTop: 2,
+    letterSpacing: 0.3,
   },
   challengeBtnText: {
     fontSize: 15,

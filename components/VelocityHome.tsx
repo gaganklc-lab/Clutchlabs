@@ -43,6 +43,9 @@ import {
 } from "@/lib/velocity-storage";
 import { trackEvent } from "@/lib/analytics";
 import AmbientParticles from "@/components/AmbientParticles";
+import { getVelocityTitle, getTitleColor } from "@/lib/velocity-progression";
+import { getEquippedOrb, getOrbStyle, type OrbStyleId } from "@/lib/velocity-cosmetics";
+import VelocityCustomizeModal from "@/components/VelocityCustomizeModal";
 
 const VELOCITY_CYAN = Colors.accent;
 const VELOCITY_PURPLE = "#7B61FF";
@@ -297,6 +300,10 @@ export default function VelocityHome() {
   const [showReward, setShowReward] = useState(false);
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [rewardData, setRewardData] = useState({ rewardXP: 0, streak: 0, milestoneBonus: 0, milestoneLabel: "" });
+  const [velocityTitle, setVelocityTitle] = useState("Runner");
+  const [velocityTitleColor, setVelocityTitleColor] = useState(VELOCITY_CYAN);
+  const [equippedOrbId, setEquippedOrbId] = useState<OrbStyleId>("core_blue");
+  const [showCustomize, setShowCustomize] = useState(false);
 
   const pulseAnim = useSharedValue(0);
   const glowAnim = useSharedValue(0);
@@ -322,14 +329,20 @@ export default function VelocityHome() {
     );
   }, []);
 
+  const loadCosmetics = async () => {
+    const orbId = await getEquippedOrb();
+    setEquippedOrbId(orbId);
+  };
+
   const loadData = async () => {
-    const [score, s, xp, m, login, diff] = await Promise.all([
+    const [score, s, xp, m, login, diff, orbId] = await Promise.all([
       getBestScore(),
       getSettings(),
       getTotalXP(),
       getGameMode(),
       getLoginStreak(),
       getDifficulty(),
+      getEquippedOrb(),
     ]);
     setBestScore(score);
     setSettings(s);
@@ -337,6 +350,10 @@ export default function VelocityHome() {
     setMode(m);
     setLoginStreak(login.streak);
     setDifficulty(diff);
+    setEquippedOrbId(orbId);
+    const title = getVelocityTitle(xp);
+    setVelocityTitle(title);
+    setVelocityTitleColor(getTitleColor(title));
 
     const reward = await checkAndUpdateLoginStreak();
     if (reward.isNewDay && reward.rewardXP > 0) {
@@ -427,6 +444,18 @@ export default function VelocityHome() {
               <Pressable
                 onPress={() => {
                   if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowCustomize(true);
+                }}
+                style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.6 : 1 }]}
+              >
+                <View style={styles.customizeBtnInner}>
+                  <View style={[styles.orbPreviewDot, { backgroundColor: getOrbStyle(equippedOrbId).colors.core }]} />
+                  <Ionicons name="color-palette-outline" size={20} color={Colors.textSecondary} />
+                </View>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setShowSettings(true);
                 }}
                 style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.6 : 1 }]}
@@ -442,7 +471,7 @@ export default function VelocityHome() {
               <Text style={[styles.titleAccent, { color: VELOCITY_PURPLE }]}>CITY</Text>
             </View>
             <Text style={styles.subtitle}>SWIPE TO DODGE</Text>
-            <Text style={[styles.levelTitle, { color: VELOCITY_CYAN }]}>{levelInfo.title}</Text>
+            <Text style={[styles.levelTitle, { color: velocityTitleColor }]}>{velocityTitle.toUpperCase()}</Text>
 
             {bestScore > 0 && (
               <View style={styles.bestScoreContainer}>
@@ -553,6 +582,13 @@ export default function VelocityHome() {
         </View>
       </View>
 
+      <VelocityCustomizeModal
+        visible={showCustomize}
+        onClose={() => {
+          setShowCustomize(false);
+          loadCosmetics();
+        }}
+      />
       <HowToPlayModal visible={showHowToPlay} onClose={() => setShowHowToPlay(false)} />
       <SettingsModal
         visible={showSettings}
@@ -635,6 +671,19 @@ const styles = StyleSheet.create({
     height: 44,
     justifyContent: "center",
     alignItems: "center",
+  },
+  customizeBtnInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  orbPreviewDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    shadowOpacity: 0.9,
+    shadowRadius: 4,
+    elevation: 3,
   },
   center: {
     flex: 1,

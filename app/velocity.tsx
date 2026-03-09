@@ -43,6 +43,14 @@ import {
   type VelocityPowerUpInventory,
   type VelocityDifficulty,
 } from "@/lib/velocity-storage";
+import {
+  getEquippedOrb,
+  getEquippedTrail,
+  getOrbStyle,
+  getTrailStyle,
+  type OrbStyleId,
+  type TrailStyleId,
+} from "@/lib/velocity-cosmetics";
 
 type Direction = "top" | "bottom" | "left" | "right";
 type GameMode = "regular" | "endless" | "zen";
@@ -136,6 +144,8 @@ export default function VelocityScreen() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [popups, setPopups] = useState<PopupEvent[]>([]);
   const [showPhaseUp, setShowPhaseUp] = useState<number | null>(null);
+  const [equippedOrbId, setEquippedOrbId] = useState<OrbStyleId>("core_blue");
+  const [equippedTrailId, setEquippedTrailId] = useState<TrailStyleId>("cyan_trail");
 
   const isPlayingRef = useRef(false);
   const scoreRef = useRef(0);
@@ -183,6 +193,10 @@ export default function VelocityScreen() {
 
   useEffect(() => {
     getVelocityPowerUps().then(setPowerUpInventory);
+    Promise.all([getEquippedOrb(), getEquippedTrail()]).then(([orb, trail]) => {
+      setEquippedOrbId(orb);
+      setEquippedTrailId(trail);
+    });
   }, []);
 
   const cleanup = useCallback(() => {
@@ -228,6 +242,7 @@ export default function VelocityScreen() {
         mistakes: mistakesRef.current,
         totalDodges: totalDodgesRef.current,
         timeSurvived: elapsedRef.current,
+        speedLevel: speedLevelRef.current,
         mode,
         difficulty,
       },
@@ -414,7 +429,7 @@ export default function VelocityScreen() {
 
       const trailOffX = OPPOSITE_DIR === "right" ? 22 : OPPOSITE_DIR === "left" ? -22 : 0;
       const trailOffY = OPPOSITE_DIR === "bottom" ? 22 : OPPOSITE_DIR === "top" ? -22 : 0;
-      const trailColor = OBSTACLE_COLOR[lastDir];
+      const trailColor = getTrailStyle(equippedTrailId).color;
       const segId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
       setTrailSegments(prev => [...prev, { id: segId, offsetX: trailOffX, offsetY: trailOffY, color: trailColor, size: 26 }].slice(-6));
       setTimeout(() => setTrailSegments(prev => prev.filter(s => s.id !== segId)), 500);
@@ -846,11 +861,40 @@ export default function VelocityScreen() {
               <OrbTrail segments={trailSegments} />
 
               {/* Outer orb aura */}
-              <Animated.View style={[styles.orbAura, orbAuraStyle]} pointerEvents="none" />
+              <Animated.View
+                style={[
+                  styles.orbAura,
+                  orbAuraStyle,
+                  {
+                    backgroundColor: getOrbStyle(equippedOrbId).colors.aura,
+                    shadowColor: getOrbStyle(equippedOrbId).colors.core,
+                  },
+                ]}
+                pointerEvents="none"
+              />
               {/* Mid orb glow */}
-              <Animated.View style={[styles.orbMid, orbMidStyle]} pointerEvents="none" />
+              <Animated.View
+                style={[
+                  styles.orbMid,
+                  orbMidStyle,
+                  {
+                    backgroundColor: getOrbStyle(equippedOrbId).colors.mid,
+                    shadowColor: getOrbStyle(equippedOrbId).colors.core,
+                  },
+                ]}
+                pointerEvents="none"
+              />
               {/* Player orb core */}
-              <Animated.View style={[styles.orb, orbAnimStyle]} />
+              <Animated.View
+                style={[
+                  styles.orb,
+                  orbAnimStyle,
+                  {
+                    backgroundColor: getOrbStyle(equippedOrbId).colors.core,
+                    shadowColor: getOrbStyle(equippedOrbId).colors.core,
+                  },
+                ]}
+              />
 
               {/* Near-miss label */}
               {showNearMiss && (
