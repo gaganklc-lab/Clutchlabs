@@ -9,7 +9,7 @@ A React Native (Expo) mobile arcade suite with two independently publishable gam
 ## Build & Publishing
 - **Config**: `app.config.js` (dynamic Expo config, replaces `app.json`). Reads `APP_VARIANT` env var to switch between ClutchTap and Velocity configs (name, slug, bundle ID, icons).
 - **EAS**: `eas.json` defines build profiles: `production-clutchtap` (APP_VARIANT=clutchtap) and `production-velocity` (APP_VARIANT=velocity).
-- **Bundle IDs**: ClutchTap = `com.clutchlabs.clutchtap`, Velocity = `app.replit.velocity`
+- **Bundle IDs**: ClutchTap = `com.myapp`, Velocity = `app.replit.velocity`
 - **Icons**: ClutchTap uses `assets/images/icon.png`, Velocity uses `assets/images/velocity-icon.png`. Each has its own Android adaptive icon set.
 - **To build**: `eas build --profile production-velocity --platform ios` (requires EAS CLI + Apple Developer account)
 

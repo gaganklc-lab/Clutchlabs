@@ -7,8 +7,8 @@ const VARIANTS = {
     name: "ClutchTap",
     slug: "clutchtap",
     scheme: "clutchtap",
-    bundleIdentifier: "com.clutchlabs.clutchtap",
-    androidPackage: "com.clutchlabs.clutchtap",
+    bundleIdentifier: "com.myapp",
+    androidPackage: "com.myapp",
   },
   velocity: {
     name: "Velocity",
@@ -35,7 +35,7 @@ module.exports = {
     newArchEnabled: true,
     splash: {
       image: IS_VELOCITY
-        ? "./assets/images/velocity-icon.png"
+        ? "./assets/images/velocity-splash-icon.png"
         : "./assets/images/splash-icon.png",
       resizeMode: "contain",
       backgroundColor: "#0A0A1A",
