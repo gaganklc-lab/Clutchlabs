@@ -6,7 +6,7 @@ const VARIANTS = {
   clutchtap: {
     name: "ClutchTap",
     slug: "clutchtap",
-    scheme: "clutchtap",
+    scheme: "myapp",
     bundleIdentifier: "com.myapp",
     androidPackage: "com.myapp",
   },
