@@ -77,6 +77,9 @@ module.exports = {
     },
     extra: {
       appVariant: variant,
+      eas: {
+        projectId: "43583fb0-be02-428a-a19e-85dca9e961c9",
+      },
     },
   },
 };
