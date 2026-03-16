@@ -6,6 +6,13 @@ A React Native (Expo) mobile arcade suite with two independently publishable gam
 - **ClutchTap** (`APP_VARIANT=clutchtap`): Rotating-rule reflex tap game. Tap colored tiles following rotating rules under time pressure. Features game modes, lives, combo multiplier, daily challenges, XP, tile themes, power-ups, badges, stats dashboard.
 - **Velocity** (`APP_VARIANT=velocity`): Swipe-to-dodge survival game. Dodge incoming obstacle walls by swiping in the correct direction. Features Regular/Endless/Zen modes, lives (pip bar), combo scoring, edge warnings, 3-layer orb (aura+mid+core) with squash/stretch, orb dash+trail, near-miss detection, keyboard controls (web), combo glow escalation, frenzy mode polish, enhanced animated grid background with arena rings + diagonal lane lines + mode-based color shifts, shockwave ring effect, S/A/B/C/D rank, personal best detection, viral challenge sharing, leaderboard. Production features: score popups (+10/+15/NEAR MISS/CLUTCH!/FRENZY), phase-up overlay (endless), obstacle layered neon beams, arena glow border, title progression system (Runner→Phantom→Surge→Overdrive→Legend), results XP progress bar. Cosmetics system: 3 unlockable orb styles (CoreBlue/NeonPulse/OverdriveGold) + 3 trail styles (CyanTrail/VioletTrail/GoldSpark) with unlock conditions, equip UI (Customize button on home), applied to gameplay visuals. Unlock reward card shown on results screen when new items are earned.
 
+## Build & Publishing
+- **Config**: `app.config.js` (dynamic Expo config, replaces `app.json`). Reads `APP_VARIANT` env var to switch between ClutchTap and Velocity configs (name, slug, bundle ID, icons).
+- **EAS**: `eas.json` defines build profiles: `production-clutchtap` (APP_VARIANT=clutchtap) and `production-velocity` (APP_VARIANT=velocity).
+- **Bundle IDs**: ClutchTap = `com.clutchlabs.clutchtap`, Velocity = `app.replit.velocity`
+- **Icons**: ClutchTap uses `assets/images/icon.png`, Velocity uses `assets/images/velocity-icon.png`. Each has its own Android adaptive icon set.
+- **To build**: `eas build --profile production-velocity --platform ios` (requires EAS CLI + Apple Developer account)
+
 ## Tech Stack
 - **Frontend**: Expo SDK 54, Expo Router (stack navigation), React Native Reanimated 4
 - **Backend**: Express + TypeScript on port 5000 (serves APIs + static landing page)
@@ -158,16 +165,16 @@ APP_VARIANT=clutchtap npx expo start
 APP_VARIANT=velocity npx expo start
 
 # EAS Build — ClutchTap (iOS)
-APP_VARIANT=clutchtap eas build --platform ios --profile production
+eas build --platform ios --profile production-clutchtap
 
 # EAS Build — Velocity (iOS)
-APP_VARIANT=velocity eas build --platform ios --profile production
+eas build --platform ios --profile production-velocity
 
 # EAS Build — ClutchTap (Android)
-APP_VARIANT=clutchtap eas build --platform android --profile production
+eas build --platform android --profile production-clutchtap
 
 # EAS Build — Velocity (Android)
-APP_VARIANT=velocity eas build --platform android --profile production
+eas build --platform android --profile production-velocity
 ```
 
 ### Adding Future Games

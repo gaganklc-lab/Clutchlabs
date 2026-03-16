@@ -1,5 +1,7 @@
 const variant = process.env.APP_VARIANT ?? "clutchtap";
 
+const IS_VELOCITY = variant === "velocity";
+
 const VARIANTS = {
   clutchtap: {
     name: "ClutchTap",
@@ -12,8 +14,8 @@ const VARIANTS = {
     name: "Velocity",
     slug: "velocity",
     scheme: "velocity",
-    bundleIdentifier: "com.clutchlabs.velocity",
-    androidPackage: "com.clutchlabs.velocity",
+    bundleIdentifier: "app.replit.velocity",
+    androidPackage: "app.replit.velocity",
   },
 };
 
@@ -25,12 +27,16 @@ module.exports = {
     slug: cfg.slug,
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/images/icon.png",
+    icon: IS_VELOCITY
+      ? "./assets/images/velocity-icon.png"
+      : "./assets/images/icon.png",
     scheme: cfg.scheme,
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
     splash: {
-      image: "./assets/images/splash-icon.png",
+      image: IS_VELOCITY
+        ? "./assets/images/velocity-icon.png"
+        : "./assets/images/splash-icon.png",
       resizeMode: "contain",
       backgroundColor: "#0A0A1A",
     },
@@ -40,12 +46,22 @@ module.exports = {
     },
     android: {
       package: cfg.androidPackage,
-      adaptiveIcon: {
-        backgroundColor: "#E6F4FE",
-        foregroundImage: "./assets/images/android-icon-foreground.png",
-        backgroundImage: "./assets/images/android-icon-background.png",
-        monochromeImage: "./assets/images/android-icon-monochrome.png",
-      },
+      adaptiveIcon: IS_VELOCITY
+        ? {
+            backgroundColor: "#0A0A1A",
+            foregroundImage:
+              "./assets/images/velocity-android-icon-foreground.png",
+            backgroundImage:
+              "./assets/images/velocity-android-icon-background.png",
+            monochromeImage:
+              "./assets/images/velocity-android-icon-monochrome.png",
+          }
+        : {
+            backgroundColor: "#E6F4FE",
+            foregroundImage: "./assets/images/android-icon-foreground.png",
+            backgroundImage: "./assets/images/android-icon-background.png",
+            monochromeImage: "./assets/images/android-icon-monochrome.png",
+          },
     },
     web: {
       favicon: "./assets/images/favicon.png",
