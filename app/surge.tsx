@@ -346,7 +346,7 @@ export default function SurgeScreen() {
         setTimeLeft((t) => {
           const next = t - 1;
           if (next <= 0) {
-            runOnJS(endGame)();
+            endGame();
             return 0;
           }
           return next;

@@ -274,18 +274,29 @@ export default function SurgeHome() {
     transform: [{ scale: interpolate(glowAnim.value, [0, 1], [0.9, 1.1]) }],
   }));
 
-  const makeRingStyle = (anim: Animated.SharedValue<number>, baseRadius: number) =>
-    useAnimatedStyle(() => ({
-      opacity: interpolate(anim.value, [0, 0.5, 1], [0.08, 0.22, 0.08]),
-      transform: [{ scale: interpolate(anim.value, [0, 1], [0.85, 1.15]) }],
-      width: baseRadius * 2,
-      height: baseRadius * 2,
-      borderRadius: baseRadius,
-    }));
+  const ring1Style = useAnimatedStyle(() => ({
+    opacity: interpolate(ring1.value, [0, 0.5, 1], [0.08, 0.22, 0.08]),
+    transform: [{ scale: interpolate(ring1.value, [0, 1], [0.85, 1.15]) }],
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+  }));
 
-  const ring1Style = makeRingStyle(ring1, 60);
-  const ring2Style = makeRingStyle(ring2, 90);
-  const ring3Style = makeRingStyle(ring3, 120);
+  const ring2Style = useAnimatedStyle(() => ({
+    opacity: interpolate(ring2.value, [0, 0.5, 1], [0.08, 0.22, 0.08]),
+    transform: [{ scale: interpolate(ring2.value, [0, 1], [0.85, 1.15]) }],
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+  }));
+
+  const ring3Style = useAnimatedStyle(() => ({
+    opacity: interpolate(ring3.value, [0, 0.5, 1], [0.08, 0.22, 0.08]),
+    transform: [{ scale: interpolate(ring3.value, [0, 1], [0.85, 1.15]) }],
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+  }));
 
   const bestForMode = mode === "classic" ? bestClassic : bestEndless;
 
