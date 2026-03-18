@@ -36,6 +36,7 @@ import {
   getRingTheme,
   type RingThemeId,
 } from "@/lib/surge-cosmetics";
+import { getSurgeSettings } from "@/lib/surge-storage";
 
 type SurgeGameMode = "classic" | "endless";
 type HitQuality = "perfect" | "good" | "miss";
@@ -76,6 +77,8 @@ export default function SurgeScreen() {
   const [hitLabel, setHitLabel] = useState<string | null>(null);
   const [hitLabelColor, setHitLabelColor] = useState(Colors.success);
   const [equippedThemeId, setEquippedThemeId] = useState<RingThemeId>("neon_purple");
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [hapticsEnabled, setHapticsEnabled] = useState(true);
 
   const isPlayingRef = useRef(false);
   const scoreRef = useRef(0);
@@ -110,7 +113,11 @@ export default function SurgeScreen() {
   const screenCenterY = (height - topInset - bottomInset) / 2;
 
   useEffect(() => {
-    getEquippedRingTheme().then((id) => setEquippedThemeId(id));
+    Promise.all([getEquippedRingTheme(), getSurgeSettings()]).then(([id, s]) => {
+      setEquippedThemeId(id);
+      setSoundEnabled(s.soundEnabled);
+      setHapticsEnabled(s.hapticsEnabled);
+    });
   }, []);
 
   useEffect(() => {
@@ -203,8 +210,8 @@ export default function SurgeScreen() {
 
     setShowFlash("error");
     setTimeout(() => setShowFlash(null), 300);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    soundManager.play("wrong");
+    if (hapticsEnabled) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    if (soundEnabled) soundManager.play("wrong");
 
     orbScale.value = withSequence(
       withTiming(1.35, { duration: 80 }),
@@ -219,7 +226,7 @@ export default function SurgeScreen() {
     }
 
     cycleTimerRef.current = setTimeout(startCycle, 450);
-  }, [endGame, startCycle, showHitLabel]);
+  }, [endGame, startCycle, showHitLabel, hapticsEnabled, soundEnabled]);
 
   const handleTap = useCallback(() => {
     if (!isPlayingRef.current || gameOverRef.current) return;
@@ -249,8 +256,8 @@ export default function SurgeScreen() {
 
       setShowFlash("error");
       setTimeout(() => setShowFlash(null), 300);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      soundManager.play("wrong");
+      if (hapticsEnabled) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      if (soundEnabled) soundManager.play("wrong");
 
       orbScale.value = withSequence(
         withTiming(1.35, { duration: 80 }),
@@ -329,12 +336,12 @@ export default function SurgeScreen() {
 
       setShowFlash("success");
       setTimeout(() => setShowFlash(null), 180);
-      Haptics.impactAsync(quality === "perfect" ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Light);
-      soundManager.play("tap");
+      if (hapticsEnabled) Haptics.impactAsync(quality === "perfect" ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Light);
+      if (soundEnabled) soundManager.play("tap");
     }
 
     cycleTimerRef.current = setTimeout(startCycle, 300);
-  }, [endGame, startCycle, showHitLabel, screenCenterX, screenCenterY, theme]);
+  }, [endGame, startCycle, showHitLabel, screenCenterX, screenCenterY, theme, hapticsEnabled, soundEnabled]);
 
   const startGame = useCallback(() => {
     isPlayingRef.current = true;
@@ -408,7 +415,7 @@ export default function SurgeScreen() {
     opacity: interpolate(targetRingPulse.value, [0, 1], [0.45, 0.85]),
   }));
 
-  const pipCount = mode === "classic" ? 3 : 3;
+  const pipCount = 3;
 
   return (
     <Pressable style={{ flex: 1 }} onPress={handleTap}>
