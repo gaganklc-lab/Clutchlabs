@@ -62,12 +62,12 @@ export const RING_THEMES: RingTheme[] = [
   {
     id: "ice_ring",
     name: "Ice Crystal",
-    description: "Frozen cyan rings — glacial precision",
+    description: "Frozen white-blue rings — glacial precision",
     unlockText: "Survive 60 seconds in Endless mode",
     free: false,
-    ringColor: "#00E5FF",
-    glowColor: "#0091EA",
-    targetColor: "#80D8FF",
+    ringColor: "#E3F4FF",
+    glowColor: "#90CAF9",
+    targetColor: "#BBDEFB",
   },
 ];
 
