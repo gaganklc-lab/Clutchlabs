@@ -13,6 +13,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
+import Constants from "expo-constants";
 import Colors from "@/constants/colors";
 import { useSurgeSubscription } from "@/lib/surge-subscription";
 
@@ -117,11 +118,20 @@ export default function SurgePaywallSheet({
     },
   ];
 
+  const isTestEnv =
+    __DEV__ ||
+    Platform.OS === "web" ||
+    Constants.executionEnvironment === "storeClient";
+
   const handleSubscribePress = () => {
     if (!pkg) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setError(null);
-    setShowTestConfirm(true);
+    if (isTestEnv) {
+      setShowTestConfirm(true);
+    } else {
+      handleConfirmPurchase();
+    }
   };
 
   const handleConfirmPurchase = async () => {

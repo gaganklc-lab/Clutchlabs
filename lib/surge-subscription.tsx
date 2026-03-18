@@ -87,9 +87,12 @@ function useSurgeSubscriptionContext() {
     customerInfoQuery.data?.entitlements.active?.[SURGE_PRO_ENTITLEMENT] !==
     undefined;
 
+  const currentOffering = offeringsQuery.data?.current ?? null;
+
   return {
     customerInfo: customerInfoQuery.data,
     offerings: offeringsQuery.data,
+    currentOffering,
     isPro,
     isLoading: customerInfoQuery.isLoading || offeringsQuery.isLoading,
     purchasePro: purchaseMutation.mutateAsync,
