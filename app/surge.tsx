@@ -94,7 +94,7 @@ export default function SurgeScreen() {
   const [maxPips, setMaxPips] = useState(3);
   const slowRingActiveRef = useRef(false);
   const doubleScoreActiveRef = useRef(false);
-  const powerUpTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const powerUpTimerRef = useRef<ReturnType<typeof setTimeout> | ReturnType<typeof setInterval> | null>(null);
 
   const { isPro } = useSurgeSubscription();
   const { isAdReady, watchAd } = useRewardedAd();
@@ -413,7 +413,7 @@ export default function SurgeScreen() {
       setPowerUpSecsLeft(0);
       powerUpTimerRef.current = setTimeout(() => {
         setActivePowerUp(null);
-      }, 5000) as unknown as ReturnType<typeof setInterval>;
+      }, 5000);
       return;
     }
 
