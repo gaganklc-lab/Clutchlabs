@@ -193,9 +193,16 @@ export default function SurgeScreen() {
 
   const handleRevive = useCallback(async () => {
     setShowRevivePrompt(false);
+    let granted = false;
     try {
-      await watchAd();
+      const result = await watchAd();
+      granted = result.granted;
     } catch {
+      granted = false;
+    }
+    if (!granted) {
+      goToResults();
+      return;
     }
     hasRevivedRef.current = true;
     gameOverRef.current = false;
@@ -204,7 +211,7 @@ export default function SurgeScreen() {
     setTimeout(() => {
       startCountdown();
     }, 300);
-  }, [watchAd]);
+  }, [watchAd, goToResults]);
 
   const showHitLabel = useCallback((label: string, color: string) => {
     setHitLabel(label);

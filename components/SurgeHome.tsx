@@ -136,11 +136,15 @@ function SettingsModal({
   onClose,
   settings,
   onSettingsChange,
+  isPro,
+  onOpenPaywall,
 }: {
   visible: boolean;
   onClose: () => void;
   settings: SurgeSettings;
   onSettingsChange: (s: SurgeSettings) => void;
+  isPro: boolean;
+  onOpenPaywall: () => void;
 }) {
   const insets = useSafeAreaInsets();
   return (
@@ -181,6 +185,28 @@ function SettingsModal({
               <View style={[cs.toggleKnob, settings.hapticsEnabled && cs.toggleKnobOn]} />
             </Pressable>
           </View>
+          {isPro ? (
+            <View style={cs.settingRow}>
+              <View style={cs.settingLeft}>
+                <Ionicons name="flash" size={22} color="#7C3AED" />
+                <Text style={[cs.settingLabel, { color: "#7C3AED" }]}>Surge Pro Active</Text>
+              </View>
+              <View style={[cs.proBadgeSmall]}>
+                <Text style={cs.proBadgeSmallText}>PRO</Text>
+              </View>
+            </View>
+          ) : (
+            <Pressable
+              onPress={() => { onClose(); setTimeout(onOpenPaywall, 150); }}
+              style={({ pressed }) => [cs.settingRow, cs.upgradeRow, { opacity: pressed ? 0.8 : 1 }]}
+            >
+              <View style={cs.settingLeft}>
+                <Ionicons name="flash" size={22} color="#7C3AED" />
+                <Text style={[cs.settingLabel, { color: "#7C3AED" }]}>Upgrade to Pro</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#7C3AED" />
+            </Pressable>
+          )}
         </View>
       </View>
     </Modal>
@@ -454,6 +480,8 @@ export default function SurgeHome() {
         onClose={() => setShowSettings(false)}
         settings={settings}
         onSettingsChange={(s) => { setSettings(s); saveSurgeSettings(s); }}
+        isPro={isPro}
+        onOpenPaywall={() => setShowPaywall(true)}
       />
       <SurgePaywallSheet
         visible={showPaywall}
@@ -785,5 +813,20 @@ const cs = StyleSheet.create({
   toggleKnobOn: {
     backgroundColor: Colors.text,
     transform: [{ translateX: 20 }],
+  },
+  upgradeRow: {
+    borderBottomColor: "#7C3AED33",
+  },
+  proBadgeSmall: {
+    backgroundColor: "#7C3AED",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  proBadgeSmallText: {
+    fontSize: 10,
+    fontFamily: "Outfit_800ExtraBold",
+    color: "#fff",
+    letterSpacing: 1,
   },
 });
