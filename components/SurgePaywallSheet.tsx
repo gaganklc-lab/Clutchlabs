@@ -40,8 +40,7 @@ function TestConfirmModal({
           <Ionicons name="storefront-outline" size={36} color={SURGE_PURPLE} />
           <Text style={pw.confirmTitle}>Test Purchase</Text>
           <Text style={pw.confirmBody}>
-            You're in the RevenueCat Test Store. This simulates a real purchase
-            of Surge Pro ({price}/mo) without charging you.
+            {"You're in the RevenueCat Test Store. This simulates a real purchase of Surge Pro (" + price + "/mo) without charging you."}
           </Text>
           <View style={pw.confirmRow}>
             <Pressable
