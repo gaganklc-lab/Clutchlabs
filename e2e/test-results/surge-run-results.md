@@ -2,23 +2,16 @@
 
 **Date:** 2026-03-18
 **Suite:** e2e/surge.spec.ts
-**Browser:** Firefox (Playwright)
+**Browser:** Firefox (Playwright v1.58)
 **App:** Surge variant (APP_VARIANT=surge, port 8081)
 
 ## Results
 
-| Test | Status | Duration |
-|------|--------|----------|
-| T1: Surge home screen renders key UI controls | ✓ PASS | 9.5s |
-| T2: Surge gameplay leads to results screen with XP and rank | ✓ PASS | 34.7s |
-| T3: Surge paywall opens from PRO button and settings modal | ✓ PASS | 9.7s |
-| T4: Results screen navigation buttons work correctly | ✓ PASS | 52.4s |
+| Test | Status | Duration | Coverage |
+|------|--------|----------|----------|
+| T1: Surge home screen renders key UI controls and modals | ✓ PASS | 11.7s | Home controls, settings modal (sound/haptics toggles, upgrade-to-pro row), customize modal (Ring Themes), leaderboard navigation |
+| T2: Surge gameplay: countdown → play → results with score/XP/rank | ✓ PASS | 30.4s | Countdown overlay (3/2/1/GO!), game score block, life drain via misses, results rank card (letter+label), XP badge, action buttons |
+| T3: Surge paywall shows features/pricing and opens from PRO button and settings | ✓ PASS | 10.0s | Paywall title, feature list (Double XP, Ad-Free, Pro Ring Themes), pricing text, Subscribe → TestConfirmModal (Cancel/Confirm), settings upgrade row entry |
+| T4: Results screen navigation buttons work correctly | ✓ PASS | 52.7s | Play Again → game (countdown visible), Home → home screen (play button visible) |
 
 **Total: 4 passed, 0 failed**
-
-## Test Coverage
-
-- T1: Home screen UI (play button, PRO pill, theme/leaderboard/settings buttons, settings modal, Upgrade to Pro row)
-- T2: Full gameplay flow (countdown → rapid-miss life drain → optional revive skip → results screen with score/XP/rank/buttons)
-- T3: Paywall flow from PRO button + Subscribe → TestConfirmModal (Cancel), plus paywall from Settings → Upgrade to Pro
-- T4: Results navigation — Play Again sends back to game, Home returns to home screen

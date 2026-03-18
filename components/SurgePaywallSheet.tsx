@@ -198,9 +198,9 @@ export default function SurgePaywallSheet({
               <Text style={pw.surgeTagline}>Take your game to the next level</Text>
             </LinearGradient>
 
-            <View style={pw.featureList}>
+            <View testID="surge-paywall-features" style={pw.featureList}>
               {features.map((f) => (
-                <View key={f.title} style={pw.featureRow}>
+                <View key={f.title} testID={`surge-paywall-feature-${f.title.toLowerCase().replace(/\s+/g, "-")}`} style={pw.featureRow}>
                   <View
                     style={[
                       pw.featureIcon,
@@ -232,9 +232,9 @@ export default function SurgePaywallSheet({
               </View>
             )}
 
-            <View style={pw.priceBlock}>
+            <View testID="surge-paywall-price-block" style={pw.priceBlock}>
               <Text style={pw.priceLabel}>Monthly subscription</Text>
-              <Text style={pw.price}>{price}</Text>
+              <Text testID="surge-paywall-price-text" style={pw.price}>{price}</Text>
               <Text style={pw.priceNote}>Cancel anytime · No free trial in test mode</Text>
             </View>
 

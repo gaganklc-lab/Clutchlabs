@@ -123,12 +123,12 @@ function RankDisplay({ rankInfo, delay }: { rankInfo: SurgeRankInfo; delay: numb
   const glowStyle = useAnimatedStyle(() => ({ transform: [{ scale: glowScale.value }], opacity: 0.3 }));
 
   return (
-    <Animated.View style={[rs.rankContainer, rankStyle]}>
+    <Animated.View testID="surge-results-rank-card" style={[rs.rankContainer, rankStyle]}>
       <Animated.View style={[rs.rankGlow, { backgroundColor: rankInfo.color }, glowStyle]} />
       <View style={[rs.rankCircle, { borderColor: rankInfo.color }]}>
-        <Text style={[rs.rankLetter, { color: rankInfo.color }]}>{rankInfo.rank}</Text>
+        <Text testID="surge-results-rank-letter" style={[rs.rankLetter, { color: rankInfo.color }]}>{rankInfo.rank}</Text>
       </View>
-      <Text style={[rs.rankLabel, { color: rankInfo.color }]}>{rankInfo.label}</Text>
+      <Text testID="surge-results-rank-label" style={[rs.rankLabel, { color: rankInfo.color }]}>{rankInfo.label}</Text>
       <Text style={rs.rankDesc}>{rankInfo.description}</Text>
     </Animated.View>
   );

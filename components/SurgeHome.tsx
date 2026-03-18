@@ -88,12 +88,12 @@ function CustomizeModal({
       <View style={cs.overlay}>
         <View style={[cs.sheet, { paddingBottom: (Platform.OS === "web" ? 34 : insets.bottom) + 16 }]}>
           <View style={cs.header}>
-            <Text style={cs.title}>Ring Themes</Text>
-            <Pressable onPress={onClose} style={({ pressed }) => [cs.closeBtn, { opacity: pressed ? 0.6 : 1 }]}>
+            <Text testID="surge-customize-title" style={cs.title}>Ring Themes</Text>
+            <Pressable testID="surge-customize-close" onPress={onClose} style={({ pressed }) => [cs.closeBtn, { opacity: pressed ? 0.6 : 1 }]}>
               <Ionicons name="close" size={24} color={Colors.text} />
             </Pressable>
           </View>
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView testID="surge-customize-list" showsVerticalScrollIndicator={false}>
             {RING_THEMES.map((theme) => {
               const isUnlocked = unlocked.includes(theme.id);
               const isEquipped = equipped === theme.id;
@@ -157,24 +157,26 @@ function SettingsModal({
               <Ionicons name="close" size={24} color={Colors.text} />
             </Pressable>
           </View>
-          <View style={cs.settingRow}>
+          <View testID="surge-settings-sound-row" style={cs.settingRow}>
             <View style={cs.settingLeft}>
               <Ionicons name="volume-high" size={22} color={SURGE_PURPLE} />
               <Text style={cs.settingLabel}>Sound Effects</Text>
             </View>
             <Pressable
+              testID="surge-settings-sound-toggle"
               onPress={() => onSettingsChange({ ...settings, soundEnabled: !settings.soundEnabled })}
               style={[cs.toggle, settings.soundEnabled && cs.toggleOn]}
             >
               <View style={[cs.toggleKnob, settings.soundEnabled && cs.toggleKnobOn]} />
             </Pressable>
           </View>
-          <View style={cs.settingRow}>
+          <View testID="surge-settings-haptics-row" style={cs.settingRow}>
             <View style={cs.settingLeft}>
               <Ionicons name="phone-portrait" size={22} color={SURGE_PURPLE} />
               <Text style={cs.settingLabel}>Haptic Feedback</Text>
             </View>
             <Pressable
+              testID="surge-settings-haptics-toggle"
               onPress={() => {
                 const v = !settings.hapticsEnabled;
                 onSettingsChange({ ...settings, hapticsEnabled: v });

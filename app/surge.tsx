@@ -486,8 +486,8 @@ export default function SurgeScreen() {
             <Ionicons name="close" size={22} color={Colors.textSecondary} />
           </Pressable>
 
-          <View style={styles.scoreBlock}>
-            <Text style={[styles.scoreText, { color: theme.ringColor }]}>{score}</Text>
+          <View testID="surge-game-score-block" style={styles.scoreBlock}>
+            <Text testID="surge-game-score-text" style={[styles.scoreText, { color: theme.ringColor }]}>{score}</Text>
             {combo >= 2 && (
               <Text style={[styles.comboText, { color: theme.glowColor }]}>{combo}x</Text>
             )}
@@ -586,8 +586,8 @@ export default function SurgeScreen() {
 
         {/* Countdown overlay */}
         {countdown !== null && (
-          <View style={styles.countdownOverlay} pointerEvents="none">
-            <Text style={[styles.countdownText, { color: theme.ringColor }]}>
+          <View testID="surge-countdown-overlay" style={styles.countdownOverlay} pointerEvents="none">
+            <Text testID="surge-countdown-text" style={[styles.countdownText, { color: theme.ringColor }]}>
               {countdown}
             </Text>
             <Text style={styles.countdownSubtitle}>TAP WHEN RINGS ALIGN</Text>
