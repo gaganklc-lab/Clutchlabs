@@ -14,6 +14,7 @@ import {
   Outfit_700Bold,
   Outfit_800ExtraBold,
 } from "@expo-google-fonts/outfit";
+import { IS_VELOCITY, IS_SURGE } from "@/constants/appVariant";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -35,11 +36,19 @@ function RootLayoutNav() {
       <Stack.Screen name="leaderboard" options={{ animation: "slide_from_right" }} />
       <Stack.Screen name="badges" options={{ animation: "slide_from_right" }} />
       <Stack.Screen name="stats" options={{ animation: "slide_from_right" }} />
-      <Stack.Screen name="velocity" options={{ gestureEnabled: false, animation: "fade" }} />
-      <Stack.Screen name="velocity-results" options={{ gestureEnabled: false, animation: "slide_from_bottom" }} />
-      <Stack.Screen name="surge" options={{ gestureEnabled: false, animation: "fade" }} />
-      <Stack.Screen name="surge-results" options={{ gestureEnabled: false, animation: "slide_from_bottom" }} />
-      <Stack.Screen name="surge-leaderboard" options={{ animation: "slide_from_right" }} />
+      {IS_VELOCITY && (
+        <>
+          <Stack.Screen name="velocity" options={{ gestureEnabled: false, animation: "fade" }} />
+          <Stack.Screen name="velocity-results" options={{ gestureEnabled: false, animation: "slide_from_bottom" }} />
+        </>
+      )}
+      {IS_SURGE && (
+        <>
+          <Stack.Screen name="surge" options={{ gestureEnabled: false, animation: "fade" }} />
+          <Stack.Screen name="surge-results" options={{ gestureEnabled: false, animation: "slide_from_bottom" }} />
+          <Stack.Screen name="surge-leaderboard" options={{ animation: "slide_from_right" }} />
+        </>
+      )}
     </Stack>
   );
 }
