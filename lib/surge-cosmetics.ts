@@ -21,13 +21,13 @@ export interface RingTheme {
 export const RING_THEMES: RingTheme[] = [
   {
     id: "neon_purple",
-    name: "Neon Purple",
-    description: "Electric violet rings — the default surge",
+    name: "Neon Cyan",
+    description: "Electric cyan rings — the default surge",
     unlockText: "Default — always unlocked",
     free: true,
-    ringColor: "#A78BFA",
-    glowColor: "#7C3AED",
-    targetColor: "#E040FB",
+    ringColor: "#00E5FF",
+    glowColor: "#0091EA",
+    targetColor: "#80D8FF",
   },
   {
     id: "gold_ring",
@@ -42,12 +42,12 @@ export const RING_THEMES: RingTheme[] = [
   {
     id: "void_ring",
     name: "Void",
-    description: "Cold white rings on pure darkness",
+    description: "Deep dark rings on pure shadow",
     unlockText: "Reach Rhythm rank (500 XP)",
     free: false,
-    ringColor: "#FFFFFF",
-    glowColor: "#B0BEC5",
-    targetColor: "#ECEFF1",
+    ringColor: "#37474F",
+    glowColor: "#1A1A2E",
+    targetColor: "#546E7A",
   },
   {
     id: "ember_ring",

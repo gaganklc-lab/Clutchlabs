@@ -41,8 +41,8 @@ type SurgeGameMode = "classic" | "endless";
 type HitQuality = "perfect" | "good" | "miss";
 
 const TARGET_PROGRESS = 0.5;
-const PERFECT_WINDOW = 0.07;
-const GOOD_WINDOW = 0.15;
+const PERFECT_WINDOW_MS = 80;
+const GOOD_WINDOW_MS = 160;
 const INITIAL_CYCLE_MS = 1300;
 const MIN_CYCLE_MS = 520;
 const RAMP_EVERY_N_HITS = 3;
@@ -93,6 +93,7 @@ export default function SurgeScreen() {
   const cycleDurationRef = useRef(INITIAL_CYCLE_MS);
   const hitLabelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tappedThisCycleRef = useRef(false);
+  const cycleStartTimeRef = useRef(0);
 
   const ringProgress = useSharedValue(0);
   const orbPulse = useSharedValue(0);
@@ -176,6 +177,7 @@ export default function SurgeScreen() {
   const startCycle = useCallback(() => {
     if (!isPlayingRef.current || gameOverRef.current) return;
     tappedThisCycleRef.current = false;
+    cycleStartTimeRef.current = Date.now();
     ringProgress.value = 0;
     ringProgress.value = withTiming(1, {
       duration: cycleDurationRef.current,
@@ -224,15 +226,16 @@ export default function SurgeScreen() {
     if (tappedThisCycleRef.current) return;
     tappedThisCycleRef.current = true;
 
-    const progress = ringProgress.value;
-    const diff = Math.abs(progress - TARGET_PROGRESS);
+    const elapsed = Date.now() - cycleStartTimeRef.current;
+    const targetMs = cycleDurationRef.current * TARGET_PROGRESS;
+    const diffMs = Math.abs(elapsed - targetMs);
     cancelAnimation(ringProgress);
     ringProgress.value = withTiming(0, { duration: 150 });
 
     let quality: HitQuality;
-    if (diff <= PERFECT_WINDOW) {
+    if (diffMs <= PERFECT_WINDOW_MS) {
       quality = "perfect";
-    } else if (diff <= GOOD_WINDOW) {
+    } else if (diffMs <= GOOD_WINDOW_MS) {
       quality = "good";
     } else {
       quality = "miss";
@@ -254,7 +257,7 @@ export default function SurgeScreen() {
         withSpring(1, { damping: 6, stiffness: 180 })
       );
 
-      showHitLabel(progress < TARGET_PROGRESS - GOOD_WINDOW ? "EARLY!" : "LATE!", Colors.warning);
+      showHitLabel(elapsed < targetMs ? "EARLY!" : "LATE!", Colors.warning);
 
       if (livesRef.current <= 0) {
         endGame();

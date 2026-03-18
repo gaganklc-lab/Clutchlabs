@@ -8,6 +8,7 @@ const KEYS = {
   TOTAL_XP:             "surge_total_xp",
   GAME_MODE:            "surge_game_mode",
   SETTINGS:             "surge_settings",
+  POWER_UPS:            "surge_power_ups",
 };
 
 export interface SurgeLeaderboardEntry {
@@ -24,9 +25,23 @@ export interface SurgeSettings {
   hapticsEnabled: boolean;
 }
 
+export type SurgePowerUpType = "slow_ring" | "extra_life" | "double_score";
+
+export interface SurgePowerUpInventory {
+  slow_ring: number;
+  extra_life: number;
+  double_score: number;
+}
+
 const DEFAULT_SETTINGS: SurgeSettings = {
   soundEnabled: true,
   hapticsEnabled: true,
+};
+
+const DEFAULT_POWER_UPS: SurgePowerUpInventory = {
+  slow_ring: 0,
+  extra_life: 0,
+  double_score: 0,
 };
 
 export type SurgeGameMode = "classic" | "endless";
@@ -93,4 +108,35 @@ export async function getSurgeSettings(): Promise<SurgeSettings> {
 
 export async function saveSurgeSettings(settings: SurgeSettings): Promise<void> {
   await AsyncStorage.setItem(KEYS.SETTINGS, JSON.stringify(settings));
+}
+
+export async function getSurgePowerUps(): Promise<SurgePowerUpInventory> {
+  const val = await AsyncStorage.getItem(KEYS.POWER_UPS);
+  if (!val) return { ...DEFAULT_POWER_UPS };
+  try {
+    return { ...DEFAULT_POWER_UPS, ...JSON.parse(val) };
+  } catch {
+    return { ...DEFAULT_POWER_UPS };
+  }
+}
+
+export async function saveSurgePowerUps(inventory: SurgePowerUpInventory): Promise<void> {
+  await AsyncStorage.setItem(KEYS.POWER_UPS, JSON.stringify(inventory));
+}
+
+export async function useSurgePowerUp(type: SurgePowerUpType): Promise<{ success: boolean; remaining: number }> {
+  const inventory = await getSurgePowerUps();
+  if (inventory[type] <= 0) {
+    return { success: false, remaining: 0 };
+  }
+  inventory[type] -= 1;
+  await saveSurgePowerUps(inventory);
+  return { success: true, remaining: inventory[type] };
+}
+
+export async function earnSurgePowerUp(type: SurgePowerUpType, amount: number = 1): Promise<SurgePowerUpInventory> {
+  const inventory = await getSurgePowerUps();
+  inventory[type] += amount;
+  await saveSurgePowerUps(inventory);
+  return inventory;
 }

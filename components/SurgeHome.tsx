@@ -421,7 +421,11 @@ export default function SurgeHome() {
   );
 }
 
-const orbContainerStyle: any = {
+const orbContainerStyle: {
+  alignItems: "center";
+  justifyContent: "center";
+  position: "absolute";
+} = {
   alignItems: "center",
   justifyContent: "center",
   position: "absolute",
