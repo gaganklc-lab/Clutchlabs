@@ -1,0 +1,144 @@
+
+> expo-app@1.0.0 lint
+> npx expo lint
+
+
+/home/runner/workspace/app/badges.tsx
+  31:6  warning  React Hook useEffect has missing dependencies: 'index' and 'scale'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/runner/workspace/app/game.tsx
+   20:3   warning  'withDelay' is defined but never used                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+   21:3   warning  'runOnJS' is defined but never used                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+   49:48  warning  'earnPowerUp' is defined but never used                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+  120:6   warning  React Hook useEffect has a missing dependency: 'entranceScale'. Either include it or remove the dependency array                                                                                                                                                       react-hooks/exhaustive-deps
+  136:6   warning  React Hook useEffect has a missing dependency: 'flashOpacity'. Either include it or remove the dependency array                                                                                                                                                        react-hooks/exhaustive-deps
+  212:6   warning  React Hook useEffect has a missing dependency: 'scale'. Either include it or remove the dependency array                                                                                                                                                               react-hooks/exhaustive-deps
+  276:6   warning  React Hook useEffect has a missing dependency: 'fireScale'. Either include it or remove the dependency array                                                                                                                                                           react-hooks/exhaustive-deps
+  314:6   warning  React Hook useEffect has missing dependencies: 'opacity' and 'translateY'. Either include them or remove the dependency array                                                                                                                                          react-hooks/exhaustive-deps
+  338:6   warning  React Hook useEffect has missing dependencies: 'opacity' and 'scale'. Either include them or remove the dependency array                                                                                                                                               react-hooks/exhaustive-deps
+  524:6   warning  React Hook useEffect has a missing dependency: 'frenzyPulse'. Either include it or remove the dependency array                                                                                                                                                         react-hooks/exhaustive-deps
+  532:19  warning  The ref value 'popupTimers.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'popupTimers.current' to a variable inside the effect, and use that variable in the cleanup function  react-hooks/exhaustive-deps
+  535:6   warning  React Hook useEffect has a missing dependency: 'startCountdown'. Either include it or remove the dependency array                                                                                                                                                      react-hooks/exhaustive-deps
+  713:27  error    React Hook "usePowerUp" cannot be called inside a callback. React Hooks must be called in a React function component or a custom React Hook function                                                                                                                   react-hooks/rules-of-hooks
+  798:6   warning  React Hook useCallback has a missing dependency: 'endGame'. Either include it or remove the dependency array                                                                                                                                                           react-hooks/exhaustive-deps
+  926:6   warning  React Hook useCallback has missing dependencies: 'endGame', 'scorePopAnim', and 'shakeAnim'. Either include them or remove the dependency array                                                                                                                        react-hooks/exhaustive-deps
+
+/home/runner/workspace/app/index.tsx
+    1:28  warning  'useRef' is defined but never used                                                                                             @typescript-eslint/no-unused-vars
+   75:6   warning  React Hook useEffect has missing dependencies: 'anim' and 'delay'. Either include them or remove the dependency array          react-hooks/exhaustive-deps
+  127:6   warning  React Hook useEffect has missing dependencies: 'opacity' and 'scale'. Either include them or remove the dependency array       react-hooks/exhaustive-deps
+  238:6   warning  React Hook useEffect has missing dependencies: 'glowAnim' and 'pulseAnim'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  325:9   warning  'modeColor' is assigned a value but never used                                                                                 @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/app/leaderboard.tsx
+  23:26  warning  'getSettings' is defined but never used                                                                                                 @typescript-eslint/no-unused-vars
+  34:6   warning  React Hook useEffect has missing dependencies: 'opacity', 'rank', and 'translateX'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/runner/workspace/app/results.tsx
+   51:3   warning  'getLevelInfo' is defined but never used                                                                                                                               @typescript-eslint/no-unused-vars
+  115:6   warning  React Hook useEffect has missing dependencies: 'delay', 'opacity', and 'translateY'. Either include them or remove the dependency array                                react-hooks/exhaustive-deps
+  150:6   warning  React Hook useEffect has missing dependencies: 'delay', 'glow', and 'scale'. Either include them or remove the dependency array                                        react-hooks/exhaustive-deps
+  186:6   warning  React Hook useEffect has a missing dependency: 'shimmer'. Either include it or remove the dependency array                                                             react-hooks/exhaustive-deps
+  216:6   warning  React Hook useEffect has missing dependencies: 'delay', 'opacity', and 'width'. Either include them or remove the dependency array                                     react-hooks/exhaustive-deps
+  222:9   warning  'fillStyle' is assigned a value but never used                                                                                                                         @typescript-eslint/no-unused-vars
+  256:9   warning  'livesLeft' is assigned a value but never used                                                                                                                         @typescript-eslint/no-unused-vars
+  302:6   warning  React Hook useEffect has missing dependencies: 'buttonsOpacity', 'processResults', 'scoreScale', and 'titleScale'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  407:14  warning  'e' is defined but never used                                                                                                                                          @typescript-eslint/no-unused-vars
+  418:14  warning  'e' is defined but never used                                                                                                                                          @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/app/surge-leaderboard.tsx
+  48:6  warning  React Hook useEffect has missing dependencies: 'index', 'opacity', and 'translateX'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/runner/workspace/app/surge-results.tsx
+  120:6  warning  React Hook useEffect has missing dependencies: 'delay', 'glowScale', 'opacity', and 'scale'. Either include them or remove the dependency array                                                                                 react-hooks/exhaustive-deps
+  144:6  warning  React Hook useEffect has missing dependencies: 'opacity' and 'translateY'. Either include them or remove the dependency array                                                                                                   react-hooks/exhaustive-deps
+  164:6  warning  React Hook useEffect has missing dependencies: 'opacity' and 'scale'. Either include them or remove the dependency array                                                                                                        react-hooks/exhaustive-deps
+  234:6  warning  React Hook useEffect has missing dependencies: 'containerOpacity' and 'headerScale'. Either include them or remove the dependency array                                                                                         react-hooks/exhaustive-deps
+  301:6  warning  React Hook useEffect has missing dependencies: 'maxCombo', 'mode', 'perfectAccuracy', 'perfectHits', 'rankInfo.rank', 'rankInfo.xpMultiplier', 'score', and 'timeSurvived'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/runner/workspace/app/surge.tsx
+   73:10  warning  'perfectHits' is assigned a value but never used                                                                                                                           @typescript-eslint/no-unused-vars
+   74:10  warning  'totalHits' is assigned a value but never used                                                                                                                             @typescript-eslint/no-unused-vars
+   75:10  warning  'maxCombo' is assigned a value but never used                                                                                                                              @typescript-eslint/no-unused-vars
+   89:11  warning  'isAdReady' is assigned a value but never used                                                                                                                             @typescript-eslint/no-unused-vars
+  115:9   warning  'hitFlashOpacity' is assigned a value but never used                                                                                                                       @typescript-eslint/no-unused-vars
+  116:9   warning  'hitFlashColor' is assigned a value but never used                                                                                                                         @typescript-eslint/no-unused-vars
+  148:6   warning  React Hook useEffect has missing dependencies: 'orbPulse' and 'targetRingPulse'. Either include them or remove the dependency array                                        react-hooks/exhaustive-deps
+  158:6   warning  React Hook useCallback has missing dependencies: 'ringProgress', 'shockwaveOpacity', and 'shockwaveScale'. Either include them or remove the dependency array              react-hooks/exhaustive-deps
+  214:6   warning  React Hook useCallback has a missing dependency: 'startCountdown'. Either include it or remove the dependency array                                                        react-hooks/exhaustive-deps
+  236:6   warning  React Hook useCallback has missing dependencies: 'handleMissOnComplete' and 'ringProgress'. Either include them or remove the dependency array                             react-hooks/exhaustive-deps
+  269:6   warning  React Hook useCallback has missing dependencies: 'orbScale' and 'ringProgress'. Either include them or remove the dependency array                                         react-hooks/exhaustive-deps
+  386:6   warning  React Hook useCallback has missing dependencies: 'orbScale', 'ringProgress', 'shockwaveOpacity', and 'shockwaveScale'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  438:6   warning  React Hook useEffect has missing dependencies: 'cleanup' and 'startCountdown'. Either include them or remove the dependency array                                          react-hooks/exhaustive-deps
+
+/home/runner/workspace/app/velocity-leaderboard.tsx
+  40:6  warning  React Hook useEffect has missing dependencies: 'opacity', 'rank', and 'translateX'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/runner/workspace/app/velocity-results.tsx
+  103:6  warning  React Hook useEffect has missing dependencies: 'delay', 'glowScale', 'opacity', and 'scale'. Either include them or remove the dependency array                                                                                       react-hooks/exhaustive-deps
+  143:6  warning  React Hook useEffect has missing dependencies: 'opacity', 'scale', and 'shimmer'. Either include them or remove the dependency array                                                                                                  react-hooks/exhaustive-deps
+  194:6  warning  React Hook useEffect has missing dependencies: 'opacity' and 'scale'. Either include them or remove the dependency array                                                                                                              react-hooks/exhaustive-deps
+  245:6  warning  React Hook useEffect has missing dependencies: 'opacity' and 'translateY'. Either include them or remove the dependency array                                                                                                         react-hooks/exhaustive-deps
+  310:6  warning  React Hook useEffect has missing dependencies: 'containerOpacity' and 'headerScale'. Either include them or remove the dependency array                                                                                               react-hooks/exhaustive-deps
+  354:6  warning  React Hook useEffect has missing dependencies: 'accuracy', 'difficulty', 'maxCombo', 'mode', 'rankInfo.rank', 'rankInfo.xpMultiplier', 'score', 'speedLevel', and 'timeSurvived'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/runner/workspace/app/velocity.tsx
+  129:10  warning  'mistakes' is assigned a value but never used                                                                                                                                                                                                                 @typescript-eslint/no-unused-vars
+  130:10  warning  'maxCombo' is assigned a value but never used                                                                                                                                                                                                                 @typescript-eslint/no-unused-vars
+  229:6   warning  React Hook useCallback has missing dependencies: 'arenaGlow', 'comboGlow', 'frenzyPulse', 'obstacleProgress', 'orbDashX', 'orbDashY', 'orbScaleX', 'orbScaleY', 'shockwaveOpacity', and 'shockwaveScale'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  314:6   warning  React Hook useCallback has missing dependencies: 'directionPulse', 'handleMissInternal', and 'obstacleProgress'. Either include them or remove the dependency array                                                                                           react-hooks/exhaustive-deps
+  373:6   warning  React Hook useCallback has missing dependencies: 'comboGlow', 'directionPulse', 'obstacleProgress', 'orbScaleX', 'orbScaleY', and 'orbShake'. Either include them or remove the dependency array                                                              react-hooks/exhaustive-deps
+  475:6   warning  React Hook useCallback has missing dependencies: 'comboGlow', 'directionPulse', 'obstacleProgress', 'orbDashX', 'orbDashY', 'orbScaleX', 'orbScaleY', 'shockwaveOpacity', and 'shockwaveScale'. Either include them or remove the dependency array            react-hooks/exhaustive-deps
+  488:6   warning  React Hook useCallback has a missing dependency: 'frenzyPulse'. Either include it or remove the dependency array                                                                                                                                              react-hooks/exhaustive-deps
+  564:6   warning  React Hook useEffect has missing dependencies: 'cleanup', 'difficulty', 'mode', 'orbScale', and 'startGame'. Either include them or remove the dependency array                                                                                               react-hooks/exhaustive-deps
+  572:6   warning  React Hook useEffect has a missing dependency: 'arenaGlow'. Either include it or remove the dependency array                                                                                                                                                  react-hooks/exhaustive-deps
+  600:27  error    React Hook "useVelocityPowerUp" cannot be called inside a callback. React Hooks must be called in a React function component or a custom React Hook function                                                                                                  react-hooks/rules-of-hooks
+  612:27  error    React Hook "useVelocityPowerUp" cannot be called inside a callback. React Hooks must be called in a React function component or a custom React Hook function                                                                                                  react-hooks/rules-of-hooks
+  708:9   warning  'heartColor' is assigned a value but never used                                                                                                                                                                                                               @typescript-eslint/no-unused-vars
+
+/home/runner/workspace/components/AmbientParticles.tsx
+  39:6  warning  React Hook useEffect has missing dependencies: 'anim', 'config.delay', and 'config.duration'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/runner/workspace/components/Confetti.tsx
+  45:6  warning  React Hook useEffect has missing dependencies: 'onDone', 'piece.delay', and 'progress'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/runner/workspace/components/EdgeWarning.tsx
+  41:6  warning  React Hook useEffect has a missing dependency: 'opacity'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/runner/workspace/components/OrbTrail.tsx
+  25:6  warning  React Hook useEffect has missing dependencies: 'opacity' and 'scale'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/runner/workspace/components/ParticleBurst.tsx
+  11:16  warning  'SCREEN_WIDTH' is assigned a value but never used                                                                           @typescript-eslint/no-unused-vars
+  11:38  warning  'SCREEN_HEIGHT' is assigned a value but never used                                                                          @typescript-eslint/no-unused-vars
+  44:6   warning  React Hook useEffect has missing dependencies: 'onDone' and 'progress'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/runner/workspace/components/ScorePopup.tsx
+  35:6  warning  React Hook useEffect has missing dependencies: 'event.id', 'onComplete', 'opacity', 'scale', and 'translateY'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/runner/workspace/components/ScreenFlash.tsx
+  29:6  warning  React Hook useEffect has a missing dependency: 'opacity'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/runner/workspace/components/SurgeHome.tsx
+   54:7  warning  'SURGE_MAGENTA' is assigned a value but never used                                                                                                         @typescript-eslint/no-unused-vars
+  275:6  warning  React Hook useEffect has missing dependencies: 'glowAnim', 'pulseAnim', 'ring1', 'ring2', and 'ring3'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/runner/workspace/components/TapRipple.tsx
+   1:28  warning  'useState' is defined but never used                                                                                        @typescript-eslint/no-unused-vars
+  30:6   warning  React Hook useEffect has missing dependencies: 'onDone' and 'progress'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/runner/workspace/components/VelocityBackgroundFX.tsx
+   71:6  warning  React Hook useEffect has a missing dependency: 'drift'. Either include it or remove the dependency array                          react-hooks/exhaustive-deps
+   75:6  warning  React Hook useEffect has a missing dependency: 'opacityBase'. Either include it or remove the dependency array                    react-hooks/exhaustive-deps
+   88:6  warning  React Hook useEffect has missing dependencies: 'ringOpacity' and 'ringPulse'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+   97:6  warning  React Hook useEffect has a missing dependency: 'laneDrift'. Either include it or remove the dependency array                      react-hooks/exhaustive-deps
+  104:6  warning  React Hook useEffect has a missing dependency: 'intensityScale'. Either include it or remove the dependency array                 react-hooks/exhaustive-deps
+
+/home/runner/workspace/components/VelocityHome.tsx
+    1:28  warning  'useRef' is defined but never used                                                                                             @typescript-eslint/no-unused-vars
+   74:6   warning  React Hook useEffect has missing dependencies: 'anim' and 'delay'. Either include them or remove the dependency array          react-hooks/exhaustive-deps
+  123:6   warning  React Hook useEffect has missing dependencies: 'opacity' and 'scale'. Either include them or remove the dependency array       react-hooks/exhaustive-deps
+  330:6   warning  React Hook useEffect has missing dependencies: 'glowAnim' and 'pulseAnim'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+✖ 93 problems (3 errors, 90 warnings)
+

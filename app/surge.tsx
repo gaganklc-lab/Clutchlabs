@@ -603,12 +603,13 @@ export default function SurgeScreen() {
 
         {/* Revive prompt */}
         {showRevivePrompt && (
-          <View style={styles.reviveOverlay}>
-            <View style={styles.reviveCard}>
+          <View testID="surge-revive-overlay" style={styles.reviveOverlay}>
+            <View testID="surge-revive-card" style={styles.reviveCard}>
               <Text style={styles.reviveTitle}>GAME OVER</Text>
               <Text style={styles.reviveScore}>Score: {scoreRef.current}</Text>
               <Text style={styles.reviveSubtitle}>Watch an ad to revive with 1 life</Text>
               <Pressable
+                testID="surge-revive-watch-ad"
                 style={({ pressed }) => [styles.reviveBtn, { opacity: pressed ? 0.8 : 1 }]}
                 onPress={handleRevive}
               >
@@ -616,6 +617,7 @@ export default function SurgeScreen() {
                 <Text style={styles.reviveBtnText}>WATCH AD & REVIVE</Text>
               </Pressable>
               <Pressable
+                testID="surge-revive-skip"
                 style={({ pressed }) => [styles.reviveSkipBtn, { opacity: pressed ? 0.6 : 1 }]}
                 onPress={() => { setShowRevivePrompt(false); goToResults(); }}
               >

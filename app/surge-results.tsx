@@ -346,7 +346,7 @@ export default function SurgeResultsScreen() {
                 </View>
               )}
 
-              <View style={[rs.scoreSection, isNewBest && { borderColor: Colors.warning + "80" }]}>
+              <View testID="surge-results-score-section" style={[rs.scoreSection, isNewBest && { borderColor: Colors.warning + "80" }]}>
                 <Text style={rs.scoreLabel}>SCORE</Text>
                 <AnimatedScoreCounter target={score} />
                 {maxCombo >= 3 && (
@@ -357,9 +357,9 @@ export default function SurgeResultsScreen() {
               <RankDisplay rankInfo={rankInfo} delay={400} />
 
               {xpEarned > 0 && (
-                <View style={rs.xpBadge}>
+                <View testID="surge-results-xp-badge" style={rs.xpBadge}>
                   <Ionicons name="star" size={16} color={Colors.warning} />
-                  <Text style={rs.xpText}>+{xpEarned} XP</Text>
+                  <Text testID="surge-results-xp-text" style={rs.xpText}>+{xpEarned} XP</Text>
                   {isPro && (
                     <Text style={rs.xpMultiplier}>2× Pro</Text>
                   )}
@@ -402,8 +402,9 @@ export default function SurgeResultsScreen() {
                 <StatCard label="Time" value={`${timeSurvived}s`} icon="timer" color={Colors.primary} />
               </View>
 
-              <View style={rs.buttonStack}>
+              <View testID="surge-results-buttons" style={rs.buttonStack}>
                 <Pressable
+                  testID="surge-results-play-again"
                   onPress={() => router.replace({ pathname: "/surge", params: { mode } })}
                   style={({ pressed }) => [rs.primaryBtn, { transform: [{ scale: pressed ? 0.97 : 1 }] }]}
                 >
@@ -415,6 +416,7 @@ export default function SurgeResultsScreen() {
 
                 <View style={rs.secondaryRow}>
                   <Pressable
+                    testID="surge-results-home"
                     onPress={() => router.replace("/")}
                     style={({ pressed }) => [rs.secondaryBtn, { opacity: pressed ? 0.7 : 1 }]}
                   >
@@ -422,6 +424,7 @@ export default function SurgeResultsScreen() {
                     <Text style={[rs.secondaryBtnText, { color: SURGE_PURPLE }]}>Home</Text>
                   </Pressable>
                   <Pressable
+                    testID="surge-results-share"
                     onPress={handleShare}
                     style={({ pressed }) => [rs.secondaryBtn, { opacity: pressed ? 0.7 : 1 }]}
                   >
@@ -429,6 +432,7 @@ export default function SurgeResultsScreen() {
                     <Text style={[rs.secondaryBtnText, { color: SURGE_MAGENTA }]}>Share</Text>
                   </Pressable>
                   <Pressable
+                    testID="surge-results-scores"
                     onPress={() => router.push("/surge-leaderboard")}
                     style={({ pressed }) => [rs.secondaryBtn, { opacity: pressed ? 0.7 : 1 }]}
                   >

@@ -153,7 +153,7 @@ function SettingsModal({
         <View style={[cs.sheet, { paddingBottom: (Platform.OS === "web" ? 34 : insets.bottom) + 16 }]}>
           <View style={cs.header}>
             <Text style={cs.title}>Settings</Text>
-            <Pressable onPress={onClose} style={({ pressed }) => [cs.closeBtn, { opacity: pressed ? 0.6 : 1 }]}>
+            <Pressable testID="surge-settings-close" onPress={onClose} style={({ pressed }) => [cs.closeBtn, { opacity: pressed ? 0.6 : 1 }]}>
               <Ionicons name="close" size={24} color={Colors.text} />
             </Pressable>
           </View>
@@ -186,7 +186,7 @@ function SettingsModal({
             </Pressable>
           </View>
           {isPro ? (
-            <View style={cs.settingRow}>
+            <View testID="surge-settings-pro-active" style={cs.settingRow}>
               <View style={cs.settingLeft}>
                 <Ionicons name="flash" size={22} color="#7C3AED" />
                 <Text style={[cs.settingLabel, { color: "#7C3AED" }]}>Surge Pro Active</Text>
@@ -197,6 +197,7 @@ function SettingsModal({
             </View>
           ) : (
             <Pressable
+              testID="surge-settings-upgrade-pro"
               onPress={() => { onClose(); setTimeout(onOpenPaywall, 150); }}
               style={({ pressed }) => [cs.settingRow, cs.upgradeRow, { opacity: pressed ? 0.8 : 1 }]}
             >
@@ -364,6 +365,7 @@ export default function SurgeHome() {
             <View style={styles.topBarRight}>
               {!isPro && (
                 <Pressable
+                  testID="surge-pro-button"
                   onPress={() => { if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowPaywall(true); }}
                   style={({ pressed }) => [styles.proBtn, { opacity: pressed ? 0.7 : 1 }]}
                 >
@@ -372,6 +374,7 @@ export default function SurgeHome() {
                 </Pressable>
               )}
               <Pressable
+                testID="surge-theme-button"
                 onPress={() => { if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowCustomize(true); }}
                 style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.6 : 1 }]}
               >
@@ -379,12 +382,14 @@ export default function SurgeHome() {
                 <Ionicons name="color-palette-outline" size={20} color={Colors.textSecondary} />
               </Pressable>
               <Pressable
+                testID="surge-leaderboard-button"
                 onPress={() => router.push("/surge-leaderboard")}
                 style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.6 : 1 }]}
               >
                 <Ionicons name="podium-outline" size={22} color={Colors.textSecondary} />
               </Pressable>
               <Pressable
+                testID="surge-settings-button"
                 onPress={() => { if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowSettings(true); }}
                 style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.6 : 1 }]}
               >

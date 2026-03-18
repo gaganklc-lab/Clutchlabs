@@ -36,14 +36,15 @@ function TestConfirmModal({
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={pw.confirmOverlay}>
-        <View style={pw.confirmBox}>
+        <View testID="surge-test-confirm-modal" style={pw.confirmBox}>
           <Ionicons name="storefront-outline" size={36} color={SURGE_PURPLE} />
-          <Text style={pw.confirmTitle}>Test Purchase</Text>
+          <Text testID="surge-test-confirm-title" style={pw.confirmTitle}>Test Purchase</Text>
           <Text style={pw.confirmBody}>
             {"You're in the RevenueCat Test Store. This simulates a real purchase of Surge Pro (" + price + "/mo) without charging you."}
           </Text>
           <View style={pw.confirmRow}>
             <Pressable
+              testID="surge-test-confirm-cancel"
               onPress={onCancel}
               style={({ pressed }) => [
                 pw.confirmCancelBtn,
@@ -53,6 +54,7 @@ function TestConfirmModal({
               <Text style={pw.confirmCancelText}>Cancel</Text>
             </Pressable>
             <Pressable
+              testID="surge-test-confirm-confirm"
               onPress={onConfirm}
               style={({ pressed }) => [
                 pw.confirmConfirmBtn,
@@ -170,11 +172,18 @@ export default function SurgePaywallSheet({
   return (
     <>
       <Modal visible={visible} transparent animationType="slide">
-        <Pressable style={pw.backdrop} onPress={onClose} />
+        <Pressable testID="surge-paywall-backdrop" style={pw.backdrop} onPress={onClose} />
         <View
           style={[pw.sheet, { paddingBottom: bottomPad + 16 }]}
         >
-          <View style={pw.handle} />
+          <Pressable
+            testID="surge-paywall-close"
+            onPress={onClose}
+            style={pw.closeBtn}
+          >
+            <Ionicons name="close" size={22} color={Colors.textSecondary} />
+          </Pressable>
+          <View testID="surge-paywall-sheet" style={pw.handle} />
 
           <ScrollView
             showsVerticalScrollIndicator={false}
@@ -185,7 +194,7 @@ export default function SurgePaywallSheet({
               style={pw.gradientBanner}
             >
               <Ionicons name="radio-button-on" size={32} color={SURGE_PURPLE} />
-              <Text style={pw.surgeLogo}>SURGE PRO</Text>
+              <Text testID="surge-paywall-title" style={pw.surgeLogo}>SURGE PRO</Text>
               <Text style={pw.surgeTagline}>Take your game to the next level</Text>
             </LinearGradient>
 
@@ -230,6 +239,7 @@ export default function SurgePaywallSheet({
             </View>
 
             <Pressable
+              testID="surge-paywall-subscribe"
               onPress={handleSubscribePress}
               disabled={isPurchasing || !pkg}
               style={({ pressed }) => [
@@ -256,6 +266,7 @@ export default function SurgePaywallSheet({
             </Pressable>
 
             <Pressable
+              testID="surge-paywall-restore"
               onPress={handleRestore}
               disabled={isRestoring}
               style={({ pressed }) => [
@@ -293,6 +304,13 @@ const pw = StyleSheet.create({
     borderTopWidth: 1,
     borderColor: "#7C3AED40",
     maxHeight: "85%",
+  },
+  closeBtn: {
+    position: "absolute",
+    top: 12,
+    right: 16,
+    zIndex: 10,
+    padding: 6,
   },
   handle: {
     width: 40,
