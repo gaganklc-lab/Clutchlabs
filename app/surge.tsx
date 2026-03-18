@@ -36,7 +36,7 @@ import {
   getRingTheme,
   type RingThemeId,
 } from "@/lib/surge-cosmetics";
-import { getSurgeSettings, useSurgePowerUp, type SurgePowerUpType } from "@/lib/surge-storage";
+import { getSurgeSettings, consumeSurgePowerUp, type SurgePowerUpType } from "@/lib/surge-storage";
 import { useSurgeSubscription } from "@/lib/surge-subscription";
 import { useRewardedAd } from "@/lib/surge-ads";
 
@@ -401,7 +401,7 @@ export default function SurgeScreen() {
   }, [endGame, startCycle, showHitLabel, screenCenterX, screenCenterY, theme, hapticsEnabled, soundEnabled]);
 
   const applyPowerUp = useCallback(async (type: SurgePowerUpType) => {
-    const result = await useSurgePowerUp(type);
+    const result = await consumeSurgePowerUp(type);
     if (!result.success) return;
 
     if (type === "extra_life") {

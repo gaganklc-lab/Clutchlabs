@@ -135,7 +135,7 @@ export async function saveSurgePowerUps(inventory: SurgePowerUpInventory): Promi
   await AsyncStorage.setItem(KEYS.POWER_UPS, JSON.stringify(inventory));
 }
 
-export async function useSurgePowerUp(type: SurgePowerUpType): Promise<{ success: boolean; remaining: number }> {
+export async function consumeSurgePowerUp(type: SurgePowerUpType): Promise<{ success: boolean; remaining: number }> {
   const inventory = await getSurgePowerUps();
   if (inventory[type] <= 0) {
     return { success: false, remaining: 0 };
