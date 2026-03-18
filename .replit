@@ -77,4 +77,4 @@ ensurePreviewReachable = "/status"
 [userenv]
 
 [userenv.shared]
-APP_VARIANT = "velocity"
+APP_VARIANT = "surge"
