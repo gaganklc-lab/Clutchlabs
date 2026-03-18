@@ -170,7 +170,7 @@ export async function checkAndUnlockRingThemes(runStats: {
   totalXP: number;
   timeSurvived: number;
   mode: string;
-}): Promise<{ newThemes: RingThemeId[] }> {
+}): Promise<{ newThemes: RingThemeId[]; hasProOnlyThemes: boolean }> {
   const { score, maxCombo, totalXP, timeSurvived, mode } = runStats;
   const unlocked = await getUnlockedRingThemes();
   const newThemes: RingThemeId[] = [];
@@ -199,9 +199,19 @@ export async function checkAndUnlockRingThemes(runStats: {
     newThemes.push("ice_ring");
   }
 
+  const proOnlyIds: RingThemeId[] = RING_THEMES
+    .filter((t) => t.proOnly && !unlocked.includes(t.id))
+    .map((t) => t.id);
+
+  const hasProOnlyThemes = proOnlyIds.length > 0 && (
+    totalXP >= 200 ||
+    score >= 100 ||
+    maxCombo >= 10
+  );
+
   if (newThemes.length > 0) {
     await saveUnlockedRingThemes(unlocked);
   }
 
-  return { newThemes };
+  return { newThemes, hasProOnlyThemes };
 }

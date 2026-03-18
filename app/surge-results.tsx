@@ -214,7 +214,7 @@ export default function SurgeResultsScreen() {
   const topInset = Platform.OS === "web" ? 67 : insets.top;
   const bottomInset = Platform.OS === "web" ? 34 : insets.bottom;
 
-  const { isPro } = useSurgeSubscription();
+  const { isPro, isLoading: isSubLoading } = useSurgeSubscription();
   const [xpEarned, setXpEarned] = useState(0);
   const [isNewBest, setIsNewBest] = useState(false);
   const [totalXP, setTotalXP] = useState(0);
@@ -234,6 +234,7 @@ export default function SurgeResultsScreen() {
   }, []);
 
   useEffect(() => {
+    if (isSubLoading) return;
     if (processedRef.current) return;
     processedRef.current = true;
 
@@ -271,8 +272,13 @@ export default function SurgeResultsScreen() {
         const proUnlocks = await unlockProThemes();
         const allUnlocks = [...unlocks.newThemes, ...proUnlocks];
         if (allUnlocks.length > 0) setNewThemes(allUnlocks);
-      } else if (unlocks.newThemes.length > 0) {
-        setNewThemes(unlocks.newThemes);
+      } else {
+        if (unlocks.newThemes.length > 0) {
+          setNewThemes(unlocks.newThemes);
+        }
+        if (unlocks.hasProOnlyThemes) {
+          setTimeout(() => setShowPaywall(true), 1800);
+        }
       }
 
       await addSurgeLeaderboardEntry(
@@ -292,7 +298,7 @@ export default function SurgeResultsScreen() {
 
     process().catch((err) => console.error("[surge-results] process error:", err));
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  }, [isPro]);
+  }, [isSubLoading, isPro]);
 
   const handleShare = async () => {
     const modeLabel = mode === "classic" ? "Classic" : "Endless";

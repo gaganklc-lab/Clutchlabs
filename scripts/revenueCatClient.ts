@@ -1,6 +1,18 @@
 import { createClient } from "replit-revenuecat-v2/client";
 
-let connectionSettings: any;
+interface ConnectionSettings {
+  settings: {
+    expires_at?: string;
+    access_token?: string;
+    oauth?: {
+      credentials?: {
+        access_token?: string;
+      };
+    };
+  };
+}
+
+let connectionSettings: ConnectionSettings | null = null;
 
 async function getApiKey() {
   if (
