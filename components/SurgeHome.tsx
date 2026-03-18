@@ -261,8 +261,8 @@ export default function SurgeHome() {
       unlockProThemes().catch((e) =>
         console.warn("[SurgeHome] Pro theme unlock failed:", e)
       );
-      checkAndGrantProWeeklyBonus().then((granted) => {
-        if (granted) {
+      checkAndGrantProWeeklyBonus().then((grantedType) => {
+        if (grantedType) {
           getSurgePowerUps().then((inv) => {
             setPowerUpInventory(inv);
             setPowerUpTotal(totalPowerUps(inv));

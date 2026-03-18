@@ -156,16 +156,17 @@ export function totalPowerUps(inv: SurgePowerUpInventory): number {
   return inv.slow_ring + inv.extra_life + inv.double_score;
 }
 
-export async function checkAndGrantProWeeklyBonus(): Promise<boolean> {
+const BONUS_POWER_UP_TYPES: SurgePowerUpType[] = ["slow_ring", "extra_life", "double_score"];
+
+export async function checkAndGrantProWeeklyBonus(): Promise<SurgePowerUpType | null> {
   const lastStr = await AsyncStorage.getItem(KEYS.PRO_WEEKLY_BONUS_DATE);
   const now = Date.now();
   const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
   if (lastStr && now - parseInt(lastStr, 10) < SEVEN_DAYS) {
-    return false;
+    return null;
   }
   await AsyncStorage.setItem(KEYS.PRO_WEEKLY_BONUS_DATE, now.toString());
-  await earnSurgePowerUp("slow_ring", 1);
-  await earnSurgePowerUp("extra_life", 1);
-  await earnSurgePowerUp("double_score", 1);
-  return true;
+  const type = BONUS_POWER_UP_TYPES[Math.floor(Math.random() * BONUS_POWER_UP_TYPES.length)];
+  await earnSurgePowerUp(type, 1);
+  return type;
 }

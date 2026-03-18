@@ -91,6 +91,7 @@ export default function SurgeScreen() {
   const hasRevivedRef = useRef(false);
   const [activePowerUp, setActivePowerUp] = useState<SurgePowerUpType | null>(null);
   const [powerUpSecsLeft, setPowerUpSecsLeft] = useState(0);
+  const [maxPips, setMaxPips] = useState(3);
   const slowRingActiveRef = useRef(false);
   const doubleScoreActiveRef = useRef(false);
   const powerUpTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -407,6 +408,12 @@ export default function SurgeScreen() {
       const newLives = Math.min(livesRef.current + 1, 4);
       livesRef.current = newLives;
       setLives(newLives);
+      setMaxPips(newLives);
+      setActivePowerUp("extra_life");
+      setPowerUpSecsLeft(0);
+      powerUpTimerRef.current = setTimeout(() => {
+        setActivePowerUp(null);
+      }, 5000) as unknown as ReturnType<typeof setInterval>;
       return;
     }
 
@@ -511,8 +518,6 @@ export default function SurgeScreen() {
     opacity: interpolate(targetRingPulse.value, [0, 1], [0.45, 0.85]),
   }));
 
-  const pipCount = 3;
-
   return (
     <Pressable style={{ flex: 1 }} onPress={handleTap}>
       <LinearGradient
@@ -552,7 +557,7 @@ export default function SurgeScreen() {
             </View>
           ) : (
             <View style={styles.livesRow}>
-              {Array.from({ length: pipCount }).map((_, i) => (
+              {Array.from({ length: maxPips }).map((_, i) => (
                 <View
                   key={i}
                   style={[
@@ -573,14 +578,18 @@ export default function SurgeScreen() {
               color={activePowerUp === "slow_ring" ? "#00B0FF" : activePowerUp === "double_score" ? Colors.warning : "#FF4081"}
             />
             <Text style={[styles.powerUpBadgeText, { color: activePowerUp === "slow_ring" ? "#00B0FF" : activePowerUp === "double_score" ? Colors.warning : "#FF4081" }]}>
-              {activePowerUp === "slow_ring" ? "SLOW" : activePowerUp === "double_score" ? "2× SCORE" : ""} — {powerUpSecsLeft}s
+              {activePowerUp === "slow_ring"
+                ? `SLOW — ${powerUpSecsLeft}s`
+                : activePowerUp === "double_score"
+                ? `2× SCORE — ${powerUpSecsLeft}s`
+                : "+1 LIFE ACTIVE"}
             </Text>
           </View>
         )}
 
         {mode === "classic" && (
           <View style={styles.livesRowBottom}>
-            {Array.from({ length: pipCount }).map((_, i) => (
+            {Array.from({ length: maxPips }).map((_, i) => (
               <View
                 key={i}
                 style={[
