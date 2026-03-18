@@ -4,7 +4,11 @@ type AnalyticsEvent =
   | "badge_unlocked"
   | "settings_changed"
   | "score_shared"
-  | "screen_viewed";
+  | "screen_viewed"
+  | "velocity_game_end"
+  | "velocity_results_viewed"
+  | "surge_game_end"
+  | "surge_results_viewed";
 
 interface AnalyticsPayload {
   [key: string]: string | number | boolean | undefined;
