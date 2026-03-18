@@ -42,10 +42,13 @@ import {
 } from "@/lib/surge-progression";
 import {
   checkAndUnlockRingThemes,
+  unlockProThemes,
   getRingTheme,
   type RingThemeId,
 } from "@/lib/surge-cosmetics";
 import AmbientParticles from "@/components/AmbientParticles";
+import { useSurgeSubscription } from "@/lib/surge-subscription";
+import SurgePaywallSheet from "@/components/SurgePaywallSheet";
 
 const SURGE_PURPLE = "#7C3AED";
 const SURGE_MAGENTA = "#E040FB";
@@ -211,10 +214,12 @@ export default function SurgeResultsScreen() {
   const topInset = Platform.OS === "web" ? 67 : insets.top;
   const bottomInset = Platform.OS === "web" ? 34 : insets.bottom;
 
+  const { isPro } = useSurgeSubscription();
   const [xpEarned, setXpEarned] = useState(0);
   const [isNewBest, setIsNewBest] = useState(false);
   const [totalXP, setTotalXP] = useState(0);
   const [newThemes, setNewThemes] = useState<RingThemeId[]>([]);
+  const [showPaywall, setShowPaywall] = useState(false);
   const processedRef = useRef(false);
 
   const perfectAccuracy = totalHits > 0 ? Math.round((perfectHits / totalHits) * 100) : 0;
@@ -233,14 +238,19 @@ export default function SurgeResultsScreen() {
     processedRef.current = true;
 
     const baseXP = Math.max(15, Math.round(score / 8) + maxCombo * 2 + perfectHits);
-    const xp = Math.round(baseXP * rankInfo.xpMultiplier);
+    const proMultiplier = isPro ? 2 : 1;
+    const xp = Math.round(baseXP * rankInfo.xpMultiplier * proMultiplier);
     setXpEarned(xp);
 
     const process = async () => {
       const prevBest = await getSurgeBestScore(mode);
-      if (score > prevBest) {
+      const newPersonalBest = score > prevBest;
+      if (newPersonalBest) {
         setIsNewBest(true);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        if (!isPro) {
+          setTimeout(() => setShowPaywall(true), 1800);
+        }
       }
 
       await addSurgeXP(xp);
@@ -256,7 +266,12 @@ export default function SurgeResultsScreen() {
         timeSurvived,
         mode,
       });
-      if (unlocks.newThemes.length > 0) {
+
+      if (isPro) {
+        const proUnlocks = await unlockProThemes();
+        const allUnlocks = [...unlocks.newThemes, ...proUnlocks];
+        if (allUnlocks.length > 0) setNewThemes(allUnlocks);
+      } else if (unlocks.newThemes.length > 0) {
         setNewThemes(unlocks.newThemes);
       }
 
@@ -272,12 +287,12 @@ export default function SurgeResultsScreen() {
         mode
       );
 
-      trackEvent("surge_results_viewed", { score, maxCombo, mode, perfectAccuracy, rank: rankInfo.rank });
+      trackEvent("surge_results_viewed", { score, maxCombo, mode, perfectAccuracy, rank: rankInfo.rank, isPro });
     };
 
     process().catch((err) => console.error("[surge-results] process error:", err));
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  }, []);
+  }, [isPro]);
 
   const handleShare = async () => {
     const modeLabel = mode === "classic" ? "Classic" : "Endless";
@@ -339,7 +354,10 @@ export default function SurgeResultsScreen() {
                 <View style={rs.xpBadge}>
                   <Ionicons name="star" size={16} color={Colors.warning} />
                   <Text style={rs.xpText}>+{xpEarned} XP</Text>
-                  {rankInfo.xpMultiplier > 1 && (
+                  {isPro && (
+                    <Text style={rs.xpMultiplier}>2× Pro</Text>
+                  )}
+                  {!isPro && rankInfo.xpMultiplier > 1 && (
                     <Text style={rs.xpMultiplier}>{rankInfo.xpMultiplier}× bonus</Text>
                   )}
                 </View>
@@ -418,6 +436,10 @@ export default function SurgeResultsScreen() {
           </ScrollView>
         </View>
       </View>
+      <SurgePaywallSheet
+        visible={showPaywall}
+        onClose={() => setShowPaywall(false)}
+      />
     </LinearGradient>
   );
 }

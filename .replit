@@ -26,7 +26,7 @@ PORT = "5000"
 
 [agent]
 stack = "EXPO"
-integrations = ["github:1.0.0"]
+integrations = ["github:1.0.0", "revenuecat:1.0.0"]
 
 [workflows]
 runButton = "Project"
@@ -78,3 +78,10 @@ ensurePreviewReachable = "/status"
 
 [userenv.shared]
 APP_VARIANT = "surge"
+EXPO_PUBLIC_REVENUECAT_TEST_API_KEY = "test_XtKBxoFsRVhhzRidlqqkNLeBtAO"
+EXPO_PUBLIC_REVENUECAT_IOS_API_KEY = "appl_PYLTaTqAeaizBJMKQDnVfdqAOzv"
+EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY = "goog_JbEcUqhaHNjbkcvxKrEKysapOSk"
+REVENUECAT_PROJECT_ID = "proj0f7f05c4"
+REVENUECAT_TEST_STORE_APP_ID = "app079f70cf16"
+REVENUECAT_APPLE_APP_STORE_APP_ID = "appa8d0c25034"
+REVENUECAT_GOOGLE_PLAY_STORE_APP_ID = "app79debf1e1d"

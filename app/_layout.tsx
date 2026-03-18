@@ -15,8 +15,16 @@ import {
   Outfit_800ExtraBold,
 } from "@expo-google-fonts/outfit";
 import { IS_VELOCITY, IS_SURGE } from "@/constants/appVariant";
+import {
+  initializeSurgeRevenueCat,
+  SurgeSubscriptionProvider,
+} from "@/lib/surge-subscription";
 
 SplashScreen.preventAutoHideAsync();
+
+if (IS_SURGE) {
+  initializeSurgeRevenueCat();
+}
 
 function RootLayoutNav() {
   return (
@@ -70,7 +78,7 @@ export default function RootLayout() {
 
   if (!fontsLoaded) return null;
 
-  return (
+  const inner = (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <GestureHandlerRootView style={{ flex: 1 }}>
@@ -80,4 +88,21 @@ export default function RootLayout() {
       </QueryClientProvider>
     </ErrorBoundary>
   );
+
+  if (IS_SURGE) {
+    return (
+      <ErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <SurgeSubscriptionProvider>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <StatusBar style="light" />
+              <RootLayoutNav />
+            </GestureHandlerRootView>
+          </SurgeSubscriptionProvider>
+        </QueryClientProvider>
+      </ErrorBoundary>
+    );
+  }
+
+  return inner;
 }

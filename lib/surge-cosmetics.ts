@@ -5,7 +5,9 @@ export type RingThemeId =
   | "gold_ring"
   | "void_ring"
   | "ember_ring"
-  | "ice_ring";
+  | "ice_ring"
+  | "pro_obsidian"
+  | "pro_aurora";
 
 export interface RingTheme {
   id: RingThemeId;
@@ -13,6 +15,7 @@ export interface RingTheme {
   description: string;
   unlockText: string;
   free: boolean;
+  proOnly: boolean;
   ringColor: string;
   glowColor: string;
   targetColor: string;
@@ -25,6 +28,7 @@ export const RING_THEMES: RingTheme[] = [
     description: "Electric cyan rings — the default surge",
     unlockText: "Default — always unlocked",
     free: true,
+    proOnly: false,
     ringColor: "#00E5FF",
     glowColor: "#0091EA",
     targetColor: "#80D8FF",
@@ -35,6 +39,7 @@ export const RING_THEMES: RingTheme[] = [
     description: "Molten gold for those who master the timing",
     unlockText: "Score 150+ in a single Classic run",
     free: false,
+    proOnly: false,
     ringColor: "#FFD700",
     glowColor: "#FF8F00",
     targetColor: "#FFB300",
@@ -45,6 +50,7 @@ export const RING_THEMES: RingTheme[] = [
     description: "Deep dark rings on pure shadow",
     unlockText: "Reach Rhythm rank (500 XP)",
     free: false,
+    proOnly: false,
     ringColor: "#37474F",
     glowColor: "#1A1A2E",
     targetColor: "#546E7A",
@@ -55,6 +61,7 @@ export const RING_THEMES: RingTheme[] = [
     description: "Burning orange rings that pulse with heat",
     unlockText: "Hit a 20x combo in one run",
     free: false,
+    proOnly: false,
     ringColor: "#FF6D00",
     glowColor: "#FF3D00",
     targetColor: "#FFAB40",
@@ -65,15 +72,38 @@ export const RING_THEMES: RingTheme[] = [
     description: "Frozen white-blue rings — glacial precision",
     unlockText: "Survive 60 seconds in Endless mode",
     free: false,
+    proOnly: false,
     ringColor: "#E3F4FF",
     glowColor: "#90CAF9",
     targetColor: "#BBDEFB",
+  },
+  {
+    id: "pro_obsidian",
+    name: "Obsidian Pro",
+    description: "Dark volcanic rings with crimson core — Pro exclusive",
+    unlockText: "Surge Pro subscribers only",
+    free: false,
+    proOnly: true,
+    ringColor: "#B71C1C",
+    glowColor: "#4A148C",
+    targetColor: "#E53935",
+  },
+  {
+    id: "pro_aurora",
+    name: "Aurora Pro",
+    description: "Northern lights shimmering — Pro exclusive",
+    unlockText: "Surge Pro subscribers only",
+    free: false,
+    proOnly: true,
+    ringColor: "#00E676",
+    glowColor: "#1DE9B6",
+    targetColor: "#69F0AE",
   },
 ];
 
 const KEYS = {
   UNLOCKED_THEMES: "surge_unlocked_themes",
-  EQUIPPED_THEME:  "surge_equipped_theme",
+  EQUIPPED_THEME: "surge_equipped_theme",
 };
 
 const DEFAULT_UNLOCKED: RingThemeId[] = ["neon_purple"];
@@ -106,6 +136,34 @@ export async function setEquippedRingTheme(id: RingThemeId): Promise<void> {
   await AsyncStorage.setItem(KEYS.EQUIPPED_THEME, id);
 }
 
+const PRO_THEMES: RingThemeId[] = ["pro_obsidian", "pro_aurora"];
+
+export async function unlockProThemes(): Promise<RingThemeId[]> {
+  const unlocked = await getUnlockedRingThemes();
+  const newThemes: RingThemeId[] = [];
+  for (const id of PRO_THEMES) {
+    if (!unlocked.includes(id)) {
+      unlocked.push(id);
+      newThemes.push(id);
+    }
+  }
+  if (newThemes.length > 0) {
+    await saveUnlockedRingThemes(unlocked);
+  }
+  return newThemes;
+}
+
+export async function revokeProThemes(): Promise<void> {
+  const unlocked = await getUnlockedRingThemes();
+  const filtered = unlocked.filter((id) => !PRO_THEMES.includes(id));
+  await saveUnlockedRingThemes(filtered);
+
+  const equipped = await getEquippedRingTheme();
+  if (PRO_THEMES.includes(equipped)) {
+    await setEquippedRingTheme("neon_purple");
+  }
+}
+
 export async function checkAndUnlockRingThemes(runStats: {
   score: number;
   maxCombo: number;
@@ -132,7 +190,11 @@ export async function checkAndUnlockRingThemes(runStats: {
     newThemes.push("ember_ring");
   }
 
-  if (!unlocked.includes("ice_ring") && mode === "endless" && timeSurvived >= 60) {
+  if (
+    !unlocked.includes("ice_ring") &&
+    mode === "endless" &&
+    timeSurvived >= 60
+  ) {
     unlocked.push("ice_ring");
     newThemes.push("ice_ring");
   }

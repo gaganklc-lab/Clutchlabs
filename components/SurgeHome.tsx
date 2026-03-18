@@ -42,10 +42,13 @@ import {
   getEquippedRingTheme,
   setEquippedRingTheme,
   getUnlockedRingThemes,
+  unlockProThemes,
   getRingTheme,
   RING_THEMES,
   type RingThemeId,
 } from "@/lib/surge-cosmetics";
+import { useSurgeSubscription } from "@/lib/surge-subscription";
+import SurgePaywallSheet from "@/components/SurgePaywallSheet";
 
 const SURGE_PURPLE = "#7C3AED";
 const SURGE_MAGENTA = "#E040FB";
@@ -194,6 +197,7 @@ export default function SurgeHome() {
   const topInset = Platform.OS === "web" ? 67 : insets.top;
   const bottomInset = Platform.OS === "web" ? 34 : insets.bottom;
 
+  const { isPro } = useSurgeSubscription();
   const [bestClassic, setBestClassic] = useState(0);
   const [bestEndless, setBestEndless] = useState(0);
   const [mode, setMode] = useState<SurgeGameMode>("classic");
@@ -203,6 +207,7 @@ export default function SurgeHome() {
   const [equippedThemeId, setEquippedThemeId] = useState<RingThemeId>("neon_purple");
   const [showCustomize, setShowCustomize] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
 
   const pulseAnim = useSharedValue(0);
   const glowAnim = useSharedValue(0);
@@ -211,6 +216,14 @@ export default function SurgeHome() {
   const ring3 = useSharedValue(0);
 
   const theme = getRingTheme(equippedThemeId);
+
+  useEffect(() => {
+    if (isPro) {
+      unlockProThemes().catch((e) =>
+        console.warn("[SurgeHome] Pro theme unlock failed:", e)
+      );
+    }
+  }, [isPro]);
 
   useEffect(() => {
     trackEvent("screen_viewed", { screen: "surge_home" });
@@ -315,9 +328,23 @@ export default function SurgeHome() {
             <View style={styles.titleBadge}>
               <View style={[styles.titleDot, { backgroundColor: surgeTitleColor }]} />
               <Text style={[styles.titleText, { color: surgeTitleColor }]}>{surgeTitle.toUpperCase()}</Text>
+              {isPro && (
+                <View style={styles.proBadge}>
+                  <Text style={styles.proBadgeText}>PRO</Text>
+                </View>
+              )}
             </View>
 
             <View style={styles.topBarRight}>
+              {!isPro && (
+                <Pressable
+                  onPress={() => { if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowPaywall(true); }}
+                  style={({ pressed }) => [styles.proBtn, { opacity: pressed ? 0.7 : 1 }]}
+                >
+                  <Ionicons name="flash" size={12} color="#fff" />
+                  <Text style={styles.proBtnText}>PRO</Text>
+                </Pressable>
+              )}
               <Pressable
                 onPress={() => { if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowCustomize(true); }}
                 style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.6 : 1 }]}
@@ -428,6 +455,11 @@ export default function SurgeHome() {
         settings={settings}
         onSettingsChange={(s) => { setSettings(s); saveSurgeSettings(s); }}
       />
+      <SurgePaywallSheet
+        visible={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        onSuccess={() => setShowPaywall(false)}
+      />
     </LinearGradient>
   );
 }
@@ -470,6 +502,35 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Outfit_700Bold",
     letterSpacing: 2,
+  },
+  proBadge: {
+    backgroundColor: "#7C3AED",
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginLeft: 4,
+  },
+  proBadgeText: {
+    fontSize: 9,
+    fontFamily: "Outfit_800ExtraBold",
+    color: "#fff",
+    letterSpacing: 1,
+  },
+  proBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: "#7C3AED",
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginRight: 4,
+  },
+  proBtnText: {
+    fontSize: 11,
+    fontFamily: "Outfit_800ExtraBold",
+    color: "#fff",
+    letterSpacing: 1,
   },
   topBarRight: {
     flexDirection: "row",

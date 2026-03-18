@@ -37,6 +37,8 @@ import {
   type RingThemeId,
 } from "@/lib/surge-cosmetics";
 import { getSurgeSettings } from "@/lib/surge-storage";
+import { useSurgeSubscription } from "@/lib/surge-subscription";
+import { useRewardedAd } from "@/lib/surge-ads";
 
 type SurgeGameMode = "classic" | "endless";
 type HitQuality = "perfect" | "good" | "miss";
@@ -80,6 +82,11 @@ export default function SurgeScreen() {
   const [equippedThemeId, setEquippedThemeId] = useState<RingThemeId>("neon_purple");
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
+  const [showRevivePrompt, setShowRevivePrompt] = useState(false);
+  const hasRevivedRef = useRef(false);
+
+  const { isPro } = useSurgeSubscription();
+  const { isAdReady, watchAd } = useRewardedAd();
 
   const isPlayingRef = useRef(false);
   const scoreRef = useRef(0);
@@ -150,6 +157,20 @@ export default function SurgeScreen() {
     cancelAnimation(shockwaveOpacity);
   }, []);
 
+  const goToResults = useCallback(() => {
+    router.replace({
+      pathname: "/surge-results",
+      params: {
+        score: scoreRef.current,
+        maxCombo: maxComboRef.current,
+        perfectHits: perfectHitsRef.current,
+        totalHits: totalHitsRef.current,
+        timeSurvived: elapsedRef.current,
+        mode,
+      },
+    });
+  }, [mode]);
+
   const endGame = useCallback(() => {
     if (gameOverRef.current) return;
     gameOverRef.current = true;
@@ -162,18 +183,28 @@ export default function SurgeScreen() {
       mode,
       timeSurvived: elapsedRef.current,
     });
-    router.replace({
-      pathname: "/surge-results",
-      params: {
-        score: scoreRef.current,
-        maxCombo: maxComboRef.current,
-        perfectHits: perfectHitsRef.current,
-        totalHits: totalHitsRef.current,
-        timeSurvived: elapsedRef.current,
-        mode,
-      },
-    });
-  }, [cleanup, mode]);
+
+    if (!isPro && !hasRevivedRef.current && scoreRef.current > 0) {
+      setShowRevivePrompt(true);
+    } else {
+      goToResults();
+    }
+  }, [cleanup, mode, isPro, goToResults]);
+
+  const handleRevive = useCallback(async () => {
+    setShowRevivePrompt(false);
+    try {
+      await watchAd();
+    } catch {
+    }
+    hasRevivedRef.current = true;
+    gameOverRef.current = false;
+    setLives(1);
+    livesRef.current = 1;
+    setTimeout(() => {
+      startCountdown();
+    }, 300);
+  }, [watchAd]);
 
   const showHitLabel = useCallback((label: string, color: string) => {
     setHitLabel(label);
@@ -372,7 +403,7 @@ export default function SurgeScreen() {
     startCycle();
   }, [mode, endGame, startCycle]);
 
-  useEffect(() => {
+  const startCountdown = useCallback(() => {
     let cd = 3;
     setCountdown(3);
     const tick = setInterval(() => {
@@ -388,6 +419,11 @@ export default function SurgeScreen() {
         setCountdown(cd);
       }
     }, 1000);
+    return tick;
+  }, [startGame]);
+
+  useEffect(() => {
+    const tick = startCountdown();
     return () => {
       clearInterval(tick);
       cleanup();
@@ -557,6 +593,30 @@ export default function SurgeScreen() {
             <Text style={styles.hintText}>TAP ANYWHERE</Text>
           </View>
         )}
+
+        {/* Revive prompt */}
+        {showRevivePrompt && (
+          <View style={styles.reviveOverlay}>
+            <View style={styles.reviveCard}>
+              <Text style={styles.reviveTitle}>GAME OVER</Text>
+              <Text style={styles.reviveScore}>Score: {scoreRef.current}</Text>
+              <Text style={styles.reviveSubtitle}>Watch an ad to revive with 1 life</Text>
+              <Pressable
+                style={({ pressed }) => [styles.reviveBtn, { opacity: pressed ? 0.8 : 1 }]}
+                onPress={handleRevive}
+              >
+                <Ionicons name="play-circle" size={20} color="#fff" />
+                <Text style={styles.reviveBtnText}>WATCH AD & REVIVE</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [styles.reviveSkipBtn, { opacity: pressed ? 0.6 : 1 }]}
+                onPress={() => { setShowRevivePrompt(false); goToResults(); }}
+              >
+                <Text style={styles.reviveSkipText}>Skip</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
       </LinearGradient>
     </Pressable>
   );
@@ -701,5 +761,68 @@ const styles = StyleSheet.create({
     fontFamily: "Outfit_500Medium",
     color: Colors.textMuted,
     letterSpacing: 3,
+  },
+  reviveOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(10,10,26,0.85)",
+  },
+  reviveCard: {
+    width: 300,
+    backgroundColor: Colors.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: "center",
+    padding: 28,
+    gap: 12,
+  },
+  reviveTitle: {
+    fontSize: 26,
+    fontFamily: "Outfit_800ExtraBold",
+    color: Colors.text,
+    letterSpacing: 3,
+  },
+  reviveScore: {
+    fontSize: 18,
+    fontFamily: "Outfit_700Bold",
+    color: Colors.textSecondary,
+  },
+  reviveSubtitle: {
+    fontSize: 14,
+    fontFamily: "Outfit_500Medium",
+    color: Colors.textMuted,
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  reviveBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#7C3AED",
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    width: "100%",
+    justifyContent: "center",
+  },
+  reviveBtnText: {
+    fontSize: 15,
+    fontFamily: "Outfit_700Bold",
+    color: "#fff",
+    letterSpacing: 1,
+  },
+  reviveSkipBtn: {
+    paddingVertical: 8,
+  },
+  reviveSkipText: {
+    fontSize: 14,
+    fontFamily: "Outfit_500Medium",
+    color: Colors.textMuted,
   },
 });
