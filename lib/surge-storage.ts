@@ -1,14 +1,17 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const KEYS = {
-  BEST_SCORE_CLASSIC:   "surge_best_score_classic",
-  BEST_SCORE_ENDLESS:   "surge_best_score_endless",
-  LEADERBOARD_CLASSIC:  "surge_leaderboard_classic",
-  LEADERBOARD_ENDLESS:  "surge_leaderboard_endless",
-  TOTAL_XP:             "surge_total_xp",
-  GAME_MODE:            "surge_game_mode",
-  SETTINGS:             "surge_settings",
-  POWER_UPS:            "surge_power_ups",
+  BEST_SCORE_CLASSIC:       "surge_best_score_classic",
+  BEST_SCORE_ENDLESS:       "surge_best_score_endless",
+  BEST_SCORE_RUSH:          "surge_best_score_rush",
+  LEADERBOARD_CLASSIC:      "surge_leaderboard_classic",
+  LEADERBOARD_ENDLESS:      "surge_leaderboard_endless",
+  LEADERBOARD_RUSH:         "surge_leaderboard_rush",
+  TOTAL_XP:                 "surge_total_xp",
+  GAME_MODE:                "surge_game_mode",
+  SETTINGS:                 "surge_settings",
+  POWER_UPS:                "surge_power_ups",
+  PRO_WEEKLY_BONUS_DATE:    "surge_pro_weekly_bonus_date",
 };
 
 export interface SurgeLeaderboardEntry {
@@ -44,25 +47,34 @@ const DEFAULT_POWER_UPS: SurgePowerUpInventory = {
   double_score: 0,
 };
 
-export type SurgeGameMode = "classic" | "endless";
+export type SurgeGameMode = "classic" | "endless" | "rush";
+
+function bestScoreKey(mode: SurgeGameMode): string {
+  if (mode === "endless") return KEYS.BEST_SCORE_ENDLESS;
+  if (mode === "rush") return KEYS.BEST_SCORE_RUSH;
+  return KEYS.BEST_SCORE_CLASSIC;
+}
+
+function leaderboardKey(mode: SurgeGameMode): string {
+  if (mode === "endless") return KEYS.LEADERBOARD_ENDLESS;
+  if (mode === "rush") return KEYS.LEADERBOARD_RUSH;
+  return KEYS.LEADERBOARD_CLASSIC;
+}
 
 export async function getSurgeBestScore(mode: SurgeGameMode): Promise<number> {
-  const key = mode === "classic" ? KEYS.BEST_SCORE_CLASSIC : KEYS.BEST_SCORE_ENDLESS;
-  const val = await AsyncStorage.getItem(key);
+  const val = await AsyncStorage.getItem(bestScoreKey(mode));
   return val ? parseInt(val, 10) : 0;
 }
 
 export async function setSurgeBestScore(score: number, mode: SurgeGameMode): Promise<void> {
   const current = await getSurgeBestScore(mode);
   if (score > current) {
-    const key = mode === "classic" ? KEYS.BEST_SCORE_CLASSIC : KEYS.BEST_SCORE_ENDLESS;
-    await AsyncStorage.setItem(key, score.toString());
+    await AsyncStorage.setItem(bestScoreKey(mode), score.toString());
   }
 }
 
 export async function getSurgeLeaderboard(mode: SurgeGameMode): Promise<SurgeLeaderboardEntry[]> {
-  const key = mode === "classic" ? KEYS.LEADERBOARD_CLASSIC : KEYS.LEADERBOARD_ENDLESS;
-  const val = await AsyncStorage.getItem(key);
+  const val = await AsyncStorage.getItem(leaderboardKey(mode));
   if (!val) return [];
   try { return JSON.parse(val); } catch { return []; }
 }
@@ -75,8 +87,7 @@ export async function addSurgeLeaderboardEntry(
   leaderboard.push(entry);
   leaderboard.sort((a, b) => b.score - a.score);
   const trimmed = leaderboard.slice(0, 20);
-  const key = mode === "classic" ? KEYS.LEADERBOARD_CLASSIC : KEYS.LEADERBOARD_ENDLESS;
-  await AsyncStorage.setItem(key, JSON.stringify(trimmed));
+  await AsyncStorage.setItem(leaderboardKey(mode), JSON.stringify(trimmed));
   return trimmed;
 }
 
@@ -139,4 +150,22 @@ export async function earnSurgePowerUp(type: SurgePowerUpType, amount: number = 
   inventory[type] += amount;
   await saveSurgePowerUps(inventory);
   return inventory;
+}
+
+export function totalPowerUps(inv: SurgePowerUpInventory): number {
+  return inv.slow_ring + inv.extra_life + inv.double_score;
+}
+
+export async function checkAndGrantProWeeklyBonus(): Promise<boolean> {
+  const lastStr = await AsyncStorage.getItem(KEYS.PRO_WEEKLY_BONUS_DATE);
+  const now = Date.now();
+  const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+  if (lastStr && now - parseInt(lastStr, 10) < SEVEN_DAYS) {
+    return false;
+  }
+  await AsyncStorage.setItem(KEYS.PRO_WEEKLY_BONUS_DATE, now.toString());
+  await earnSurgePowerUp("slow_ring", 1);
+  await earnSurgePowerUp("extra_life", 1);
+  await earnSurgePowerUp("double_score", 1);
+  return true;
 }

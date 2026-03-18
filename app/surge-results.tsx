@@ -32,7 +32,10 @@ import {
   setSurgeBestScore,
   getSurgeTotalXP,
   getSurgeBestScore,
+  earnSurgePowerUp,
+  type SurgePowerUpType,
 } from "@/lib/surge-storage";
+
 import {
   getSurgeTitle,
   getSurgeTitleColor,
@@ -52,6 +55,16 @@ import SurgePaywallSheet from "@/components/SurgePaywallSheet";
 
 const SURGE_PURPLE = "#7C3AED";
 const SURGE_MAGENTA = "#E040FB";
+
+const POWER_UP_TYPES: SurgePowerUpType[] = ["slow_ring", "extra_life", "double_score"];
+function randomPowerUpType(): SurgePowerUpType {
+  return POWER_UP_TYPES[Math.floor(Math.random() * POWER_UP_TYPES.length)];
+}
+const POWER_UP_META: Record<SurgePowerUpType, { label: string; icon: string; color: string }> = {
+  slow_ring: { label: "Slow Ring", icon: "hourglass-outline", color: "#00B0FF" },
+  extra_life: { label: "Extra Life", icon: "heart", color: "#FF4081" },
+  double_score: { label: "Double Score", icon: "flash", color: "#FFB300" },
+};
 
 type RankLetter = "S" | "A" | "B" | "C" | "D";
 interface SurgeRankInfo {
@@ -204,7 +217,7 @@ export default function SurgeResultsScreen() {
   const perfectHits = parseInt(params.perfectHits ?? "0");
   const totalHits = parseInt(params.totalHits ?? "0");
   const timeSurvived = parseInt(params.timeSurvived ?? "0");
-  const mode = (params.mode ?? "classic") as "classic" | "endless";
+  const mode = (params.mode ?? "classic") as "classic" | "endless" | "rush";
 
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -220,6 +233,7 @@ export default function SurgeResultsScreen() {
   const [totalXP, setTotalXP] = useState(0);
   const [newThemes, setNewThemes] = useState<RingThemeId[]>([]);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [earnedPowerUp, setEarnedPowerUp] = useState<SurgePowerUpType | null>(null);
   const processedRef = useRef(false);
 
   const perfectAccuracy = totalHits > 0 ? Math.round((perfectHits / totalHits) * 100) : 0;
@@ -293,6 +307,13 @@ export default function SurgeResultsScreen() {
         mode
       );
 
+      const earnsPowerUp = rankInfo.rank === "S" || (rankInfo.rank === "A" && isPro);
+      if (earnsPowerUp) {
+        const type = randomPowerUpType();
+        await earnSurgePowerUp(type, 1);
+        setEarnedPowerUp(type);
+      }
+
       trackEvent("surge_results_viewed", { score, maxCombo, mode, perfectAccuracy, rank: rankInfo.rank, isPro });
     };
 
@@ -301,12 +322,11 @@ export default function SurgeResultsScreen() {
   }, [isSubLoading, isPro]);
 
   const handleShare = async () => {
-    const modeLabel = mode === "classic" ? "Classic" : "Endless";
     const text = [
       isNewBest ? "🎉 NEW PERSONAL BEST in SURGE!" : `⚡ SURGE — Rank ${rankInfo.rank} (${rankInfo.label})`,
       `🏆 Score: ${score.toLocaleString()}`,
       `🎯 Perfect Hits: ${perfectHits} · 🔥 Max Combo: ${maxCombo}x`,
-      `⏱ ${timeSurvived}s · ${modeLabel} mode`,
+      `⏱ ${timeSurvived}s · ${modeLabel} Mode`,
       "",
       `Can you beat my score of ${score}?`,
       "Download ClutchLabs and play Surge! #Surge #ClutchLabs",
@@ -319,7 +339,7 @@ export default function SurgeResultsScreen() {
 
   const containerStyle = useAnimatedStyle(() => ({ opacity: containerOpacity.value }));
   const headerStyle = useAnimatedStyle(() => ({ transform: [{ scale: headerScale.value }] }));
-  const modeLabel = mode === "classic" ? "Classic" : "Endless";
+  const modeLabel = mode === "classic" ? "Classic" : mode === "rush" ? "Rush" : "Endless";
 
   return (
     <LinearGradient
@@ -368,6 +388,22 @@ export default function SurgeResultsScreen() {
                   )}
                 </View>
               )}
+
+              {earnedPowerUp && (() => {
+                const meta = POWER_UP_META[earnedPowerUp];
+                return (
+                  <View style={rs.powerUpRewardCard}>
+                    <View style={[rs.powerUpRewardIcon, { backgroundColor: meta.color + "20" }]}>
+                      <Ionicons name={meta.icon as React.ComponentProps<typeof Ionicons>["name"]} size={20} color={meta.color} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[rs.powerUpRewardTitle, { color: meta.color }]}>Power-Up Earned!</Text>
+                      <Text style={rs.powerUpRewardLabel}>{meta.label}</Text>
+                    </View>
+                    <Ionicons name="sparkles" size={16} color={meta.color} />
+                  </View>
+                );
+              })()}
 
               {newThemes.length > 0 && <UnlockCard newThemes={newThemes} />}
 
@@ -575,4 +611,33 @@ const rs = StyleSheet.create({
     borderColor: Colors.border,
   },
   secondaryBtnText: { fontSize: 13, fontFamily: "Outfit_700Bold" },
+  powerUpRewardCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  powerUpRewardIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  powerUpRewardTitle: {
+    fontSize: 12,
+    fontFamily: "Outfit_800ExtraBold",
+    letterSpacing: 1,
+  },
+  powerUpRewardLabel: {
+    fontSize: 14,
+    fontFamily: "Outfit_700Bold",
+    color: Colors.text,
+    marginTop: 1,
+  },
 });

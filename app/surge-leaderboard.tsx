@@ -115,18 +115,21 @@ export default function SurgeLeaderboardScreen() {
   const [modeTab, setModeTab] = useState<SurgeGameMode>("classic");
   const [classicScores, setClassicScores] = useState<SurgeLeaderboardEntry[]>([]);
   const [endlessScores, setEndlessScores] = useState<SurgeLeaderboardEntry[]>([]);
+  const [rushScores, setRushScores] = useState<SurgeLeaderboardEntry[]>([]);
 
   useEffect(() => {
     Promise.all([
       getSurgeLeaderboard("classic"),
       getSurgeLeaderboard("endless"),
-    ]).then(([c, e]) => {
+      getSurgeLeaderboard("rush"),
+    ]).then(([c, e, r]) => {
       setClassicScores(c);
       setEndlessScores(e);
+      setRushScores(r);
     });
   }, []);
 
-  const scores = modeTab === "classic" ? classicScores : endlessScores;
+  const scores = modeTab === "classic" ? classicScores : modeTab === "rush" ? rushScores : endlessScores;
 
   return (
     <LinearGradient
@@ -159,19 +162,23 @@ export default function SurgeLeaderboardScreen() {
 
           {/* Tabs */}
           <View style={lb.tabs}>
-            {(["classic", "endless"] as SurgeGameMode[]).map((m) => (
+            {([
+              { id: "classic", icon: "timer-outline", label: "Classic" },
+              { id: "endless", icon: "infinite-outline", label: "Endless" },
+              { id: "rush", icon: "flash-outline", label: "Rush" },
+            ] as const).map(({ id: m, icon, label }) => (
               <Pressable
                 key={m}
                 onPress={() => setModeTab(m)}
                 style={[lb.tabBtn, modeTab === m && lb.tabBtnActive]}
               >
                 <Ionicons
-                  name={m === "classic" ? "timer-outline" : "infinite-outline"}
+                  name={icon as React.ComponentProps<typeof Ionicons>["name"]}
                   size={15}
                   color={modeTab === m ? Colors.text : Colors.textMuted}
                 />
                 <Text style={[lb.tabText, modeTab === m && lb.tabTextActive]}>
-                  {m === "classic" ? "Classic" : "Endless"}
+                  {label}
                 </Text>
               </Pressable>
             ))}

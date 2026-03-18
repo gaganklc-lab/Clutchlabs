@@ -36,27 +36,32 @@ import {
   getRingTheme,
   type RingThemeId,
 } from "@/lib/surge-cosmetics";
-import { getSurgeSettings } from "@/lib/surge-storage";
+import { getSurgeSettings, useSurgePowerUp, type SurgePowerUpType } from "@/lib/surge-storage";
 import { useSurgeSubscription } from "@/lib/surge-subscription";
 import { useRewardedAd } from "@/lib/surge-ads";
 
-type SurgeGameMode = "classic" | "endless";
+type SurgeGameMode = "classic" | "endless" | "rush";
 type HitQuality = "perfect" | "good" | "miss";
 
 const TARGET_PROGRESS = 0.5;
 const PERFECT_WINDOW_MS = 80;
 const GOOD_WINDOW_MS = 160;
 const INITIAL_CYCLE_MS = 1300;
+const RUSH_INITIAL_CYCLE_MS = 700;
 const MIN_CYCLE_MS = 520;
+const SLOW_RING_FLOOR_MS = 700;
 const RAMP_EVERY_N_HITS = 3;
+const RUSH_RAMP_EVERY_N_HITS = 2;
 const RAMP_AMOUNT_MS = 35;
+const RUSH_COLOR = "#FF6D00";
 const ORB_RADIUS = 44;
 const MAX_RING_RADIUS = 130;
 const TARGET_RADIUS = ORB_RADIUS + (MAX_RING_RADIUS - ORB_RADIUS) * TARGET_PROGRESS;
 
 export default function SurgeScreen() {
-  const { mode: modeParam } = useLocalSearchParams<{ mode: string }>();
+  const { mode: modeParam, powerUp: powerUpParam } = useLocalSearchParams<{ mode: string; powerUp: string }>();
   const mode = (modeParam ?? "classic") as SurgeGameMode;
+  const pendingPowerUp = (powerUpParam ?? null) as SurgePowerUpType | null;
 
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
@@ -84,6 +89,11 @@ export default function SurgeScreen() {
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
   const [showRevivePrompt, setShowRevivePrompt] = useState(false);
   const hasRevivedRef = useRef(false);
+  const [activePowerUp, setActivePowerUp] = useState<SurgePowerUpType | null>(null);
+  const [powerUpSecsLeft, setPowerUpSecsLeft] = useState(0);
+  const slowRingActiveRef = useRef(false);
+  const doubleScoreActiveRef = useRef(false);
+  const powerUpTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { isPro } = useSurgeSubscription();
   const { isAdReady, watchAd } = useRewardedAd();
@@ -101,7 +111,7 @@ export default function SurgeScreen() {
   const elapsedRef = useRef(0);
   const elapsedTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hitsSinceRampRef = useRef(0);
-  const cycleDurationRef = useRef(INITIAL_CYCLE_MS);
+  const cycleDurationRef = useRef(mode === "rush" ? RUSH_INITIAL_CYCLE_MS : INITIAL_CYCLE_MS);
   const hitLabelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tappedThisCycleRef = useRef(false);
   const cycleStartTimeRef = useRef(0);
@@ -152,6 +162,7 @@ export default function SurgeScreen() {
     if (gameTimerRef.current) clearInterval(gameTimerRef.current);
     if (elapsedTimerRef.current) clearInterval(elapsedTimerRef.current);
     if (hitLabelTimerRef.current) clearTimeout(hitLabelTimerRef.current);
+    if (powerUpTimerRef.current) clearInterval(powerUpTimerRef.current);
     cancelAnimation(ringProgress);
     cancelAnimation(shockwaveScale);
     cancelAnimation(shockwaveOpacity);
@@ -329,15 +340,18 @@ export default function SurgeScreen() {
 
       const multiplier = Math.min(1 + (comboRef.current - 1) * 0.4, 5);
       const base = quality === "perfect" ? 15 : 8;
-      const gained = Math.round(base * multiplier);
+      const rawGained = Math.round(base * multiplier);
+      const gained = doubleScoreActiveRef.current ? rawGained * 2 : rawGained;
       scoreRef.current += gained;
       setScore(scoreRef.current);
 
+      const rampThreshold = mode === "rush" ? RUSH_RAMP_EVERY_N_HITS : RAMP_EVERY_N_HITS;
+      const minFloor = slowRingActiveRef.current ? SLOW_RING_FLOOR_MS : MIN_CYCLE_MS;
       hitsSinceRampRef.current += 1;
-      if (hitsSinceRampRef.current >= RAMP_EVERY_N_HITS) {
+      if (hitsSinceRampRef.current >= rampThreshold) {
         hitsSinceRampRef.current = 0;
         cycleDurationRef.current = Math.max(
-          MIN_CYCLE_MS,
+          minFloor,
           cycleDurationRef.current - RAMP_AMOUNT_MS
         );
       }
@@ -385,6 +399,37 @@ export default function SurgeScreen() {
     cycleTimerRef.current = setTimeout(startCycle, 300);
   }, [endGame, startCycle, showHitLabel, screenCenterX, screenCenterY, theme, hapticsEnabled, soundEnabled]);
 
+  const applyPowerUp = useCallback(async (type: SurgePowerUpType) => {
+    const result = await useSurgePowerUp(type);
+    if (!result.success) return;
+
+    if (type === "extra_life") {
+      const newLives = Math.min(livesRef.current + 1, 4);
+      livesRef.current = newLives;
+      setLives(newLives);
+      return;
+    }
+
+    const duration = type === "slow_ring" ? 15 : 20;
+    setActivePowerUp(type);
+    setPowerUpSecsLeft(duration);
+
+    if (type === "slow_ring") slowRingActiveRef.current = true;
+    if (type === "double_score") doubleScoreActiveRef.current = true;
+
+    let remaining = duration;
+    powerUpTimerRef.current = setInterval(() => {
+      remaining -= 1;
+      setPowerUpSecsLeft(remaining);
+      if (remaining <= 0) {
+        if (powerUpTimerRef.current) clearInterval(powerUpTimerRef.current);
+        slowRingActiveRef.current = false;
+        doubleScoreActiveRef.current = false;
+        setActivePowerUp(null);
+      }
+    }, 1000);
+  }, []);
+
   const startGame = useCallback(() => {
     isPlayingRef.current = true;
     gameOverRef.current = false;
@@ -407,8 +452,12 @@ export default function SurgeScreen() {
       elapsedRef.current += 1;
     }, 1000);
 
+    if (pendingPowerUp) {
+      applyPowerUp(pendingPowerUp);
+    }
+
     startCycle();
-  }, [mode, endGame, startCycle]);
+  }, [mode, endGame, startCycle, pendingPowerUp, applyPowerUp]);
 
   const startCountdown = useCallback(() => {
     let cd = 3;
@@ -487,6 +536,9 @@ export default function SurgeScreen() {
           </Pressable>
 
           <View testID="surge-game-score-block" style={styles.scoreBlock}>
+            {mode === "rush" && (
+              <Text style={[styles.modeLabel, { color: RUSH_COLOR }]}>RUSH</Text>
+            )}
             <Text testID="surge-game-score-text" style={[styles.scoreText, { color: theme.ringColor }]}>{score}</Text>
             {combo >= 2 && (
               <Text style={[styles.comboText, { color: theme.glowColor }]}>{combo}x</Text>
@@ -512,6 +564,19 @@ export default function SurgeScreen() {
             </View>
           )}
         </View>
+
+        {activePowerUp && (
+          <View style={styles.powerUpBadge} pointerEvents="none">
+            <Ionicons
+              name={activePowerUp === "slow_ring" ? "hourglass-outline" : activePowerUp === "double_score" ? "flash" : "heart"}
+              size={13}
+              color={activePowerUp === "slow_ring" ? "#00B0FF" : activePowerUp === "double_score" ? Colors.warning : "#FF4081"}
+            />
+            <Text style={[styles.powerUpBadgeText, { color: activePowerUp === "slow_ring" ? "#00B0FF" : activePowerUp === "double_score" ? Colors.warning : "#FF4081" }]}>
+              {activePowerUp === "slow_ring" ? "SLOW" : activePowerUp === "double_score" ? "2× SCORE" : ""} — {powerUpSecsLeft}s
+            </Text>
+          </View>
+        )}
 
         {mode === "classic" && (
           <View style={styles.livesRowBottom}>
@@ -770,6 +835,28 @@ const styles = StyleSheet.create({
     fontFamily: "Outfit_500Medium",
     color: Colors.textMuted,
     letterSpacing: 3,
+  },
+  modeLabel: {
+    fontSize: 10,
+    fontFamily: "Outfit_800ExtraBold",
+    letterSpacing: 3,
+    marginBottom: -2,
+  },
+  powerUpBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    alignSelf: "center",
+    backgroundColor: "rgba(0,0,0,0.35)",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    marginBottom: 4,
+  },
+  powerUpBadgeText: {
+    fontSize: 11,
+    fontFamily: "Outfit_700Bold",
+    letterSpacing: 1,
   },
   reviveOverlay: {
     position: "absolute",

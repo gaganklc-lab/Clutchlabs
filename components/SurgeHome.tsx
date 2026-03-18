@@ -34,9 +34,15 @@ import {
   saveSurgeGameMode,
   getSurgeSettings,
   saveSurgeSettings,
+  getSurgePowerUps,
+  checkAndGrantProWeeklyBonus,
+  totalPowerUps,
   type SurgeGameMode,
   type SurgeSettings,
+  type SurgePowerUpInventory,
+  type SurgePowerUpType,
 } from "@/lib/surge-storage";
+import SurgePowerUpSelect from "@/components/SurgePowerUpSelect";
 import { getSurgeTitle, getSurgeTitleColor } from "@/lib/surge-progression";
 import {
   getEquippedRingTheme,
@@ -237,6 +243,10 @@ export default function SurgeHome() {
   const [showCustomize, setShowCustomize] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showPowerUpSelect, setShowPowerUpSelect] = useState(false);
+  const [powerUpInventory, setPowerUpInventory] = useState<SurgePowerUpInventory>({ slow_ring: 0, extra_life: 0, double_score: 0 });
+  const [powerUpTotal, setPowerUpTotal] = useState(0);
+  const [bestRush, setBestRush] = useState(0);
 
   const pulseAnim = useSharedValue(0);
   const glowAnim = useSharedValue(0);
@@ -251,6 +261,14 @@ export default function SurgeHome() {
       unlockProThemes().catch((e) =>
         console.warn("[SurgeHome] Pro theme unlock failed:", e)
       );
+      checkAndGrantProWeeklyBonus().then((granted) => {
+        if (granted) {
+          getSurgePowerUps().then((inv) => {
+            setPowerUpInventory(inv);
+            setPowerUpTotal(totalPowerUps(inv));
+          });
+        }
+      }).catch(() => {});
     }
   }, [isPro]);
 
@@ -278,22 +296,27 @@ export default function SurgeHome() {
   }, []);
 
   const loadData = async () => {
-    const [bc, be, m, s, xp, eq] = await Promise.all([
+    const [bc, be, br, m, s, xp, eq, inv] = await Promise.all([
       getSurgeBestScore("classic"),
       getSurgeBestScore("endless"),
+      getSurgeBestScore("rush"),
       getSurgeGameMode(),
       getSurgeSettings(),
       getSurgeTotalXP(),
       getEquippedRingTheme(),
+      getSurgePowerUps(),
     ]);
     setBestClassic(bc);
     setBestEndless(be);
+    setBestRush(br);
     setMode(m);
     setSettings(s);
     const title = getSurgeTitle(xp);
     setSurgeTitle(title);
     setSurgeTitleColor(getSurgeTitleColor(title));
     setEquippedThemeId(eq);
+    setPowerUpInventory(inv);
+    setPowerUpTotal(totalPowerUps(inv));
   };
 
   const handleModeChange = async (m: SurgeGameMode) => {
@@ -304,7 +327,18 @@ export default function SurgeHome() {
 
   const handlePlay = () => {
     if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push({ pathname: "/surge", params: { mode } });
+    if (powerUpTotal > 0) {
+      setShowPowerUpSelect(true);
+    } else {
+      router.push({ pathname: "/surge", params: { mode } });
+    }
+  };
+
+  const handlePowerUpPlay = (selectedPowerUp: SurgePowerUpType | null) => {
+    setShowPowerUpSelect(false);
+    const params: Record<string, string> = { mode };
+    if (selectedPowerUp) params.powerUp = selectedPowerUp;
+    router.push({ pathname: "/surge", params });
   };
 
   const playBtnStyle = useAnimatedStyle(() => ({
@@ -340,7 +374,7 @@ export default function SurgeHome() {
     borderRadius: 120,
   }));
 
-  const bestForMode = mode === "classic" ? bestClassic : bestEndless;
+  const bestForMode = mode === "classic" ? bestClassic : mode === "rush" ? bestRush : bestEndless;
 
   return (
     <LinearGradient
@@ -422,31 +456,35 @@ export default function SurgeHome() {
             {bestForMode > 0 && (
               <View style={styles.bestScore}>
                 <Ionicons name="trophy" size={14} color={Colors.warning} />
-                <Text style={styles.bestScoreText}>{mode === "classic" ? "Classic" : "Endless"} Best: {bestForMode}</Text>
+                <Text style={styles.bestScoreText}>
+                  {mode === "classic" ? "Classic" : mode === "rush" ? "Rush" : "Endless"} Best: {bestForMode}
+                </Text>
               </View>
             )}
           </View>
 
           {/* Mode picker */}
           <View style={styles.modePicker}>
-            {(["classic", "endless"] as SurgeGameMode[]).map((m) => {
+            {([
+              { id: "classic", icon: "timer-outline", label: "Classic", desc: "30 seconds" },
+              { id: "endless", icon: "infinite-outline", label: "Endless", desc: "Survive" },
+              { id: "rush", icon: "flash-outline", label: "Rush", desc: "Fast ramp" },
+            ] as const).map(({ id: m, icon, label, desc }) => {
               const isSelected = mode === m;
-              const icon = m === "classic" ? "timer-outline" : "infinite-outline";
-              const label = m === "classic" ? "Classic" : "Endless";
-              const desc = m === "classic" ? "30 seconds" : "Survive";
+              const isRush = m === "rush";
               return (
                 <Pressable
                   key={m}
                   onPress={() => handleModeChange(m)}
                   style={({ pressed }) => [
                     styles.modeOption,
-                    isSelected && { borderColor: theme.ringColor, backgroundColor: theme.ringColor + "15" },
+                    isSelected && { borderColor: isRush ? "#FF6D00" : theme.ringColor, backgroundColor: (isRush ? "#FF6D00" : theme.ringColor) + "15" },
                     { opacity: pressed ? 0.7 : 1 },
                   ]}
                 >
-                  <Ionicons name={icon as React.ComponentProps<typeof Ionicons>["name"]} size={18} color={isSelected ? theme.ringColor : Colors.textMuted} />
-                  <Text style={[styles.modeLabel, isSelected && { color: theme.ringColor }]}>{label}</Text>
-                  <Text style={[styles.modeDesc, isSelected && { color: theme.glowColor }]}>{desc}</Text>
+                  <Ionicons name={icon as React.ComponentProps<typeof Ionicons>["name"]} size={18} color={isSelected ? (isRush ? "#FF6D00" : theme.ringColor) : Colors.textMuted} />
+                  <Text style={[styles.modeLabel, isSelected && { color: isRush ? "#FF6D00" : theme.ringColor }]}>{label}</Text>
+                  <Text style={[styles.modeDesc, isSelected && { color: isRush ? "#FF6D00" : theme.glowColor }]}>{desc}</Text>
                 </Pressable>
               );
             })}
@@ -472,6 +510,12 @@ export default function SurgeHome() {
                 </LinearGradient>
               </Pressable>
             </Animated.View>
+            {powerUpTotal > 0 && (
+              <Pressable onPress={() => setShowPowerUpSelect(true)} style={styles.powerUpCountBadge}>
+                <Ionicons name="flash" size={13} color={Colors.warning} />
+                <Text style={styles.powerUpCountText}>{powerUpTotal} Power-Up{powerUpTotal !== 1 ? "s" : ""}</Text>
+              </Pressable>
+            )}
           </View>
 
         </View>
@@ -494,6 +538,12 @@ export default function SurgeHome() {
         visible={showPaywall}
         onClose={() => setShowPaywall(false)}
         onSuccess={() => setShowPaywall(false)}
+      />
+      <SurgePowerUpSelect
+        visible={showPowerUpSelect}
+        inventory={powerUpInventory}
+        onClose={() => setShowPowerUpSelect(false)}
+        onPlay={handlePowerUpPlay}
       />
     </LinearGradient>
   );
@@ -705,6 +755,23 @@ const styles = StyleSheet.create({
     fontFamily: "Outfit_800ExtraBold",
     color: Colors.background,
     letterSpacing: 4,
+  },
+  powerUpCountBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 10,
+    backgroundColor: Colors.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.warning + "40",
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  powerUpCountText: {
+    fontSize: 13,
+    fontFamily: "Outfit_600SemiBold",
+    color: Colors.warning,
   },
 });
 
