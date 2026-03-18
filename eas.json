@@ -16,6 +16,11 @@
       "env": {
         "APP_VARIANT": "velocity"
       }
+    },
+    "production-surge": {
+      "env": {
+        "APP_VARIANT": "surge"
+      }
     }
   },
   "submit": {

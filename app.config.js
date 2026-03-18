@@ -1,6 +1,7 @@
 const variant = process.env.APP_VARIANT ?? "clutchtap";
 
 const IS_VELOCITY = variant === "velocity";
+const IS_SURGE = variant === "surge";
 
 const VARIANTS = {
   clutchtap: {
@@ -17,6 +18,13 @@ const VARIANTS = {
     bundleIdentifier: "app.replit.velocity",
     androidPackage: "app.replit.velocity",
   },
+  surge: {
+    name: "Surge",
+    slug: "surge",
+    scheme: "surge",
+    bundleIdentifier: "app.replit.surge",
+    androidPackage: "app.replit.surge",
+  },
 };
 
 const cfg = VARIANTS[variant] || VARIANTS.clutchtap;
@@ -29,6 +37,8 @@ module.exports = {
     orientation: "portrait",
     icon: IS_VELOCITY
       ? "./assets/images/velocity-icon.png"
+      : IS_SURGE
+      ? "./assets/images/surge-icon.png"
       : "./assets/images/icon.png",
     scheme: cfg.scheme,
     userInterfaceStyle: "automatic",
@@ -36,6 +46,8 @@ module.exports = {
     splash: {
       image: IS_VELOCITY
         ? "./assets/images/velocity-splash-icon.png"
+        : IS_SURGE
+        ? "./assets/images/surge-icon.png"
         : "./assets/images/splash-icon.png",
       resizeMode: "contain",
       backgroundColor: "#0A0A1A",
@@ -55,6 +67,13 @@ module.exports = {
               "./assets/images/velocity-android-icon-background.png",
             monochromeImage:
               "./assets/images/velocity-android-icon-monochrome.png",
+          }
+        : IS_SURGE
+        ? {
+            backgroundColor: "#0A0A1A",
+            foregroundImage: "./assets/images/surge-icon.png",
+            backgroundImage: "./assets/images/surge-icon.png",
+            monochromeImage: "./assets/images/surge-icon.png",
           }
         : {
             backgroundColor: "#E6F4FE",

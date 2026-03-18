@@ -53,8 +53,9 @@ import {
 } from "@/lib/storage";
 import { trackEvent } from "@/lib/analytics";
 import AmbientParticles from "@/components/AmbientParticles";
-import { IS_VELOCITY } from "@/constants/appVariant";
+import { IS_VELOCITY, IS_SURGE } from "@/constants/appVariant";
 import VelocityHome from "@/components/VelocityHome";
+import SurgeHome from "@/components/SurgeHome";
 
 function FloatingTile({ delay, x, y, color, size }: { delay: number; x: number; y: number; color: string; size: number }) {
   const anim = useSharedValue(0);
@@ -1274,4 +1275,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default IS_VELOCITY ? VelocityHome : ClutchTapHomeScreen;
+export default IS_SURGE ? SurgeHome : IS_VELOCITY ? VelocityHome : ClutchTapHomeScreen;

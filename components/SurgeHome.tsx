@@ -1,0 +1,713 @@
+import React, { useEffect, useState } from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  Pressable,
+  Modal,
+  ScrollView,
+  Platform,
+  useWindowDimensions,
+} from "react-native";
+import { router } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  withSequence,
+  withDelay,
+  Easing,
+  interpolate,
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Haptics from "expo-haptics";
+import Colors from "@/constants/colors";
+import { trackEvent } from "@/lib/analytics";
+import AmbientParticles from "@/components/AmbientParticles";
+import {
+  getSurgeBestScore,
+  getSurgeTotalXP,
+  getSurgeGameMode,
+  saveSurgeGameMode,
+  getSurgeSettings,
+  saveSurgeSettings,
+  type SurgeGameMode,
+  type SurgeSettings,
+} from "@/lib/surge-storage";
+import { getSurgeTitle, getSurgeTitleColor } from "@/lib/surge-progression";
+import {
+  getEquippedRingTheme,
+  setEquippedRingTheme,
+  getUnlockedRingThemes,
+  getRingTheme,
+  RING_THEMES,
+  type RingThemeId,
+} from "@/lib/surge-cosmetics";
+
+const SURGE_PURPLE = "#7C3AED";
+const SURGE_MAGENTA = "#E040FB";
+
+function CustomizeModal({
+  visible,
+  onClose,
+  onEquip,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onEquip: (id: RingThemeId) => void;
+}) {
+  const insets = useSafeAreaInsets();
+  const [equipped, setEquipped] = useState<RingThemeId>("neon_purple");
+  const [unlocked, setUnlocked] = useState<RingThemeId[]>(["neon_purple"]);
+
+  useEffect(() => {
+    if (visible) {
+      Promise.all([getEquippedRingTheme(), getUnlockedRingThemes()]).then(([eq, unl]) => {
+        setEquipped(eq);
+        setUnlocked(unl);
+      });
+    }
+  }, [visible]);
+
+  const handleEquip = async (id: RingThemeId) => {
+    if (!unlocked.includes(id)) return;
+    await setEquippedRingTheme(id);
+    setEquipped(id);
+    onEquip(id);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={cs.overlay}>
+        <View style={[cs.sheet, { paddingBottom: (Platform.OS === "web" ? 34 : insets.bottom) + 16 }]}>
+          <View style={cs.header}>
+            <Text style={cs.title}>Ring Themes</Text>
+            <Pressable onPress={onClose} style={({ pressed }) => [cs.closeBtn, { opacity: pressed ? 0.6 : 1 }]}>
+              <Ionicons name="close" size={24} color={Colors.text} />
+            </Pressable>
+          </View>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {RING_THEMES.map((theme) => {
+              const isUnlocked = unlocked.includes(theme.id);
+              const isEquipped = equipped === theme.id;
+              return (
+                <Pressable
+                  key={theme.id}
+                  onPress={() => handleEquip(theme.id)}
+                  style={({ pressed }) => [
+                    cs.themeRow,
+                    isEquipped && { borderColor: theme.ringColor, backgroundColor: theme.ringColor + "12" },
+                    { opacity: pressed ? 0.8 : 1 },
+                  ]}
+                >
+                  <View style={[cs.ringPreview, { borderColor: theme.ringColor, shadowColor: theme.glowColor }]}>
+                    <View style={[cs.ringPreviewOrb, { backgroundColor: theme.glowColor }]} />
+                  </View>
+                  <View style={cs.themeInfo}>
+                    <Text style={[cs.themeName, { color: isEquipped ? theme.ringColor : Colors.text }]}>{theme.name}</Text>
+                    <Text style={cs.themeDesc}>{isUnlocked ? theme.description : theme.unlockText}</Text>
+                  </View>
+                  {isEquipped ? (
+                    <Ionicons name="checkmark-circle" size={22} color={theme.ringColor} />
+                  ) : isUnlocked ? (
+                    <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+                  ) : (
+                    <Ionicons name="lock-closed" size={18} color={Colors.textMuted} />
+                  )}
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function SettingsModal({
+  visible,
+  onClose,
+  settings,
+  onSettingsChange,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  settings: SurgeSettings;
+  onSettingsChange: (s: SurgeSettings) => void;
+}) {
+  const insets = useSafeAreaInsets();
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={cs.overlay}>
+        <View style={[cs.sheet, { paddingBottom: (Platform.OS === "web" ? 34 : insets.bottom) + 16 }]}>
+          <View style={cs.header}>
+            <Text style={cs.title}>Settings</Text>
+            <Pressable onPress={onClose} style={({ pressed }) => [cs.closeBtn, { opacity: pressed ? 0.6 : 1 }]}>
+              <Ionicons name="close" size={24} color={Colors.text} />
+            </Pressable>
+          </View>
+          <View style={cs.settingRow}>
+            <View style={cs.settingLeft}>
+              <Ionicons name="volume-high" size={22} color={SURGE_PURPLE} />
+              <Text style={cs.settingLabel}>Sound Effects</Text>
+            </View>
+            <Pressable
+              onPress={() => onSettingsChange({ ...settings, soundEnabled: !settings.soundEnabled })}
+              style={[cs.toggle, settings.soundEnabled && cs.toggleOn]}
+            >
+              <View style={[cs.toggleKnob, settings.soundEnabled && cs.toggleKnobOn]} />
+            </Pressable>
+          </View>
+          <View style={cs.settingRow}>
+            <View style={cs.settingLeft}>
+              <Ionicons name="phone-portrait" size={22} color={SURGE_PURPLE} />
+              <Text style={cs.settingLabel}>Haptic Feedback</Text>
+            </View>
+            <Pressable
+              onPress={() => {
+                const v = !settings.hapticsEnabled;
+                onSettingsChange({ ...settings, hapticsEnabled: v });
+                if (v) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }}
+              style={[cs.toggle, settings.hapticsEnabled && cs.toggleOn]}
+            >
+              <View style={[cs.toggleKnob, settings.hapticsEnabled && cs.toggleKnobOn]} />
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+export default function SurgeHome() {
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
+  const contentMaxWidth = isTablet ? 560 : undefined;
+  const contentHorizontalPadding = isTablet ? 24 : 16;
+
+  const topInset = Platform.OS === "web" ? 67 : insets.top;
+  const bottomInset = Platform.OS === "web" ? 34 : insets.bottom;
+
+  const [bestClassic, setBestClassic] = useState(0);
+  const [bestEndless, setBestEndless] = useState(0);
+  const [mode, setMode] = useState<SurgeGameMode>("classic");
+  const [settings, setSettings] = useState<SurgeSettings>({ soundEnabled: true, hapticsEnabled: true });
+  const [surgeTitle, setSurgeTitle] = useState("Novice");
+  const [surgeTitleColor, setSurgeTitleColor] = useState("#9E9E9E");
+  const [equippedThemeId, setEquippedThemeId] = useState<RingThemeId>("neon_purple");
+  const [showCustomize, setShowCustomize] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
+  const pulseAnim = useSharedValue(0);
+  const glowAnim = useSharedValue(0);
+  const ring1 = useSharedValue(0);
+  const ring2 = useSharedValue(0);
+  const ring3 = useSharedValue(0);
+
+  const theme = getRingTheme(equippedThemeId);
+
+  useEffect(() => {
+    trackEvent("screen_viewed", { screen: "surge_home" });
+    loadData();
+
+    pulseAnim.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0, { duration: 1400, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1, true
+    );
+    glowAnim.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0, { duration: 2200, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1, true
+    );
+    ring1.value = withRepeat(withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.ease) }), -1, true);
+    ring2.value = withDelay(600, withRepeat(withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.ease) }), -1, true));
+    ring3.value = withDelay(1200, withRepeat(withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.ease) }), -1, true));
+  }, []);
+
+  const loadData = async () => {
+    const [bc, be, m, s, xp, eq] = await Promise.all([
+      getSurgeBestScore("classic"),
+      getSurgeBestScore("endless"),
+      getSurgeGameMode(),
+      getSurgeSettings(),
+      getSurgeTotalXP(),
+      getEquippedRingTheme(),
+    ]);
+    setBestClassic(bc);
+    setBestEndless(be);
+    setMode(m);
+    setSettings(s);
+    const title = getSurgeTitle(xp);
+    setSurgeTitle(title);
+    setSurgeTitleColor(getSurgeTitleColor(title));
+    setEquippedThemeId(eq);
+  };
+
+  const handleModeChange = async (m: SurgeGameMode) => {
+    setMode(m);
+    await saveSurgeGameMode(m);
+    if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const handlePlay = () => {
+    if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push({ pathname: "/surge", params: { mode } });
+  };
+
+  const playBtnStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(pulseAnim.value, [0, 1], [1, 1.04]) }],
+  }));
+
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(glowAnim.value, [0, 1], [0.3, 0.7]),
+    transform: [{ scale: interpolate(glowAnim.value, [0, 1], [0.9, 1.1]) }],
+  }));
+
+  const makeRingStyle = (anim: Animated.SharedValue<number>, baseRadius: number) =>
+    useAnimatedStyle(() => ({
+      opacity: interpolate(anim.value, [0, 0.5, 1], [0.08, 0.22, 0.08]),
+      transform: [{ scale: interpolate(anim.value, [0, 1], [0.85, 1.15]) }],
+      width: baseRadius * 2,
+      height: baseRadius * 2,
+      borderRadius: baseRadius,
+    }));
+
+  const ring1Style = makeRingStyle(ring1, 60);
+  const ring2Style = makeRingStyle(ring2, 90);
+  const ring3Style = makeRingStyle(ring3, 120);
+
+  const bestForMode = mode === "classic" ? bestClassic : bestEndless;
+
+  return (
+    <LinearGradient
+      colors={[Colors.backgroundGradientStart, Colors.backgroundGradientEnd]}
+      style={[styles.container, { paddingTop: topInset, paddingBottom: bottomInset }]}
+    >
+      <AmbientParticles count={12} />
+
+      <View style={{ flex: 1, alignItems: "center" }}>
+        <View style={{ flex: 1, width: "100%", maxWidth: contentMaxWidth, paddingHorizontal: contentHorizontalPadding }}>
+
+          {/* Top bar */}
+          <View style={styles.topBar}>
+            <View style={styles.titleBadge}>
+              <View style={[styles.titleDot, { backgroundColor: surgeTitleColor }]} />
+              <Text style={[styles.titleText, { color: surgeTitleColor }]}>{surgeTitle.toUpperCase()}</Text>
+            </View>
+
+            <View style={styles.topBarRight}>
+              <Pressable
+                onPress={() => { if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowCustomize(true); }}
+                style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.6 : 1 }]}
+              >
+                <View style={[styles.ringPreviewDot, { borderColor: theme.ringColor }]} />
+                <Ionicons name="color-palette-outline" size={20} color={Colors.textSecondary} />
+              </Pressable>
+              <Pressable
+                onPress={() => router.push("/surge-leaderboard")}
+                style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.6 : 1 }]}
+              >
+                <Ionicons name="podium-outline" size={22} color={Colors.textSecondary} />
+              </Pressable>
+              <Pressable
+                onPress={() => { if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowSettings(true); }}
+                style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.6 : 1 }]}
+              >
+                <Ionicons name="settings-outline" size={22} color={Colors.textSecondary} />
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Orb visual */}
+          <View style={styles.orbSection}>
+            <Animated.View style={[styles.orbRing, ring3Style, { borderColor: theme.glowColor }]} />
+            <Animated.View style={[styles.orbRing, ring2Style, { borderColor: theme.ringColor }]} />
+            <Animated.View style={[styles.orbRing, ring1Style, { borderColor: theme.targetColor }]} />
+
+            <Animated.View style={orbContainerStyle}>
+              <Animated.View style={[styles.orbGlow, { backgroundColor: theme.glowColor + "30" }, glowStyle]} />
+              <LinearGradient
+                colors={[theme.ringColor, theme.glowColor]}
+                style={styles.orb}
+              />
+            </Animated.View>
+
+            <View style={styles.gameTitleBlock}>
+              <Text style={[styles.gameTitle, { color: theme.ringColor }]}>SURGE</Text>
+              <Text style={styles.gameSubtitle}>TAP WITH PRECISION</Text>
+            </View>
+
+            {bestForMode > 0 && (
+              <View style={styles.bestScore}>
+                <Ionicons name="trophy" size={14} color={Colors.warning} />
+                <Text style={styles.bestScoreText}>{mode === "classic" ? "Classic" : "Endless"} Best: {bestForMode}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Mode picker */}
+          <View style={styles.modePicker}>
+            {(["classic", "endless"] as SurgeGameMode[]).map((m) => {
+              const isSelected = mode === m;
+              const icon = m === "classic" ? "timer-outline" : "infinite-outline";
+              const label = m === "classic" ? "Classic" : "Endless";
+              const desc = m === "classic" ? "30 seconds" : "Survive";
+              return (
+                <Pressable
+                  key={m}
+                  onPress={() => handleModeChange(m)}
+                  style={({ pressed }) => [
+                    styles.modeOption,
+                    isSelected && { borderColor: theme.ringColor, backgroundColor: theme.ringColor + "15" },
+                    { opacity: pressed ? 0.7 : 1 },
+                  ]}
+                >
+                  <Ionicons name={icon as any} size={18} color={isSelected ? theme.ringColor : Colors.textMuted} />
+                  <Text style={[styles.modeLabel, isSelected && { color: theme.ringColor }]}>{label}</Text>
+                  <Text style={[styles.modeDesc, isSelected && { color: theme.glowColor }]}>{desc}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {/* Play button */}
+          <View style={styles.actions}>
+            <Animated.View style={playBtnStyle}>
+              <Pressable
+                onPress={handlePlay}
+                style={({ pressed }) => [styles.playBtn, { transform: [{ scale: pressed ? 0.95 : 1 }] }]}
+                testID="play-button"
+              >
+                <Animated.View style={[styles.playGlow, { backgroundColor: theme.glowColor }, glowStyle]} />
+                <LinearGradient
+                  colors={[theme.ringColor, theme.glowColor]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.playGradient}
+                >
+                  <Ionicons name="play" size={30} color={Colors.background} />
+                  <Text style={styles.playText}>PLAY</Text>
+                </LinearGradient>
+              </Pressable>
+            </Animated.View>
+          </View>
+
+        </View>
+      </View>
+
+      <CustomizeModal
+        visible={showCustomize}
+        onClose={() => setShowCustomize(false)}
+        onEquip={(id) => setEquippedThemeId(id)}
+      />
+      <SettingsModal
+        visible={showSettings}
+        onClose={() => setShowSettings(false)}
+        settings={settings}
+        onSettingsChange={(s) => { setSettings(s); saveSurgeSettings(s); }}
+      />
+    </LinearGradient>
+  );
+}
+
+const orbContainerStyle: any = {
+  alignItems: "center",
+  justifyContent: "center",
+  position: "absolute",
+};
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 10,
+  },
+  titleBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: Colors.surface,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  titleDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  titleText: {
+    fontSize: 12,
+    fontFamily: "Outfit_700Bold",
+    letterSpacing: 2,
+  },
+  topBarRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  iconBtn: {
+    width: 38,
+    height: 38,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 2,
+  },
+  ringPreviewDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 2,
+    marginRight: 2,
+  },
+  orbSection: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 0,
+  },
+  orbRing: {
+    position: "absolute",
+    borderWidth: 1.5,
+  },
+  orbGlow: {
+    position: "absolute",
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  },
+  orb: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    shadowColor: "#7C3AED",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  gameTitleBlock: {
+    alignItems: "center",
+    marginTop: 90,
+  },
+  gameTitle: {
+    fontSize: 48,
+    fontFamily: "Outfit_800ExtraBold",
+    letterSpacing: 8,
+  },
+  gameSubtitle: {
+    fontSize: 12,
+    fontFamily: "Outfit_600SemiBold",
+    color: Colors.textMuted,
+    letterSpacing: 3,
+    marginTop: 4,
+  },
+  bestScore: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 10,
+    backgroundColor: Colors.surface,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.warning + "30",
+  },
+  bestScoreText: {
+    fontSize: 14,
+    fontFamily: "Outfit_600SemiBold",
+    color: Colors.warning,
+  },
+  modePicker: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 16,
+  },
+  modeOption: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+    gap: 4,
+  },
+  modeLabel: {
+    fontSize: 14,
+    fontFamily: "Outfit_700Bold",
+    color: Colors.textMuted,
+    letterSpacing: 0.5,
+  },
+  modeDesc: {
+    fontSize: 11,
+    fontFamily: "Outfit_500Medium",
+    color: Colors.textMuted,
+  },
+  actions: {
+    alignItems: "center",
+    paddingBottom: 8,
+    paddingTop: 4,
+  },
+  playBtn: {
+    borderRadius: 24,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 180,
+    height: 64,
+  },
+  playGlow: {
+    position: "absolute",
+    width: 160,
+    height: 60,
+    borderRadius: 30,
+  },
+  playGradient: {
+    width: 180,
+    height: 64,
+    borderRadius: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  playText: {
+    fontSize: 20,
+    fontFamily: "Outfit_800ExtraBold",
+    color: Colors.background,
+    letterSpacing: 4,
+  },
+});
+
+const cs = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "flex-end",
+  },
+  sheet: {
+    backgroundColor: Colors.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 20,
+    paddingHorizontal: 20,
+    maxHeight: "70%",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 20,
+    fontFamily: "Outfit_800ExtraBold",
+    color: Colors.text,
+    letterSpacing: 2,
+  },
+  closeBtn: {
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  themeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    marginBottom: 8,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    backgroundColor: Colors.card,
+  },
+  ringPreview: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  ringPreviewOrb: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+  },
+  themeInfo: {
+    flex: 1,
+  },
+  themeName: {
+    fontSize: 15,
+    fontFamily: "Outfit_700Bold",
+  },
+  themeDesc: {
+    fontSize: 12,
+    fontFamily: "Outfit_400Regular",
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  settingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  settingLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  settingLabel: {
+    fontSize: 15,
+    fontFamily: "Outfit_600SemiBold",
+    color: Colors.text,
+  },
+  toggle: {
+    width: 48,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.border,
+    padding: 3,
+    justifyContent: "center",
+  },
+  toggleOn: {
+    backgroundColor: SURGE_PURPLE,
+  },
+  toggleKnob: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: Colors.textSecondary,
+  },
+  toggleKnobOn: {
+    backgroundColor: Colors.text,
+    transform: [{ translateX: 20 }],
+  },
+});
