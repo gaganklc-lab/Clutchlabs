@@ -144,7 +144,7 @@ function StatCard({ label, value, icon, color }: { label: string; value: string;
 
   return (
     <Animated.View style={[rs.statCard, animStyle]}>
-      <Ionicons name={icon as any} size={20} color={color} />
+      <Ionicons name={icon as React.ComponentProps<typeof Ionicons>["name"]} size={20} color={color} />
       <Text style={rs.statValue}>{value}</Text>
       <Text style={rs.statLabel}>{label}</Text>
     </Animated.View>
@@ -361,7 +361,7 @@ export default function SurgeResultsScreen() {
                     {nextT && (
                       <View style={rs.progressRow}>
                         <View style={rs.progressBar}>
-                          <View style={[rs.progressFill, { width: `${Math.min(progress * 100, 100)}%` as any, backgroundColor: color }]} />
+                          <View style={[rs.progressFill, { width: `${Math.min(progress * 100, 100)}%` as `${number}%`, backgroundColor: color }]} />
                         </View>
                         <Text style={rs.progressLabel}>{tierXP.current}/{tierXP.needed} XP → {nextT.title}</Text>
                       </View>

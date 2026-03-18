@@ -71,7 +71,8 @@ export default function SurgeScreen() {
   const [perfectHits, setPerfectHits] = useState(0);
   const [totalHits, setTotalHits] = useState(0);
   const [maxCombo, setMaxCombo] = useState(0);
-  const [showFlash, setShowFlash] = useState<"success" | "error" | "near_miss" | null>(null);
+  const [flashType, setFlashType] = useState<"correct" | "wrong" | null>(null);
+  const [flashKey, setFlashKey] = useState(0);
   const [bursts, setBursts] = useState<BurstEvent[]>([]);
   const [popups, setPopups] = useState<PopupEvent[]>([]);
   const [hitLabel, setHitLabel] = useState<string | null>(null);
@@ -208,8 +209,9 @@ export default function SurgeScreen() {
     livesRef.current -= 1;
     setLives(livesRef.current);
 
-    setShowFlash("error");
-    setTimeout(() => setShowFlash(null), 300);
+    setFlashType("wrong");
+    setFlashKey((k) => k + 1);
+    setTimeout(() => setFlashType(null), 300);
     if (hapticsEnabled) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     if (soundEnabled) soundManager.play("wrong");
 
@@ -254,8 +256,9 @@ export default function SurgeScreen() {
       livesRef.current -= 1;
       setLives(livesRef.current);
 
-      setShowFlash("error");
-      setTimeout(() => setShowFlash(null), 300);
+      setFlashType("wrong");
+      setFlashKey((k) => k + 1);
+      setTimeout(() => setFlashType(null), 300);
       if (hapticsEnabled) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       if (soundEnabled) soundManager.play("wrong");
 
@@ -334,8 +337,9 @@ export default function SurgeScreen() {
       const labelColor = quality === "perfect" ? Colors.warning : Colors.success;
       showHitLabel(label, labelColor);
 
-      setShowFlash("success");
-      setTimeout(() => setShowFlash(null), 180);
+      setFlashType("correct");
+      setFlashKey((k) => k + 1);
+      setTimeout(() => setFlashType(null), 180);
       if (hapticsEnabled) Haptics.impactAsync(quality === "perfect" ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Light);
       if (soundEnabled) soundManager.play("tap");
     }
@@ -425,9 +429,9 @@ export default function SurgeScreen() {
       >
         <AmbientParticles count={8} />
 
-        {showFlash && <ScreenFlash type={showFlash} />}
-        <ParticleBurst events={bursts} onComplete={(id) => setBursts((p) => p.filter((b) => b.id !== id))} />
-        <ScorePopup events={popups} onComplete={(id) => setPopups((p) => p.filter((e) => e.id !== id))} />
+        <ScreenFlash flashType={flashType} flashKey={flashKey} />
+        <ParticleBurst bursts={bursts} onBurstComplete={(id) => setBursts((p) => p.filter((b) => b.id !== id))} />
+        <ScorePopup popups={popups} onComplete={(id) => setPopups((p) => p.filter((e) => e.id !== id))} />
 
         {/* Header */}
         <View style={styles.header}>

@@ -342,7 +342,8 @@ const lb = StyleSheet.create({
     fontSize: 11,
     fontFamily: "Outfit_400Regular",
     color: Colors.textMuted,
-    marginLeft: "auto" as any,
+    flex: 1,
+    textAlign: "right",
   },
   empty: {
     alignItems: "center",

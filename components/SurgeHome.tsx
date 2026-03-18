@@ -384,7 +384,7 @@ export default function SurgeHome() {
                     { opacity: pressed ? 0.7 : 1 },
                   ]}
                 >
-                  <Ionicons name={icon as any} size={18} color={isSelected ? theme.ringColor : Colors.textMuted} />
+                  <Ionicons name={icon as React.ComponentProps<typeof Ionicons>["name"]} size={18} color={isSelected ? theme.ringColor : Colors.textMuted} />
                   <Text style={[styles.modeLabel, isSelected && { color: theme.ringColor }]}>{label}</Text>
                   <Text style={[styles.modeDesc, isSelected && { color: theme.glowColor }]}>{desc}</Text>
                 </Pressable>
