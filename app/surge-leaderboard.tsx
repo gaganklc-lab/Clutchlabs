@@ -248,7 +248,7 @@ const lb = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: Colors.border,
+    borderColor: "rgba(255,255,255,0.20)",
     backgroundColor: Colors.surface,
   },
   tabBtnActive: {
@@ -270,7 +270,7 @@ const lb = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: Colors.warning + "30",
+    borderColor: Colors.warning + "70",
   },
   topSummaryLabel: {
     fontSize: 11,
@@ -293,11 +293,11 @@ const lb = StyleSheet.create({
     padding: 14,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: "rgba(255,255,255,0.18)",
   },
   topRow: {
-    borderColor: Colors.warning + "40",
-    backgroundColor: Colors.warning + "06",
+    borderColor: Colors.warning + "70",
+    backgroundColor: Colors.warning + "08",
   },
   positionBlock: {
     width: 32,
