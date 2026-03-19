@@ -465,7 +465,7 @@ export default function SurgeHome() {
           </View>
 
           {/* Streak row */}
-          {streak.current >= 2 && (
+          {streak.current > 0 && (
             <View style={styles.streakRow}>
               <Text style={styles.streakFire}>🔥</Text>
               <Text style={styles.streakText}>{streak.current} day streak</Text>
@@ -572,24 +572,31 @@ export default function SurgeHome() {
                 <View style={styles.dailyIconWrap}>
                   <Ionicons name="calendar" size={18} color={Colors.warning} />
                 </View>
-                <View>
+                <View style={{ gap: 2 }}>
                   <Text style={styles.dailyLabel}>Daily Challenge</Text>
                   <Text style={styles.dailyName}>{dailyChallenge.name}</Text>
+                  <Text style={styles.dailyAttemptsLabel}>
+                    Attempts: {dailyState.attemptsUsed}/{DAILY_MAX_ATTEMPTS}
+                  </Text>
                 </View>
               </View>
               <View style={styles.dailyRight}>
                 {dailyState.attemptsUsed < DAILY_MAX_ATTEMPTS ? (
-                  <>
-                    <Text style={styles.dailyAttempts}>{DAILY_MAX_ATTEMPTS - dailyState.attemptsUsed} left</Text>
-                    <Ionicons name="chevron-forward" size={16} color={Colors.warning} />
-                  </>
+                  <View style={styles.dailyPlayCta}>
+                    <Text style={styles.dailyPlayCtaText}>Play Daily</Text>
+                    <Ionicons name="chevron-forward" size={14} color={Colors.warning} />
+                  </View>
                 ) : (
-                  <>
+                  <View style={styles.dailyDoneGroup}>
                     {dailyState.bestScore > 0 && (
                       <Text style={styles.dailyBest}>{dailyState.bestScore}</Text>
                     )}
-                    <Ionicons name="checkmark-circle" size={18} color={Colors.warning} />
-                  </>
+                    <View style={styles.dailyDoneBadge}>
+                      <Ionicons name="checkmark" size={12} color={Colors.background} />
+                      <Text style={styles.dailyDoneText}>Done</Text>
+                    </View>
+                    <Text style={styles.dailyDoneSubtext}>Come back tomorrow</Text>
+                  </View>
                 )}
               </View>
             </Pressable>
@@ -992,14 +999,58 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   dailyRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
+    alignItems: "flex-end",
+    gap: 4,
+  },
+  dailyAttemptsLabel: {
+    fontSize: 11,
+    fontFamily: "Outfit_500Medium",
+    color: Colors.textMuted,
   },
   dailyAttempts: {
     fontSize: 12,
     fontFamily: "Outfit_600SemiBold",
     color: Colors.warning,
+  },
+  dailyPlayCta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: Colors.warning + "20",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.warning + "40",
+  },
+  dailyPlayCtaText: {
+    fontSize: 12,
+    fontFamily: "Outfit_700Bold",
+    color: Colors.warning,
+  },
+  dailyDoneGroup: {
+    alignItems: "flex-end",
+    gap: 3,
+  },
+  dailyDoneBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: Colors.warning,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  dailyDoneText: {
+    fontSize: 11,
+    fontFamily: "Outfit_700Bold",
+    color: Colors.background,
+  },
+  dailyDoneSubtext: {
+    fontSize: 10,
+    fontFamily: "Outfit_500Medium",
+    color: Colors.textMuted,
+    fontStyle: "italic",
   },
   dailyBest: {
     fontSize: 12,

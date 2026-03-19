@@ -33,7 +33,7 @@ import {
   getSurgeTotalXP,
   getSurgeBestScore,
   earnSurgePowerUp,
-  recordPlayToday,
+  updateStreakOnPlay,
   type SurgePowerUpType,
   type SurgeStreakData,
 } from "@/lib/surge-storage";
@@ -294,7 +294,7 @@ export default function SurgeResultsScreen() {
         setLevelUpData({ from: prevTitle, to: newTitle });
       }
 
-      const newStreak = await recordPlayToday(isPro);
+      const newStreak = await updateStreakOnPlay(isPro);
       setStreakData(newStreak);
 
       if (mode === "daily") {
@@ -433,16 +433,45 @@ export default function SurgeResultsScreen() {
                 <View testID="surge-results-xp-badge" style={rs.xpBadge}>
                   <Ionicons name="star" size={16} color={Colors.warning} />
                   <Text testID="surge-results-xp-text" style={rs.xpText}>+{xpEarned} XP</Text>
-                  {isPro && (
+                  {mode === "daily" && (
+                    <Text style={rs.xpMultiplier}>1.5× Daily</Text>
+                  )}
+                  {isPro && mode !== "daily" && (
                     <Text style={rs.xpMultiplier}>2× Pro</Text>
                   )}
-                  {!isPro && rankInfo.xpMultiplier > 1 && (
+                  {!isPro && mode !== "daily" && rankInfo.xpMultiplier > 1 && (
                     <Text style={rs.xpMultiplier}>{rankInfo.xpMultiplier}× bonus</Text>
                   )}
                 </View>
               )}
 
-              {streakData && streakData.current >= 2 && (
+              {finalDailyState && mode === "daily" && (
+                <View style={rs.dailyStateCard}>
+                  <View style={rs.dailyStateRow}>
+                    <Ionicons name="calendar" size={16} color={Colors.warning} />
+                    <Text style={rs.dailyStateTitle}>
+                      {finalDailyState.completed
+                        ? "Daily Challenge Complete!"
+                        : `Attempt ${finalDailyState.attemptsUsed}/${DAILY_MAX_ATTEMPTS}`}
+                    </Text>
+                  </View>
+                  {finalDailyState.bestScore > 0 && (
+                    <Text style={rs.dailyStateBest}>
+                      Best: {finalDailyState.bestScore.toLocaleString()}
+                    </Text>
+                  )}
+                  {finalDailyState.completed && (
+                    <Text style={rs.dailyStateDone}>Come back tomorrow for a new challenge!</Text>
+                  )}
+                  {!finalDailyState.completed && (
+                    <Text style={rs.dailyStateRemaining}>
+                      {DAILY_MAX_ATTEMPTS - finalDailyState.attemptsUsed} attempt{DAILY_MAX_ATTEMPTS - finalDailyState.attemptsUsed !== 1 ? "s" : ""} remaining
+                    </Text>
+                  )}
+                </View>
+              )}
+
+              {streakData && streakData.current >= 1 && (
                 <View style={rs.streakCard}>
                   <Text style={rs.streakFire}>🔥</Text>
                   <View style={{ flex: 1 }}>
@@ -773,5 +802,40 @@ const rs = StyleSheet.create({
     fontFamily: "Outfit_500Medium",
     color: Colors.textMuted,
     marginTop: 1,
+  },
+  dailyStateCard: {
+    backgroundColor: Colors.warning + "12",
+    borderWidth: 1,
+    borderColor: Colors.warning + "50",
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
+    gap: 6,
+  },
+  dailyStateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  dailyStateTitle: {
+    fontSize: 14,
+    fontFamily: "Outfit_700Bold",
+    color: Colors.warning,
+  },
+  dailyStateBest: {
+    fontSize: 13,
+    fontFamily: "Outfit_600SemiBold",
+    color: Colors.textMuted,
+  },
+  dailyStateDone: {
+    fontSize: 12,
+    fontFamily: "Outfit_500Medium",
+    color: Colors.textMuted,
+    fontStyle: "italic",
+  },
+  dailyStateRemaining: {
+    fontSize: 12,
+    fontFamily: "Outfit_500Medium",
+    color: Colors.textMuted,
   },
 });

@@ -201,6 +201,8 @@ export async function recordPlayToday(isPro: boolean): Promise<SurgeStreakData> 
   return streak;
 }
 
+export const updateStreakOnPlay = recordPlayToday;
+
 const BONUS_POWER_UP_TYPES: SurgePowerUpType[] = ["slow_ring", "extra_life", "double_score"];
 
 export async function checkAndGrantProWeeklyBonus(): Promise<SurgePowerUpType | null> {

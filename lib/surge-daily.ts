@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const DAILY_DATE_KEY = "surge_daily_date";
 const DAILY_STATE_KEY = "surge_daily_state";
+const DAILY_CHALLENGE_KEY = "surge_daily_challenge";
 
 export const DAILY_MAX_ATTEMPTS = 3;
 export const DAILY_XP_MULTIPLIER = 1.5;
@@ -35,10 +36,14 @@ const CHALLENGE_NAMES = [
   "Resonance Run",
 ];
 
+const RING_STYLES = ["CLASSIC", "ASSAULT", "TEMPO", "ZEN", "SURGE"] as const;
+export type DailyRingStyle = typeof RING_STYLES[number];
+
 export interface DailyChallenge {
   name: string;
   cycleStart: number;
   rampRate: number;
+  ringStyle: DailyRingStyle;
   dateKey: string;
   seed: number;
 }
@@ -49,16 +54,39 @@ export interface DailyState {
   completed: boolean;
 }
 
-export function getDailyChallenge(dateKey?: string): DailyChallenge {
-  const key = dateKey ?? getTodayKey();
+function computeChallenge(key: string): DailyChallenge {
   const seed = dateSeed(key);
   return {
     name: CHALLENGE_NAMES[seed % CHALLENGE_NAMES.length],
     cycleStart: 900 + (seed % 5) * 75,
     rampRate: 25 + (seed % 5) * 5,
+    ringStyle: RING_STYLES[(seed >> 3) % RING_STYLES.length],
     dateKey: key,
     seed,
   };
+}
+
+export function getDailyChallenge(dateKey?: string): DailyChallenge {
+  const key = dateKey ?? getTodayKey();
+  return computeChallenge(key);
+}
+
+export async function getTodayChallenge(): Promise<DailyChallenge> {
+  const todayKey = getTodayKey();
+  const storedDate = await AsyncStorage.getItem(DAILY_DATE_KEY);
+
+  if (storedDate === todayKey) {
+    const stored = await AsyncStorage.getItem(DAILY_CHALLENGE_KEY);
+    if (stored) {
+      try {
+        return JSON.parse(stored) as DailyChallenge;
+      } catch {}
+    }
+  }
+
+  const challenge = computeChallenge(todayKey);
+  await AsyncStorage.setItem(DAILY_CHALLENGE_KEY, JSON.stringify(challenge));
+  return challenge;
 }
 
 export async function getDailyState(): Promise<DailyState> {
@@ -67,9 +95,11 @@ export async function getDailyState(): Promise<DailyState> {
 
   if (storedDate !== todayKey) {
     const fresh: DailyState = { attemptsUsed: 0, bestScore: 0, completed: false };
+    const challenge = computeChallenge(todayKey);
     await AsyncStorage.multiSet([
       [DAILY_DATE_KEY, todayKey],
       [DAILY_STATE_KEY, JSON.stringify(fresh)],
+      [DAILY_CHALLENGE_KEY, JSON.stringify(challenge)],
     ]);
     return fresh;
   }
@@ -102,9 +132,11 @@ export async function resetIfNewDay(): Promise<boolean> {
   const stored = await AsyncStorage.getItem(DAILY_DATE_KEY);
   if (stored !== today) {
     const fresh: DailyState = { attemptsUsed: 0, bestScore: 0, completed: false };
+    const challenge = computeChallenge(today);
     await AsyncStorage.multiSet([
       [DAILY_DATE_KEY, today],
       [DAILY_STATE_KEY, JSON.stringify(fresh)],
+      [DAILY_CHALLENGE_KEY, JSON.stringify(challenge)],
     ]);
     return true;
   }
