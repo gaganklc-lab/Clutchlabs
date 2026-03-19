@@ -539,18 +539,32 @@ export default function SurgeHome() {
             ] as const).map(({ id: m, icon, label, desc }) => {
               const isSelected = mode === m;
               const isRush = m === "rush";
+              const accentColor = isRush ? "#FF6D00" : theme.ringColor;
               return (
                 <Pressable
                   key={m}
                   onPress={() => handleModeChange(m)}
                   style={({ pressed }) => [
                     styles.modeOption,
-                    isSelected && { borderColor: isRush ? "#FF6D00" : theme.ringColor, backgroundColor: (isRush ? "#FF6D00" : theme.ringColor) + "15" },
-                    { opacity: pressed ? 0.7 : 1 },
+                    isSelected && {
+                      borderColor: accentColor,
+                      borderWidth: 2,
+                      backgroundColor: accentColor + "28",
+                      shadowColor: accentColor,
+                      shadowOpacity: 0.35,
+                      shadowRadius: 10,
+                      shadowOffset: { width: 0, height: 2 },
+                      elevation: 6,
+                    },
+                    { opacity: pressed ? 0.75 : 1 },
                   ]}
                 >
-                  <Ionicons name={icon as React.ComponentProps<typeof Ionicons>["name"]} size={18} color={isSelected ? (isRush ? "#FF6D00" : theme.ringColor) : Colors.textMuted} />
-                  <Text style={[styles.modeLabel, isSelected && { color: isRush ? "#FF6D00" : theme.ringColor }]}>{label}</Text>
+                  <Ionicons
+                    name={icon as React.ComponentProps<typeof Ionicons>["name"]}
+                    size={18}
+                    color={isSelected ? accentColor : "rgba(255,255,255,0.55)"}
+                  />
+                  <Text style={[styles.modeLabel, isSelected && { color: accentColor }]}>{label}</Text>
                   <Text style={[styles.modeDesc, isSelected && { color: isRush ? "#FF6D00" : theme.glowColor }]}>{desc}</Text>
                 </Pressable>
               );
@@ -810,29 +824,29 @@ const styles = StyleSheet.create({
   },
   modePicker: {
     flexDirection: "row",
-    gap: 10,
+    gap: 12,
     marginBottom: 16,
   },
   modeOption: {
     flex: 1,
     alignItems: "center",
-    paddingVertical: 12,
+    paddingVertical: 13,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
+    borderColor: "rgba(255,255,255,0.14)",
+    backgroundColor: Colors.surfaceLight,
     gap: 4,
   },
   modeLabel: {
     fontSize: 14,
     fontFamily: "Outfit_700Bold",
-    color: Colors.textMuted,
+    color: "rgba(255,255,255,0.60)",
     letterSpacing: 0.5,
   },
   modeDesc: {
     fontSize: 11,
     fontFamily: "Outfit_500Medium",
-    color: Colors.textMuted,
+    color: "rgba(255,255,255,0.42)",
   },
   actions: {
     alignItems: "center",
