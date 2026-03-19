@@ -122,13 +122,16 @@ XP is earned each run based on score, combos, and perfect hits. Daily challenge 
 - Play daily to build a streak. Displayed on the home screen and results screen.
 - Pro users get a 1-day grace period — missing a single day does not reset the streak.
 
+### Leaderboard
+Classic and Endless modes each maintain a local top-20 leaderboard (score, max combo, perfect hits, date). Rush mode scores are tracked as personal best but not ranked on the leaderboard. Daily challenge scores are tracked separately in daily state and do not enter the leaderboard.
+
 ### Ring Cosmetics — 7 Themes
 
 | Theme | Unlock Condition |
 |---|---|
 | Neon Cyan | Default — always unlocked |
 | Gold Surge | Score 150+ in a Classic run |
-| Void | Reach Rhythm rank (350 XP) |
+| Void | Accumulate 500 XP total |
 | Ember | Hit a 20× combo in one run |
 | Ice Crystal | Survive 60 seconds in Endless mode |
 | Obsidian Pro ⚡ | Surge Pro only |
