@@ -71,9 +71,12 @@ module.exports = {
         : IS_SURGE
         ? {
             backgroundColor: "#0A0A1A",
-            foregroundImage: "./assets/images/surge-icon.png",
-            backgroundImage: "./assets/images/surge-icon.png",
-            monochromeImage: "./assets/images/surge-icon.png",
+            foregroundImage:
+              "./assets/images/surge-android-icon-foreground.png",
+            backgroundImage:
+              "./assets/images/surge-android-icon-background.png",
+            monochromeImage:
+              "./assets/images/surge-android-icon-monochrome.png",
           }
         : {
             backgroundColor: "#E6F4FE",
