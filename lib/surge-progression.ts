@@ -1,18 +1,32 @@
-export type SurgeTitle = "Novice" | "Pulse" | "Rhythm" | "Resonance" | "Surge Master";
+export type SurgeTitle =
+  | "Novice"
+  | "Pulse"
+  | "Rhythm"
+  | "Beat"
+  | "Flow"
+  | "Resonance"
+  | "Surge"
+  | "Elite"
+  | "Surge Master";
 
 interface SurgeTitleTier {
   title: SurgeTitle;
   xpRequired: number;
   color: string;
+  icon: string;
   description: string;
 }
 
 const SURGE_TITLE_TIERS: SurgeTitleTier[] = [
-  { title: "Novice",       xpRequired: 0,    color: "#9E9E9E", description: "Learning the rhythm" },
-  { title: "Pulse",        xpRequired: 200,  color: "#A78BFA", description: "Feeling the beat" },
-  { title: "Rhythm",       xpRequired: 500,  color: "#7C3AED", description: "In perfect sync" },
-  { title: "Resonance",    xpRequired: 1200, color: "#E040FB", description: "One with the surge" },
-  { title: "Surge Master", xpRequired: 3000, color: "#FFD700", description: "Beyond the limit" },
+  { title: "Novice",       xpRequired: 0,    color: "#9E9E9E", icon: "radio-button-off-outline", description: "Learning the rhythm" },
+  { title: "Pulse",        xpRequired: 150,  color: "#B0BEC5", icon: "pulse-outline",            description: "Feeling the beat" },
+  { title: "Rhythm",       xpRequired: 350,  color: "#4FC3F7", icon: "musical-notes-outline",    description: "Moving with the flow" },
+  { title: "Beat",         xpRequired: 650,  color: "#26C6DA", icon: "timer-outline",             description: "Locked in the groove" },
+  { title: "Flow",         xpRequired: 1100, color: "#A78BFA", icon: "water-outline",             description: "Effortless precision" },
+  { title: "Resonance",    xpRequired: 1800, color: "#E040FB", icon: "radio-button-on-outline",   description: "One with the surge" },
+  { title: "Surge",        xpRequired: 2800, color: "#7C3AED", icon: "flash-outline",             description: "Riding the energy" },
+  { title: "Elite",        xpRequired: 4200, color: "#FF6D00", icon: "star-outline",              description: "Master-class timing" },
+  { title: "Surge Master", xpRequired: 6000, color: "#FFD700", icon: "trophy-outline",            description: "Beyond the limit" },
 ];
 
 export function getSurgeTitle(xp: number): SurgeTitle {

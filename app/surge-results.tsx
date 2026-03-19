@@ -33,8 +33,11 @@ import {
   getSurgeTotalXP,
   getSurgeBestScore,
   earnSurgePowerUp,
+  recordPlayToday,
   type SurgePowerUpType,
+  type SurgeStreakData,
 } from "@/lib/surge-storage";
+import { recordDailyAttempt, DAILY_MAX_ATTEMPTS, DAILY_XP_MULTIPLIER, type DailyState } from "@/lib/surge-daily";
 
 import {
   getSurgeTitle,
@@ -42,6 +45,7 @@ import {
   getNextSurgeTitle,
   getSurgeTierXP,
   getSurgeTitleInfo,
+  type SurgeTitle,
 } from "@/lib/surge-progression";
 import {
   checkAndUnlockRingThemes,
@@ -210,6 +214,7 @@ export default function SurgeResultsScreen() {
     totalHits: string;
     timeSurvived: string;
     mode: string;
+    dailyAttemptNum: string;
   }>();
 
   const score = parseInt(params.score ?? "0");
@@ -217,7 +222,8 @@ export default function SurgeResultsScreen() {
   const perfectHits = parseInt(params.perfectHits ?? "0");
   const totalHits = parseInt(params.totalHits ?? "0");
   const timeSurvived = parseInt(params.timeSurvived ?? "0");
-  const mode = (params.mode ?? "classic") as "classic" | "endless" | "rush";
+  const mode = (params.mode ?? "classic") as "classic" | "endless" | "rush" | "daily";
+  const dailyAttemptNum = parseInt(params.dailyAttemptNum ?? "1", 10);
 
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -234,6 +240,9 @@ export default function SurgeResultsScreen() {
   const [newThemes, setNewThemes] = useState<RingThemeId[]>([]);
   const [showPaywall, setShowPaywall] = useState(false);
   const [earnedPowerUp, setEarnedPowerUp] = useState<SurgePowerUpType | null>(null);
+  const [streakData, setStreakData] = useState<SurgeStreakData | null>(null);
+  const [levelUpData, setLevelUpData] = useState<{ from: SurgeTitle; to: SurgeTitle } | null>(null);
+  const [finalDailyState, setFinalDailyState] = useState<DailyState | null>(null);
   const processedRef = useRef(false);
 
   const perfectAccuracy = totalHits > 0 ? Math.round((perfectHits / totalHits) * 100) : 0;
@@ -252,34 +261,53 @@ export default function SurgeResultsScreen() {
     if (processedRef.current) return;
     processedRef.current = true;
 
+    const dailyMultiplier = mode === "daily" ? DAILY_XP_MULTIPLIER : 1;
     const baseXP = Math.max(15, Math.round(score / 8) + maxCombo * 2 + perfectHits);
     const proMultiplier = isPro ? 2 : 1;
-    const xp = Math.round(baseXP * rankInfo.xpMultiplier * proMultiplier);
+    const xp = Math.round(baseXP * rankInfo.xpMultiplier * proMultiplier * dailyMultiplier);
     setXpEarned(xp);
 
     const process = async () => {
-      const prevBest = await getSurgeBestScore(mode);
-      const newPersonalBest = score > prevBest;
-      if (newPersonalBest) {
-        setIsNewBest(true);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        if (!isPro) {
-          setTimeout(() => setShowPaywall(true), 1800);
+      const prevXP = await getSurgeTotalXP();
+      const prevTitle = getSurgeTitle(prevXP);
+
+      if (mode !== "daily") {
+        const prevBest = await getSurgeBestScore(mode);
+        const newPersonalBest = score > prevBest;
+        if (newPersonalBest) {
+          setIsNewBest(true);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          if (!isPro) {
+            setTimeout(() => setShowPaywall(true), 1800);
+          }
         }
+        await setSurgeBestScore(score, mode);
       }
 
       await addSurgeXP(xp);
-      await setSurgeBestScore(score, mode);
 
       const newTotal = await getSurgeTotalXP();
       setTotalXP(newTotal);
+
+      const newTitle = getSurgeTitle(newTotal);
+      if (prevTitle !== newTitle) {
+        setLevelUpData({ from: prevTitle, to: newTitle });
+      }
+
+      const newStreak = await recordPlayToday(isPro);
+      setStreakData(newStreak);
+
+      if (mode === "daily") {
+        const ds = await recordDailyAttempt(score);
+        setFinalDailyState(ds);
+      }
 
       const unlocks = await checkAndUnlockRingThemes({
         score,
         maxCombo,
         totalXP: newTotal,
         timeSurvived,
-        mode,
+        mode: mode === "daily" ? "classic" : mode,
       });
 
       if (isPro) {
@@ -295,17 +323,19 @@ export default function SurgeResultsScreen() {
         }
       }
 
-      await addSurgeLeaderboardEntry(
-        {
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-          score,
-          maxCombo,
-          perfectHits,
-          date: new Date().toISOString(),
-          rank: rankInfo.rank,
-        },
-        mode
-      );
+      if (mode !== "daily") {
+        await addSurgeLeaderboardEntry(
+          {
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+            score,
+            maxCombo,
+            perfectHits,
+            date: new Date().toISOString(),
+            rank: rankInfo.rank,
+          },
+          mode
+        );
+      }
 
       const earnsPowerUp = rankInfo.rank === "S" || (rankInfo.rank === "A" && isPro);
       if (earnsPowerUp) {
@@ -339,7 +369,7 @@ export default function SurgeResultsScreen() {
 
   const containerStyle = useAnimatedStyle(() => ({ opacity: containerOpacity.value }));
   const headerStyle = useAnimatedStyle(() => ({ transform: [{ scale: headerScale.value }] }));
-  const modeLabel = mode === "classic" ? "Classic" : mode === "rush" ? "Rush" : "Endless";
+  const modeLabel = mode === "classic" ? "Classic" : mode === "rush" ? "Rush" : mode === "daily" ? "Daily" : "Endless";
 
   return (
     <LinearGradient
@@ -360,11 +390,34 @@ export default function SurgeResultsScreen() {
                 <Text style={rs.subtitleText}>{modeLabel} Mode</Text>
               </Animated.View>
 
+              {mode === "daily" && (
+                <View style={rs.dailyBadge}>
+                  <Ionicons name="calendar" size={14} color={Colors.warning} />
+                  <Text style={rs.dailyBadgeText}>
+                    DAILY CHALLENGE — Attempt {dailyAttemptNum}/{DAILY_MAX_ATTEMPTS}
+                  </Text>
+                </View>
+              )}
+
               {isNewBest && (
                 <View style={rs.newBestBanner}>
                   <Text style={rs.newBestText}>🎉 NEW PERSONAL BEST!</Text>
                 </View>
               )}
+
+              {levelUpData && (() => {
+                const toColor = getSurgeTitleColor(levelUpData.to);
+                return (
+                  <View style={[rs.levelUpBanner, { borderColor: toColor + "80" }]}>
+                    <Ionicons name="arrow-up-circle" size={18} color={toColor} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[rs.levelUpTitle, { color: toColor }]}>LEVEL UP!</Text>
+                      <Text style={rs.levelUpSub}>{levelUpData.from} → {levelUpData.to}</Text>
+                    </View>
+                    <Ionicons name="sparkles" size={16} color={toColor} />
+                  </View>
+                );
+              })()}
 
               <View testID="surge-results-score-section" style={[rs.scoreSection, isNewBest && { borderColor: Colors.warning + "80" }]}>
                 <Text style={rs.scoreLabel}>SCORE</Text>
@@ -385,6 +438,24 @@ export default function SurgeResultsScreen() {
                   )}
                   {!isPro && rankInfo.xpMultiplier > 1 && (
                     <Text style={rs.xpMultiplier}>{rankInfo.xpMultiplier}× bonus</Text>
+                  )}
+                </View>
+              )}
+
+              {streakData && streakData.current >= 2 && (
+                <View style={rs.streakCard}>
+                  <Text style={rs.streakFire}>🔥</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={rs.streakNum}>{streakData.current} day streak!</Text>
+                    {streakData.best > streakData.current && (
+                      <Text style={rs.streakBest}>Best: {streakData.best} days</Text>
+                    )}
+                    {streakData.best === streakData.current && streakData.current > 1 && (
+                      <Text style={rs.streakBest}>New record!</Text>
+                    )}
+                  </View>
+                  {streakData.current >= 7 && (
+                    <Ionicons name="trophy" size={16} color="#FF6D00" />
                   )}
                 </View>
               )}
@@ -638,6 +709,69 @@ const rs = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Outfit_700Bold",
     color: Colors.text,
+    marginTop: 1,
+  },
+  dailyBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: Colors.warning + "18",
+    borderWidth: 1,
+    borderColor: Colors.warning + "60",
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    alignSelf: "center",
+    marginBottom: 10,
+  },
+  dailyBadgeText: {
+    fontSize: 12,
+    fontFamily: "Outfit_800ExtraBold",
+    color: Colors.warning,
+    letterSpacing: 1,
+  },
+  levelUpBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
+  },
+  levelUpTitle: {
+    fontSize: 13,
+    fontFamily: "Outfit_800ExtraBold",
+    letterSpacing: 2,
+  },
+  levelUpSub: {
+    fontSize: 12,
+    fontFamily: "Outfit_500Medium",
+    color: Colors.textMuted,
+    marginTop: 1,
+  },
+  streakCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#FF6D0018",
+    borderWidth: 1,
+    borderColor: "#FF6D0050",
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 10,
+  },
+  streakFire: { fontSize: 24 },
+  streakNum: {
+    fontSize: 15,
+    fontFamily: "Outfit_700Bold",
+    color: "#FF6D00",
+  },
+  streakBest: {
+    fontSize: 11,
+    fontFamily: "Outfit_500Medium",
+    color: Colors.textMuted,
     marginTop: 1,
   },
 });

@@ -5,6 +5,7 @@ import {
   View,
   Platform,
   Pressable,
+  Alert,
   useWindowDimensions,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
@@ -37,10 +38,11 @@ import {
   type RingThemeId,
 } from "@/lib/surge-cosmetics";
 import { getSurgeSettings, consumeSurgePowerUp, type SurgePowerUpType } from "@/lib/surge-storage";
+import { getDailyChallenge, getDailyState } from "@/lib/surge-daily";
 import { useSurgeSubscription } from "@/lib/surge-subscription";
 import { useRewardedAd } from "@/lib/surge-ads";
 
-type SurgeGameMode = "classic" | "endless" | "rush";
+type SurgeGameMode = "classic" | "endless" | "rush" | "daily";
 type HitQuality = "perfect" | "good" | "miss";
 
 const TARGET_PROGRESS = 0.5;
@@ -54,14 +56,18 @@ const RAMP_EVERY_N_HITS = 3;
 const RUSH_RAMP_EVERY_N_HITS = 2;
 const RAMP_AMOUNT_MS = 35;
 const RUSH_COLOR = "#FF6D00";
+const DAILY_COLOR = "#FFD600";
 const ORB_RADIUS = 44;
 const MAX_RING_RADIUS = 130;
 const TARGET_RADIUS = ORB_RADIUS + (MAX_RING_RADIUS - ORB_RADIUS) * TARGET_PROGRESS;
 
 export default function SurgeScreen() {
-  const { mode: modeParam, powerUp: powerUpParam } = useLocalSearchParams<{ mode: string; powerUp: string }>();
+  const { mode: modeParam, powerUp: powerUpParam, dailyAttemptNum: dailyAttemptParam } = useLocalSearchParams<{ mode: string; powerUp: string; dailyAttemptNum: string }>();
   const mode = (modeParam ?? "classic") as SurgeGameMode;
   const pendingPowerUp = (powerUpParam ?? null) as SurgePowerUpType | null;
+  const dailyAttemptNum = parseInt(dailyAttemptParam ?? "1", 10);
+
+  const dailyChallenge = mode === "daily" ? getDailyChallenge() : null;
 
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
@@ -112,7 +118,12 @@ export default function SurgeScreen() {
   const elapsedRef = useRef(0);
   const elapsedTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hitsSinceRampRef = useRef(0);
-  const cycleDurationRef = useRef(mode === "rush" ? RUSH_INITIAL_CYCLE_MS : INITIAL_CYCLE_MS);
+  const cycleDurationRef = useRef(
+    mode === "rush" ? RUSH_INITIAL_CYCLE_MS
+    : mode === "daily" ? (dailyChallenge?.cycleStart ?? INITIAL_CYCLE_MS)
+    : INITIAL_CYCLE_MS
+  );
+  const rampAmountRef = useRef(dailyChallenge ? dailyChallenge.rampRate : RAMP_AMOUNT_MS);
   const hitLabelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tappedThisCycleRef = useRef(false);
   const cycleStartTimeRef = useRef(0);
@@ -179,9 +190,10 @@ export default function SurgeScreen() {
         totalHits: totalHitsRef.current,
         timeSurvived: elapsedRef.current,
         mode,
+        dailyAttemptNum: mode === "daily" ? String(dailyAttemptNum) : undefined,
       },
     });
-  }, [mode]);
+  }, [mode, dailyAttemptNum]);
 
   const endGame = useCallback(() => {
     if (gameOverRef.current) return;
@@ -353,7 +365,7 @@ export default function SurgeScreen() {
         hitsSinceRampRef.current = 0;
         cycleDurationRef.current = Math.max(
           minFloor,
-          cycleDurationRef.current - RAMP_AMOUNT_MS
+          cycleDurationRef.current - rampAmountRef.current
         );
       }
 
@@ -486,6 +498,19 @@ export default function SurgeScreen() {
   }, [startGame]);
 
   useEffect(() => {
+    if (mode !== "daily") return;
+    getDailyState().then((state) => {
+      if (state.attemptsUsed >= 3) {
+        Alert.alert(
+          "No Attempts Left",
+          "You've used all 3 attempts for today's Daily Challenge. Come back tomorrow!",
+          [{ text: "OK", onPress: () => router.replace("/") }]
+        );
+      }
+    });
+  }, [mode]);
+
+  useEffect(() => {
     const tick = startCountdown();
     return () => {
       clearInterval(tick);
@@ -543,6 +568,9 @@ export default function SurgeScreen() {
           <View testID="surge-game-score-block" style={styles.scoreBlock}>
             {mode === "rush" && (
               <Text style={[styles.modeLabel, { color: RUSH_COLOR }]}>RUSH</Text>
+            )}
+            {mode === "daily" && (
+              <Text style={[styles.modeLabel, { color: DAILY_COLOR }]}>DAILY {dailyAttemptNum}/3</Text>
             )}
             <Text testID="surge-game-score-text" style={[styles.scoreText, { color: theme.ringColor }]}>{score}</Text>
             {combo >= 2 && (

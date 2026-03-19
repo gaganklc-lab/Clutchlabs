@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   StyleSheet,
   Text,
@@ -9,7 +9,7 @@ import {
   Platform,
   useWindowDimensions,
 } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, {
@@ -36,14 +36,23 @@ import {
   saveSurgeSettings,
   getSurgePowerUps,
   checkAndGrantProWeeklyBonus,
+  getStreak,
   totalPowerUps,
   type SurgeGameMode,
   type SurgeSettings,
   type SurgePowerUpInventory,
   type SurgePowerUpType,
+  type SurgeStreakData,
 } from "@/lib/surge-storage";
+import {
+  getDailyChallenge,
+  getDailyState,
+  DAILY_MAX_ATTEMPTS,
+  type DailyChallenge,
+  type DailyState,
+} from "@/lib/surge-daily";
 import SurgePowerUpSelect from "@/components/SurgePowerUpSelect";
-import { getSurgeTitle, getSurgeTitleColor } from "@/lib/surge-progression";
+import { getSurgeTitle, getSurgeTitleColor, getSurgeTierXP, getNextSurgeTitle } from "@/lib/surge-progression";
 import {
   getEquippedRingTheme,
   setEquippedRingTheme,
@@ -247,6 +256,10 @@ export default function SurgeHome() {
   const [powerUpInventory, setPowerUpInventory] = useState<SurgePowerUpInventory>({ slow_ring: 0, extra_life: 0, double_score: 0 });
   const [powerUpTotal, setPowerUpTotal] = useState(0);
   const [bestRush, setBestRush] = useState(0);
+  const [totalXP, setTotalXP] = useState(0);
+  const [streak, setStreak] = useState<SurgeStreakData>({ current: 0, best: 0, lastPlayedDate: "" });
+  const [dailyChallenge, setDailyChallenge] = useState<DailyChallenge | null>(null);
+  const [dailyState, setDailyState] = useState<DailyState | null>(null);
 
   const pulseAnim = useSharedValue(0);
   const glowAnim = useSharedValue(0);
@@ -274,7 +287,6 @@ export default function SurgeHome() {
 
   useEffect(() => {
     trackEvent("screen_viewed", { screen: "surge_home" });
-    loadData();
 
     pulseAnim.value = withRepeat(
       withSequence(
@@ -295,8 +307,8 @@ export default function SurgeHome() {
     ring3.value = withDelay(1200, withRepeat(withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.ease) }), -1, true));
   }, []);
 
-  const loadData = async () => {
-    const [bc, be, br, m, s, xp, eq, inv] = await Promise.all([
+  const loadData = useCallback(async () => {
+    const [bc, be, br, m, s, xp, eq, inv, sk, ds] = await Promise.all([
       getSurgeBestScore("classic"),
       getSurgeBestScore("endless"),
       getSurgeBestScore("rush"),
@@ -305,19 +317,29 @@ export default function SurgeHome() {
       getSurgeTotalXP(),
       getEquippedRingTheme(),
       getSurgePowerUps(),
+      getStreak(),
+      getDailyState(),
     ]);
     setBestClassic(bc);
     setBestEndless(be);
     setBestRush(br);
     setMode(m);
     setSettings(s);
+    setTotalXP(xp);
     const title = getSurgeTitle(xp);
     setSurgeTitle(title);
     setSurgeTitleColor(getSurgeTitleColor(title));
     setEquippedThemeId(eq);
     setPowerUpInventory(inv);
     setPowerUpTotal(totalPowerUps(inv));
-  };
+    setStreak(sk);
+    setDailyState(ds);
+    setDailyChallenge(getDailyChallenge());
+  }, []);
+
+  useFocusEffect(useCallback(() => {
+    loadData();
+  }, [loadData]));
 
   const handleModeChange = async (m: SurgeGameMode) => {
     setMode(m);
@@ -332,6 +354,14 @@ export default function SurgeHome() {
     } else {
       router.push({ pathname: "/surge", params: { mode } });
     }
+  };
+
+  const handlePlayDaily = () => {
+    if (!dailyChallenge || !dailyState) return;
+    if (dailyState.attemptsUsed >= DAILY_MAX_ATTEMPTS) return;
+    if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const attemptNum = dailyState.attemptsUsed + 1;
+    router.push({ pathname: "/surge", params: { mode: "daily", dailyAttemptNum: String(attemptNum) } });
   };
 
   const handlePowerUpPlay = (selectedPowerUp: SurgePowerUpType | null) => {
@@ -434,6 +464,19 @@ export default function SurgeHome() {
             </View>
           </View>
 
+          {/* Streak row */}
+          {streak.current >= 2 && (
+            <View style={styles.streakRow}>
+              <Text style={styles.streakFire}>🔥</Text>
+              <Text style={styles.streakText}>{streak.current} day streak</Text>
+              {isPro && streak.best === streak.current && streak.current > 1 && (
+                <View style={styles.streakBestBadge}>
+                  <Text style={styles.streakBestText}>BEST</Text>
+                </View>
+              )}
+            </View>
+          )}
+
           {/* Orb visual */}
           <View style={styles.orbSection}>
             <Animated.View style={[styles.orbRing, ring3Style, { borderColor: theme.glowColor }]} />
@@ -463,6 +506,30 @@ export default function SurgeHome() {
             )}
           </View>
 
+          {/* XP progress card */}
+          {(() => {
+            const tierXP = getSurgeTierXP(totalXP);
+            const nextT = getNextSurgeTitle(totalXP);
+            const progress = tierXP.needed > 0 ? Math.min(tierXP.current / tierXP.needed, 1) : 1;
+            return (
+              <View style={styles.xpCard}>
+                <View style={styles.xpRow}>
+                  <Text style={[styles.xpTitle, { color: surgeTitleColor }]}>{surgeTitle.toUpperCase()}</Text>
+                  <Text style={styles.xpAmount}>{totalXP} XP</Text>
+                </View>
+                <View style={styles.xpBar}>
+                  <View style={[styles.xpFill, { width: `${Math.round(progress * 100)}%` as `${number}%`, backgroundColor: surgeTitleColor }]} />
+                </View>
+                {nextT && (
+                  <Text style={styles.xpNext}>{tierXP.current}/{tierXP.needed} → {nextT.title}</Text>
+                )}
+                {!nextT && (
+                  <Text style={[styles.xpNext, { color: Colors.warning }]}>MAX RANK</Text>
+                )}
+              </View>
+            );
+          })()}
+
           {/* Mode picker */}
           <View style={styles.modePicker}>
             {([
@@ -489,6 +556,44 @@ export default function SurgeHome() {
               );
             })}
           </View>
+
+          {/* Daily challenge card */}
+          {dailyChallenge && dailyState && (
+            <Pressable
+              onPress={handlePlayDaily}
+              disabled={dailyState.attemptsUsed >= DAILY_MAX_ATTEMPTS}
+              style={({ pressed }) => [
+                styles.dailyCard,
+                dailyState.attemptsUsed >= DAILY_MAX_ATTEMPTS && styles.dailyCardDone,
+                { opacity: pressed ? 0.85 : 1 },
+              ]}
+            >
+              <View style={styles.dailyLeft}>
+                <View style={styles.dailyIconWrap}>
+                  <Ionicons name="calendar" size={18} color={Colors.warning} />
+                </View>
+                <View>
+                  <Text style={styles.dailyLabel}>Daily Challenge</Text>
+                  <Text style={styles.dailyName}>{dailyChallenge.name}</Text>
+                </View>
+              </View>
+              <View style={styles.dailyRight}>
+                {dailyState.attemptsUsed < DAILY_MAX_ATTEMPTS ? (
+                  <>
+                    <Text style={styles.dailyAttempts}>{DAILY_MAX_ATTEMPTS - dailyState.attemptsUsed} left</Text>
+                    <Ionicons name="chevron-forward" size={16} color={Colors.warning} />
+                  </>
+                ) : (
+                  <>
+                    {dailyState.bestScore > 0 && (
+                      <Text style={styles.dailyBest}>{dailyState.bestScore}</Text>
+                    )}
+                    <Ionicons name="checkmark-circle" size={18} color={Colors.warning} />
+                  </>
+                )}
+              </View>
+            </Pressable>
+          )}
 
           {/* Play button */}
           <View style={styles.actions}>
@@ -772,6 +877,134 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Outfit_600SemiBold",
     color: Colors.warning,
+  },
+  streakRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "center",
+    backgroundColor: "#FF6D0015",
+    borderWidth: 1,
+    borderColor: "#FF6D0040",
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    marginBottom: 4,
+  },
+  streakFire: { fontSize: 16 },
+  streakText: {
+    fontSize: 12,
+    fontFamily: "Outfit_600SemiBold",
+    color: "#FF6D00",
+  },
+  streakBestBadge: {
+    backgroundColor: "#FF6D00",
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginLeft: 2,
+  },
+  streakBestText: {
+    fontSize: 8,
+    fontFamily: "Outfit_800ExtraBold",
+    color: "#fff",
+    letterSpacing: 1,
+  },
+  xpCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 12,
+    gap: 6,
+  },
+  xpRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  xpTitle: {
+    fontSize: 12,
+    fontFamily: "Outfit_800ExtraBold",
+    letterSpacing: 2,
+  },
+  xpAmount: {
+    fontSize: 11,
+    fontFamily: "Outfit_600SemiBold",
+    color: Colors.textMuted,
+  },
+  xpBar: {
+    height: 5,
+    backgroundColor: Colors.border,
+    borderRadius: 3,
+    overflow: "hidden",
+  },
+  xpFill: {
+    height: "100%",
+    borderRadius: 3,
+  },
+  xpNext: {
+    fontSize: 10,
+    fontFamily: "Outfit_500Medium",
+    color: Colors.textMuted,
+    textAlign: "right",
+  },
+  dailyCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: Colors.warning + "12",
+    borderWidth: 1,
+    borderColor: Colors.warning + "50",
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 10,
+  },
+  dailyCardDone: {
+    opacity: 0.6,
+  },
+  dailyLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  dailyIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.warning + "20",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dailyLabel: {
+    fontSize: 10,
+    fontFamily: "Outfit_600SemiBold",
+    color: Colors.textMuted,
+    letterSpacing: 1,
+  },
+  dailyName: {
+    fontSize: 14,
+    fontFamily: "Outfit_700Bold",
+    color: Colors.warning,
+    marginTop: 1,
+  },
+  dailyRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  dailyAttempts: {
+    fontSize: 12,
+    fontFamily: "Outfit_600SemiBold",
+    color: Colors.warning,
+  },
+  dailyBest: {
+    fontSize: 12,
+    fontFamily: "Outfit_700Bold",
+    color: Colors.textMuted,
   },
 });
 

@@ -12,6 +12,7 @@ const KEYS = {
   SETTINGS:                 "surge_settings",
   POWER_UPS:                "surge_power_ups",
   PRO_WEEKLY_BONUS_DATE:    "surge_pro_weekly_bonus_date",
+  STREAK:                   "surge_streak_data",
 };
 
 export interface SurgeLeaderboardEntry {
@@ -47,7 +48,7 @@ const DEFAULT_POWER_UPS: SurgePowerUpInventory = {
   double_score: 0,
 };
 
-export type SurgeGameMode = "classic" | "endless" | "rush";
+export type SurgeGameMode = "classic" | "endless" | "rush" | "daily";
 
 function bestScoreKey(mode: SurgeGameMode): string {
   if (mode === "endless") return KEYS.BEST_SCORE_ENDLESS;
@@ -154,6 +155,50 @@ export async function earnSurgePowerUp(type: SurgePowerUpType, amount: number = 
 
 export function totalPowerUps(inv: SurgePowerUpInventory): number {
   return inv.slow_ring + inv.extra_life + inv.double_score;
+}
+
+export interface SurgeStreakData {
+  current: number;
+  best: number;
+  lastPlayedDate: string;
+}
+
+export async function getStreak(): Promise<SurgeStreakData> {
+  const val = await AsyncStorage.getItem(KEYS.STREAK);
+  if (!val) return { current: 0, best: 0, lastPlayedDate: "" };
+  try {
+    return JSON.parse(val) as SurgeStreakData;
+  } catch {
+    return { current: 0, best: 0, lastPlayedDate: "" };
+  }
+}
+
+export async function recordPlayToday(isPro: boolean): Promise<SurgeStreakData> {
+  const today = new Date().toISOString().slice(0, 10);
+  const streak = await getStreak();
+
+  if (streak.lastPlayedDate === today) {
+    return streak;
+  }
+
+  const msPerDay = 86400000;
+  const yesterday = new Date(Date.now() - msPerDay).toISOString().slice(0, 10);
+  const twoDaysAgo = new Date(Date.now() - 2 * msPerDay).toISOString().slice(0, 10);
+
+  if (streak.lastPlayedDate === yesterday) {
+    streak.current += 1;
+  } else if (isPro && streak.lastPlayedDate === twoDaysAgo) {
+    streak.current += 1;
+  } else if (!streak.lastPlayedDate) {
+    streak.current = 1;
+  } else {
+    streak.current = 1;
+  }
+
+  if (streak.current > streak.best) streak.best = streak.current;
+  streak.lastPlayedDate = today;
+  await AsyncStorage.setItem(KEYS.STREAK, JSON.stringify(streak));
+  return streak;
 }
 
 const BONUS_POWER_UP_TYPES: SurgePowerUpType[] = ["slow_ring", "extra_life", "double_score"];
