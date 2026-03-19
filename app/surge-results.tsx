@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import type { SharedValue } from "react-native-reanimated";
 import {
   StyleSheet,
   Text,
@@ -206,6 +207,42 @@ function UnlockCard({ newThemes }: { newThemes: RingThemeId[] }) {
   );
 }
 
+function LevelUpBanner({
+  data,
+  translateY,
+  opacity,
+  scale,
+}: {
+  data: { from: SurgeTitle; to: SurgeTitle };
+  translateY: SharedValue<number>;
+  opacity: SharedValue<number>;
+  scale: SharedValue<number>;
+}) {
+  const toColor = getSurgeTitleColor(data.to);
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }, { scale: scale.value }],
+  }));
+
+  return (
+    <Animated.View style={animStyle}>
+      <LinearGradient
+        colors={[toColor + "25", toColor + "08"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={[rs.levelUpBanner, { borderColor: toColor + "90" }]}
+      >
+        <Ionicons name="arrow-up-circle" size={20} color={toColor} />
+        <View style={{ flex: 1 }}>
+          <Text style={[rs.levelUpTitle, { color: toColor }]}>LEVEL UP!</Text>
+          <Text style={rs.levelUpSub}>{data.from} → {data.to}</Text>
+        </View>
+        <Ionicons name="sparkles" size={18} color={toColor} />
+      </LinearGradient>
+    </Animated.View>
+  );
+}
+
 export default function SurgeResultsScreen() {
   const params = useLocalSearchParams<{
     score: string;
@@ -250,11 +287,30 @@ export default function SurgeResultsScreen() {
 
   const containerOpacity = useSharedValue(0);
   const headerScale = useSharedValue(0.85);
+  const levelUpTranslateY = useSharedValue(-30);
+  const levelUpOpacity = useSharedValue(0);
+  const levelUpScale = useSharedValue(0.85);
 
   useEffect(() => {
     containerOpacity.value = withTiming(1, { duration: 500 });
     headerScale.value = withSpring(1, { damping: 12, stiffness: 180 });
   }, []);
+
+  useEffect(() => {
+    if (!levelUpData) return;
+    levelUpTranslateY.value = -30;
+    levelUpOpacity.value = 0;
+    levelUpScale.value = 0.85;
+    levelUpTranslateY.value = withSpring(0, { damping: 14, stiffness: 200 });
+    levelUpOpacity.value = withTiming(1, { duration: 350 });
+    levelUpScale.value = withSequence(
+      withSpring(1.08, { damping: 8, stiffness: 200 }),
+      withSpring(1, { damping: 12, stiffness: 180 })
+    );
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const t = setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy), 180);
+    return () => clearTimeout(t);
+  }, [levelUpData]);
 
   useEffect(() => {
     if (isSubLoading) return;
@@ -405,19 +461,14 @@ export default function SurgeResultsScreen() {
                 </View>
               )}
 
-              {levelUpData && (() => {
-                const toColor = getSurgeTitleColor(levelUpData.to);
-                return (
-                  <View style={[rs.levelUpBanner, { borderColor: toColor + "80" }]}>
-                    <Ionicons name="arrow-up-circle" size={18} color={toColor} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={[rs.levelUpTitle, { color: toColor }]}>LEVEL UP!</Text>
-                      <Text style={rs.levelUpSub}>{levelUpData.from} → {levelUpData.to}</Text>
-                    </View>
-                    <Ionicons name="sparkles" size={16} color={toColor} />
-                  </View>
-                );
-              })()}
+              {levelUpData && (
+                <LevelUpBanner
+                  data={levelUpData}
+                  translateY={levelUpTranslateY}
+                  opacity={levelUpOpacity}
+                  scale={levelUpScale}
+                />
+              )}
 
               <View testID="surge-results-score-section" style={[rs.scoreSection, isNewBest && { borderColor: Colors.warning + "80" }]}>
                 <Text style={rs.scoreLabel}>SCORE</Text>

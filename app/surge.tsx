@@ -38,7 +38,7 @@ import {
   type RingThemeId,
 } from "@/lib/surge-cosmetics";
 import { getSurgeSettings, consumeSurgePowerUp, type SurgePowerUpType } from "@/lib/surge-storage";
-import { getDailyChallenge, getDailyState } from "@/lib/surge-daily";
+import { getDailyChallenge, getDailyState, dailyRingStyleToThemeId } from "@/lib/surge-daily";
 import { useSurgeSubscription } from "@/lib/surge-subscription";
 import { useRewardedAd } from "@/lib/surge-ads";
 
@@ -68,6 +68,7 @@ export default function SurgeScreen() {
   const dailyAttemptNum = parseInt(dailyAttemptParam ?? "1", 10);
 
   const dailyChallenge = mode === "daily" ? getDailyChallenge() : null;
+  const dailyThemeId = dailyChallenge ? dailyRingStyleToThemeId(dailyChallenge.ringStyle) : null;
 
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
@@ -90,7 +91,7 @@ export default function SurgeScreen() {
   const [popups, setPopups] = useState<PopupEvent[]>([]);
   const [hitLabel, setHitLabel] = useState<string | null>(null);
   const [hitLabelColor, setHitLabelColor] = useState(Colors.success);
-  const [equippedThemeId, setEquippedThemeId] = useState<RingThemeId>("neon_purple");
+  const [equippedThemeId, setEquippedThemeId] = useState<RingThemeId>(dailyThemeId ?? "neon_purple");
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
   const [showRevivePrompt, setShowRevivePrompt] = useState(false);
@@ -144,11 +145,11 @@ export default function SurgeScreen() {
 
   useEffect(() => {
     Promise.all([getEquippedRingTheme(), getSurgeSettings()]).then(([id, s]) => {
-      setEquippedThemeId(id);
+      if (!dailyThemeId) setEquippedThemeId(id);
       setSoundEnabled(s.soundEnabled);
       setHapticsEnabled(s.hapticsEnabled);
     });
-  }, []);
+  }, [dailyThemeId]);
 
   useEffect(() => {
     orbPulse.value = withRepeat(

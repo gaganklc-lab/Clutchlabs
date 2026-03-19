@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import type { RingThemeId } from "@/lib/surge-cosmetics";
 
 const DAILY_DATE_KEY = "surge_daily_date";
 const DAILY_STATE_KEY = "surge_daily_state";
@@ -69,6 +70,18 @@ function computeChallenge(key: string): DailyChallenge {
 export function getDailyChallenge(dateKey?: string): DailyChallenge {
   const key = dateKey ?? getTodayKey();
   return computeChallenge(key);
+}
+
+const RING_STYLE_TO_THEME: Record<DailyRingStyle, RingThemeId> = {
+  CLASSIC: "neon_purple",
+  ASSAULT: "ember_ring",
+  TEMPO: "ice_ring",
+  ZEN: "void_ring",
+  SURGE: "gold_ring",
+};
+
+export function dailyRingStyleToThemeId(style: DailyRingStyle): RingThemeId {
+  return RING_STYLE_TO_THEME[style];
 }
 
 export async function getTodayChallenge(): Promise<DailyChallenge> {
