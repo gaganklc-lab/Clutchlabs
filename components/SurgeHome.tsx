@@ -846,7 +846,7 @@ const styles = StyleSheet.create({
   modeDesc: {
     fontSize: 11,
     fontFamily: "Outfit_500Medium",
-    color: "rgba(255,255,255,0.42)",
+    color: "rgba(255,255,255,0.50)",
   },
   actions: {
     alignItems: "center",
