@@ -55,6 +55,12 @@ module.exports = {
     ios: {
       supportsTablet: false,
       bundleIdentifier: cfg.bundleIdentifier,
+      infoPlist: IS_SURGE
+        ? {
+            NSUserTrackingUsageDescription:
+              "This allows us to show you more relevant ads and support the free version of Surge.",
+          }
+        : undefined,
     },
     android: {
       package: cfg.androidPackage,
@@ -92,6 +98,23 @@ module.exports = {
       ["expo-router", { origin: "https://replit.com/" }],
       "expo-font",
       "expo-web-browser",
+      ...(IS_SURGE
+        ? [
+            [
+              "react-native-google-mobile-ads",
+              {
+                androidAppId:
+                  process.env.EXPO_PUBLIC_ADMOB_ANDROID_APP_ID ||
+                  "ca-app-pub-3940256099942544~3347511713",
+                iosAppId:
+                  process.env.EXPO_PUBLIC_ADMOB_IOS_APP_ID ||
+                  "ca-app-pub-3940256099942544~1458002511",
+                userTrackingUsageDescription:
+                  "This allows us to show you more relevant ads and support the free version of Surge.",
+              },
+            ],
+          ]
+        : []),
     ],
     experiments: {
       typedRoutes: true,

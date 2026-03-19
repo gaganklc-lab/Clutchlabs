@@ -20,7 +20,27 @@ A React Native (Expo) mobile arcade suite with three independently publishable g
 - **State**: AsyncStorage for persistence, React useState for local state
 - **Fonts**: @expo-google-fonts/outfit (400/500/600/700/800 weights)
 - **Subscriptions**: RevenueCat (`react-native-purchases`) — Surge Pro entitlement, purchase, restore
+- **Ads**: Google AdMob (`react-native-google-mobile-ads`) — Surge rewarded ad (revive after game over)
 - **Packages**: expo-av, expo-sharing, expo-crypto, expo-haptics, expo-linear-gradient
+
+## AdMob Configuration (Surge)
+
+`react-native-google-mobile-ads` is registered as an Expo plugin in `app.config.js` **only for the Surge variant** (`APP_VARIANT=surge`). It requires a native build (EAS) — it degrades gracefully to a stub in Expo Go so development is unaffected.
+
+### Required Replit Secrets (add before production EAS build)
+
+| Secret name | What it is |
+|---|---|
+| `EXPO_PUBLIC_ADMOB_IOS_APP_ID` | AdMob iOS App ID for Surge (`ca-app-pub-XXXXXX~YYYYYYY`) |
+| `EXPO_PUBLIC_ADMOB_ANDROID_APP_ID` | AdMob Android App ID for Surge (`ca-app-pub-XXXXXX~YYYYYYY`) |
+| `EXPO_PUBLIC_ADMOB_IOS_REWARDED_AD_UNIT_ID` | iOS rewarded ad unit ID for the revive placement |
+
+If these secrets are absent the config falls back to **Google's official test App IDs / test ad unit IDs**, so development and CI builds still work correctly — only production ad delivery requires the real values.
+
+### Ad unit used
+- Placement: revive after game over (one per session, skipped for Pro subscribers)
+- Format: rewarded (user watches to completion to earn 1 extra life)
+- Development test ID: `ca-app-pub-3940256099942544/1712485313` (iOS rewarded)
 
 ## Project Structure
 ```
