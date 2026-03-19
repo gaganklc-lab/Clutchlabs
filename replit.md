@@ -1,10 +1,11 @@
 # Clutch Labs — Multi-Variant Arcade Suite
 
 ## Overview
-A React Native (Expo) mobile arcade suite with two independently publishable games built from a shared codebase. Each game ships as its own App Store app with its own name, bundle identifier, and direct launch flow.
+A React Native (Expo) mobile arcade suite with three independently publishable games built from a shared codebase. Each game ships as its own App Store app with its own name, bundle identifier, and direct launch flow.
 
 - **ClutchTap** (`APP_VARIANT=clutchtap`): Rotating-rule reflex tap game. Tap colored tiles following rotating rules under time pressure. Features game modes, lives, combo multiplier, daily challenges, XP, tile themes, power-ups, badges, stats dashboard.
 - **Velocity** (`APP_VARIANT=velocity`): Swipe-to-dodge survival game. Dodge incoming obstacle walls by swiping in the correct direction. Features Regular/Endless/Zen modes, lives (pip bar), combo scoring, edge warnings, 3-layer orb (aura+mid+core) with squash/stretch, orb dash+trail, near-miss detection, keyboard controls (web), combo glow escalation, frenzy mode polish, enhanced animated grid background with arena rings + diagonal lane lines + mode-based color shifts, shockwave ring effect, S/A/B/C/D rank, personal best detection, viral challenge sharing, leaderboard. Production features: score popups (+10/+15/NEAR MISS/CLUTCH!/FRENZY), phase-up overlay (endless), obstacle layered neon beams, arena glow border, title progression system (Runner→Phantom→Surge→Overdrive→Legend), results XP progress bar. Cosmetics system: 3 unlockable orb styles (CoreBlue/NeonPulse/OverdriveGold) + 3 trail styles (CyanTrail/VioletTrail/GoldSpark) with unlock conditions, equip UI (Customize button on home), applied to gameplay visuals. Unlock reward card shown on results screen when new items are earned.
+- **Surge** (embedded in arcade suite): Precision timing game. An expanding ring grows from a central orb — tap when it reaches the target zone. Features Classic/Endless/Rush/Daily modes, 9-tier XP progression (Novice→Surge Master), daily challenge with 1.5× XP and seeded ring style, streak tracking with Pro grace day, 7 ring cosmetic themes with unlock conditions, power-ups (Slow Ring/Extra Life/Double Score), revive via rewarded ad, Surge Pro subscription via RevenueCat (Pro ring themes, weekly power-up bonus, ad-free, streak grace). LevelUpBanner on results with haptic pulse on tier change.
 
 ## Build & Publishing
 - **Config**: `app.config.js` (dynamic Expo config, replaces `app.json`). Reads `APP_VARIANT` env var to switch between ClutchTap and Velocity configs (name, slug, bundle ID, icons).
@@ -18,36 +19,60 @@ A React Native (Expo) mobile arcade suite with two independently publishable gam
 - **Backend**: Express + TypeScript on port 5000 (serves APIs + static landing page)
 - **State**: AsyncStorage for persistence, React useState for local state
 - **Fonts**: @expo-google-fonts/outfit (400/500/600/700/800 weights)
+- **Subscriptions**: RevenueCat (`react-native-purchases`) — Surge Pro entitlement, purchase, restore
 - **Packages**: expo-av, expo-sharing, expo-crypto, expo-haptics, expo-linear-gradient
 
 ## Project Structure
 ```
 app/
-  _layout.tsx          - Root layout with providers, font loading, Stack navigator
-  index.tsx            - Home screen (title, mode/difficulty picker, daily challenge, XP level, login streak, power-up preview, theme picker in settings)
-  game.tsx             - Game screen (4x3 grid, rules, timer, effects, daily/endless/zen modes, power-ups bar)
-  results.tsx          - Results screen (rank display, animated score, XP gain, stats, badges, challenge friend, enhanced sharing)
-  leaderboard.tsx      - Top 20 local scores
-  badges.tsx           - 12 achievement badges with progress
-  stats.tsx            - Personal stats dashboard (games, play time, accuracy chart, best scores by difficulty/mode)
-  +not-found.tsx       - 404 screen
+  _layout.tsx              - Root layout with providers, font loading, Stack navigator
+  index.tsx                - Home screen — game picker (ClutchTap / Velocity / Surge)
+  game.tsx                 - ClutchTap game screen (4x3 grid, rules, timer, effects, daily/endless/zen modes, power-ups bar)
+  results.tsx              - ClutchTap results (rank display, animated score, XP gain, stats, badges, challenge friend)
+  leaderboard.tsx          - ClutchTap top 20 local scores
+  badges.tsx               - 12 achievement badges with progress
+  stats.tsx                - ClutchTap stats dashboard (games, play time, accuracy chart, best scores)
+  velocity.tsx             - Velocity game screen
+  velocity-results.tsx     - Velocity results
+  velocity-leaderboard.tsx - Velocity top scores
+  surge.tsx                - Surge game screen (ring tap, power-ups, revive, all modes)
+  surge-results.tsx        - Surge results (XP, rank, daily state, level-up banner)
+  surge-leaderboard.tsx    - Surge leaderboard (Classic + Endless)
+  +not-found.tsx           - 404 screen
 components/
-  ParticleBurst.tsx    - Particle explosion effect on correct taps
-  ScreenFlash.tsx      - Full-screen green/red flash overlay
-  Confetti.tsx         - Confetti rain effect for new best scores
-  TapRipple.tsx        - Expanding ring ripple effect on tap
-  AmbientParticles.tsx - Slow floating dots/sparkles in background
-  ErrorBoundary.tsx    - Error boundary wrapper
+  SurgeHome.tsx            - Surge home — mode picker, XP bar, streak, daily card, ring themes
+  SurgePaywallSheet.tsx    - Surge Pro subscription paywall sheet
+  SurgePowerUpSelect.tsx   - Pre-game power-up selection UI
+  VelocityHome.tsx         - Velocity home screen
+  VelocityBackgroundFX.tsx - Velocity animated arena background
+  VelocityCustomizeModal.tsx  - Velocity orb/trail cosmetics modal
+  OrbTrail.tsx             - Velocity orb trail effect
+  ParticleBurst.tsx        - Particle explosion effect on correct hits
+  ScreenFlash.tsx          - Full-screen green/red flash overlay
+  ScorePopup.tsx           - Floating score/label popups
+  Confetti.tsx             - Confetti rain effect for new best scores
+  TapRipple.tsx            - Expanding ring ripple effect on tap
+  AmbientParticles.tsx     - Slow floating dots/sparkles in background
+  ErrorBoundary.tsx        - Error boundary wrapper
 constants/
-  colors.ts            - Theme colors (dark navy gaming aesthetic + rank colors + 5 tile theme palettes)
-  game.ts              - Game constants, difficulty configs, badge definitions, ranking, XP, daily challenge, game modes, tile themes, power-ups, daily rewards
+  colors.ts                - Theme colors (dark navy gaming aesthetic + rank colors + tile palettes)
+  game.ts                  - ClutchTap config, badges, XP tables, modes, tile themes, power-ups
 lib/
-  storage.ts           - AsyncStorage CRUD for scores, settings, badges, difficulty, XP, daily best, game mode, tile theme, login streak, power-ups, game stats, endless best
-  sounds.ts            - Web Audio sound manager (tap, wrong, combo, countdown, game over, new best)
-  analytics.ts         - Privacy-friendly event tracking (console only)
-  query-client.ts      - React Query client
+  storage.ts               - ClutchTap AsyncStorage persistence (scores, XP, settings, streaks)
+  velocity-storage.ts      - Velocity AsyncStorage persistence
+  velocity-progression.ts  - Velocity title progression system
+  velocity-cosmetics.ts    - Velocity orb/trail unlock and equip
+  surge-storage.ts         - Surge persistence — XP, leaderboard, power-ups, streak, settings
+  surge-daily.ts           - Daily challenge seeding, state tracking, attempt recording
+  surge-progression.ts     - 9-tier Surge XP title system (Novice → Surge Master)
+  surge-cosmetics.ts       - Ring theme definitions, unlock conditions, equip persistence
+  surge-subscription.tsx   - RevenueCat integration — Surge Pro entitlement, purchase, restore
+  surge-ads.ts             - Rewarded ad integration (revive after game over)
+  sounds.ts                - Web Audio sound manager (tap, wrong, combo, countdown, game over, new best)
+  analytics.ts             - Privacy-friendly event tracking (console only)
+  query-client.ts          - React Query client + API helpers
 server/
-  index.ts             - Express server
+  index.ts                 - Express server
   templates/landing-page.html - Static landing page
 ```
 
