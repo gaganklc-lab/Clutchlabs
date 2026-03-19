@@ -20,7 +20,7 @@ A React Native (Expo) mobile arcade suite with three independently publishable g
 - **State**: AsyncStorage for persistence, React useState for local state
 - **Fonts**: @expo-google-fonts/outfit (400/500/600/700/800 weights)
 - **Subscriptions**: RevenueCat (`react-native-purchases`) — Surge Pro entitlement, purchase, restore
-- **Ads**: Google AdMob (`react-native-google-mobile-ads`) — Surge rewarded ad (revive after game over)
+- **Ads**: Google AdMob (`react-native-google-mobile-ads`) — Surge rewarded ad (revive after game over); `expo-tracking-transparency` for iOS ATT permission
 - **Packages**: expo-av, expo-sharing, expo-crypto, expo-haptics, expo-linear-gradient
 
 ## AdMob Configuration (Surge)

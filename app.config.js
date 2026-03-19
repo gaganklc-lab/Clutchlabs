@@ -113,6 +113,13 @@ module.exports = {
                   "This allows us to show you more relevant ads and support the free version of Surge.",
               },
             ],
+            [
+              "expo-tracking-transparency",
+              {
+                userTrackingPermission:
+                  "This allows us to show you more relevant ads and support the free version of Surge.",
+              },
+            ],
           ]
         : []),
     ],
