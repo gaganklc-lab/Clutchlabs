@@ -4,9 +4,9 @@ export interface RewardedAdResult {
 
 export function useRewardedAd() {
   const watchAd = async (): Promise<RewardedAdResult> => {
-    await new Promise<void>((resolve) => setTimeout(resolve, 800));
-    return { granted: true };
+    // Web does not support AdMob; resolve false so the game goes to results.
+    return { granted: false };
   };
 
-  return { isAdReady: true, watchAd, showRewardedAd: watchAd };
+  return { isAdReady: false, watchAd, showRewardedAd: watchAd };
 }

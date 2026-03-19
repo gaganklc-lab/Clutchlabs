@@ -85,7 +85,8 @@ export function useRewardedAd() {
     show,
   } = sdkUseRewardedAd(adUnitId, { requestNonPersonalizedAdsOnly: true });
 
-  // One-time setup: initialise AdMob, request ATT, then load the first ad
+  // One-time setup: initialise AdMob, request ATT, then load the first ad.
+  // Also clears the safety timer on unmount.
   useEffect(() => {
     if (!isNativeSdkAvailable) return;
     (async () => {
@@ -98,6 +99,12 @@ export function useRewardedAd() {
       await requestATTPermissionOnce();
       load();
     })();
+    return () => {
+      if (safetyTimerRef.current) {
+        clearTimeout(safetyTimerRef.current);
+        safetyTimerRef.current = null;
+      }
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -134,6 +141,8 @@ export function useRewardedAd() {
     }
   }, [error, load]);
 
+  const safetyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const watchAd = useCallback((): Promise<RewardedAdResult> => {
     // ── Stub path: native SDK not linked (Expo Go) ──────────────────────
     if (!isNativeSdkAvailable) {
@@ -153,16 +162,15 @@ export function useRewardedAd() {
         load();
 
         // Safety timeout: resolve false if the ad never loads within 10 s
-        const safetyTimer = setTimeout(() => {
+        if (safetyTimerRef.current) clearTimeout(safetyTimerRef.current);
+        safetyTimerRef.current = setTimeout(() => {
+          safetyTimerRef.current = null;
           if (resolverRef.current === resolve) {
             pendingShowRef.current = false;
             resolverRef.current = null;
             resolve({ granted: false });
           }
         }, 10_000);
-
-        // Capture timer reference for potential cleanup
-        void safetyTimer;
       }
     });
   }, [isLoaded, load, show]);
