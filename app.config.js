@@ -29,6 +29,14 @@ const VARIANTS = {
 
 const cfg = VARIANTS[variant] || VARIANTS.clutchtap;
 
+// Each variant is a separate EAS project with its own project ID.
+// When a variant has no ID yet, EAS will create one on first `eas build:configure`.
+const EAS_PROJECT_IDS = {
+  clutchtap: undefined,
+  velocity: "43583fb0-be02-428a-a19e-85dca9e961c9",
+  surge: "bdce0786-1e60-490f-939e-2e696c61b392",
+};
+
 module.exports = {
   expo: {
     name: cfg.name,
@@ -130,7 +138,7 @@ module.exports = {
     extra: {
       appVariant: variant,
       eas: {
-        projectId: "43583fb0-be02-428a-a19e-85dca9e961c9",
+        projectId: EAS_PROJECT_IDS[variant],
       },
     },
   },
