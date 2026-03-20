@@ -25,20 +25,8 @@
   },
   "submit": {
     "production": {},
-    "production-clutchtap": {
-      "env": {
-        "APP_VARIANT": "clutchtap"
-      }
-    },
-    "production-velocity": {
-      "env": {
-        "APP_VARIANT": "velocity"
-      }
-    },
-    "production-surge": {
-      "env": {
-        "APP_VARIANT": "surge"
-      }
-    }
+    "production-clutchtap": {},
+    "production-velocity": {},
+    "production-surge": {}
   }
 }
