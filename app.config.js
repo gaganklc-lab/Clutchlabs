@@ -137,9 +137,9 @@ module.exports = {
     },
     extra: {
       appVariant: variant,
-      eas: {
-        projectId: EAS_PROJECT_IDS[variant],
-      },
+      ...(EAS_PROJECT_IDS[variant]
+        ? { eas: { projectId: EAS_PROJECT_IDS[variant] } }
+        : {}),
     },
   },
 };
