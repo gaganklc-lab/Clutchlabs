@@ -1,0 +1,79 @@
+Please update the existing Surge monetization flow to support a simpler v1 monetization model:
+
+GOAL
+Surge v1 should only sell a one-time “Remove Ads” purchase.
+Do NOT use a subscription-first model for v1.
+
+CONTEXT
+This repo already has:
+- Surge variant
+- RevenueCat integrated
+- Google Mobile Ads integrated
+- ATT plugin configured for Surge
+- rewarded revive flow and ad-related structure
+- README/docs currently describe a “Surge Pro” subscription model
+
+I want to simplify Surge for launch:
+- Keep rewarded ads for free users
+- Add a one-time non-consumable purchase: surge_remove_ads
+- RevenueCat entitlement identifier should be: no_ads
+- Offering can remain default
+- Package should be lifetime / non-consumable style
+- Remove or hide subscription-first UX for now
+
+PLEASE MAKE THE FOLLOWING CHANGES
+
+1. RevenueCat logic
+- Update Surge purchase logic to support a one-time “Remove Ads” product instead of a subscription-first flow
+- Use entitlement identifier: no_ads
+- Make the app check RevenueCat customer info for no_ads
+- Expose a simple helper like hasNoAds / getHasNoAds
+- Add restore purchases support if not already present
+
+2. Ad gating
+- Ensure ads are not shown when the user has the no_ads entitlement
+- Rewarded revive should only appear for users without no_ads
+- If there are any other ad placements, hide them for no_ads users too
+
+3. UI / copy
+- Replace “Surge Pro” purchase messaging with “Remove Ads”
+- Remove or hide subscription-specific copy like:
+  - weekly bonus
+  - Pro grace day
+  - Pro-exclusive framing if currently visible
+- Keep the UI premium and lightweight
+- Add a simple “Restore Purchases” action in the appropriate place (settings, store, or monetization panel)
+
+4. Results / home / settings review
+- Check Surge home screen, settings, and results screens for any references to subscription/pro
+- Update copy and CTAs so they match a one-time remove-ads purchase model
+
+5. Keep architecture clean
+- Do NOT remove RevenueCat
+- Do NOT remove ads SDK wiring
+- Do NOT break ClutchTap or Velocity
+- Do NOT break APP_VARIANT=surge
+- Do NOT rebuild the project
+
+6. Optional cleanup
+- If there is a compact monetization panel/store section for Surge, keep only:
+  - Remove Ads
+  - Restore Purchases
+- Make it launch-ready, simple, and clean
+
+7. Release-safety note
+- Review whether any app config or build config changes are needed for this v1 model
+- If not needed, leave them unchanged
+- If needed, make only minimal safe adjustments
+
+IMPORTANT
+Do not overbuild.
+Do not reintroduce subscriptions for v1.
+This should become a clean one-time purchase model for Surge launch.
+
+After changes, summarize:
+1. files modified
+2. how no_ads entitlement is checked
+3. where ads are suppressed
+4. where restore purchases was added
+5. whether any remaining App Store / RevenueCat setup is still required outside the code
