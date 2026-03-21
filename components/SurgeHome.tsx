@@ -409,7 +409,7 @@ export default function SurgeHome() {
             <View style={styles.topBarRight}>
               {!hasNoAds && (
                 <Pressable
-                  testID="surge-pro-button"
+                  testID="surge-remove-ads-button"
                   onPress={() => { if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowPaywall(true); }}
                   style={({ pressed }) => [styles.proBtn, { opacity: pressed ? 0.7 : 1 }]}
                 >
