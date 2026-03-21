@@ -89,8 +89,11 @@ export default function SurgePaywallSheet({
   const [error, setError] = useState<string | null>(null);
 
   const currentOffering = offerings?.current;
-  const pkg = currentOffering?.availablePackages[0];
-  const price = pkg?.product.priceString ?? "$2.99";
+  const pkg =
+    currentOffering?.availablePackages.find(
+      (p) => p.identifier === "$rc_lifetime"
+    ) ?? currentOffering?.availablePackages[0];
+  const price = pkg?.product.priceString ?? "…";
 
   const features = [
     {

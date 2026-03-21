@@ -80,8 +80,8 @@ export const RING_THEMES: RingTheme[] = [
   {
     id: "pro_obsidian",
     name: "Obsidian Pro",
-    description: "Dark volcanic rings with crimson core — Pro exclusive",
-    unlockText: "Surge Pro subscribers only",
+    description: "Dark volcanic rings with crimson core — exclusive",
+    unlockText: "Remove Ads to unlock",
     free: false,
     proOnly: true,
     ringColor: "#B71C1C",
@@ -91,8 +91,8 @@ export const RING_THEMES: RingTheme[] = [
   {
     id: "pro_aurora",
     name: "Aurora Pro",
-    description: "Northern lights shimmering — Pro exclusive",
-    unlockText: "Surge Pro subscribers only",
+    description: "Northern lights shimmering — exclusive",
+    unlockText: "Remove Ads to unlock",
     free: false,
     proOnly: true,
     ringColor: "#00E676",

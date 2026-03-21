@@ -348,7 +348,7 @@ export default function SurgeResultsScreen() {
         setLevelUpData({ from: prevTitle, to: newTitle });
       }
 
-      const newStreak = await updateStreakOnPlay(false);
+      const newStreak = await updateStreakOnPlay();
       setStreakData(newStreak);
 
       if (mode === "daily") {

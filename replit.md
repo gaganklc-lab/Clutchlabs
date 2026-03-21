@@ -5,7 +5,7 @@ A React Native (Expo) mobile arcade suite with three independently publishable g
 
 - **ClutchTap** (`APP_VARIANT=clutchtap`): Rotating-rule reflex tap game. Tap colored tiles following rotating rules under time pressure. Features game modes, lives, combo multiplier, daily challenges, XP, tile themes, power-ups, badges, stats dashboard.
 - **Velocity** (`APP_VARIANT=velocity`): Swipe-to-dodge survival game. Dodge incoming obstacle walls by swiping in the correct direction. Features Regular/Endless/Zen modes, lives (pip bar), combo scoring, edge warnings, 3-layer orb (aura+mid+core) with squash/stretch, orb dash+trail, near-miss detection, keyboard controls (web), combo glow escalation, frenzy mode polish, enhanced animated grid background with arena rings + diagonal lane lines + mode-based color shifts, shockwave ring effect, S/A/B/C/D rank, personal best detection, viral challenge sharing, leaderboard. Production features: score popups (+10/+15/NEAR MISS/CLUTCH!/FRENZY), phase-up overlay (endless), obstacle layered neon beams, arena glow border, title progression system (Runner→Phantom→Surge→Overdrive→Legend), results XP progress bar. Cosmetics system: 3 unlockable orb styles (CoreBlue/NeonPulse/OverdriveGold) + 3 trail styles (CyanTrail/VioletTrail/GoldSpark) with unlock conditions, equip UI (Customize button on home), applied to gameplay visuals. Unlock reward card shown on results screen when new items are earned.
-- **Surge** (embedded in arcade suite): Precision timing game. An expanding ring grows from a central orb — tap when it reaches the target zone. Features Classic/Endless/Rush/Daily modes, 9-tier XP progression (Novice→Surge Master), daily challenge with 1.5× XP and seeded ring style, streak tracking with Pro grace day, 7 ring cosmetic themes with unlock conditions, power-ups (Slow Ring/Extra Life/Double Score), revive via rewarded ad, Surge Pro subscription via RevenueCat (Pro ring themes, weekly power-up bonus, ad-free, streak grace). LevelUpBanner on results with haptic pulse on tier change.
+- **Surge** (embedded in arcade suite): Precision timing game. An expanding ring grows from a central orb — tap when it reaches the target zone. Features Classic/Endless/Rush/Daily modes, 9-tier XP progression (Novice→Surge Master), daily challenge with 1.5× XP and seeded ring style, streak tracking, 7 ring cosmetic themes with unlock conditions (2 exclusive to Remove Ads purchasers), power-ups (Slow Ring/Extra Life/Double Score), revive via rewarded ad (skipped for Remove Ads purchasers), one-time "Remove Ads" purchase via RevenueCat (`no_ads` entitlement, `$rc_lifetime` package). LevelUpBanner on results with haptic pulse on tier change.
 
 ## Build & Publishing
 - **Config**: `app.config.js` (dynamic Expo config, replaces `app.json`). Reads `APP_VARIANT` env var to switch between ClutchTap and Velocity configs (name, slug, bundle ID, icons).
@@ -19,7 +19,7 @@ A React Native (Expo) mobile arcade suite with three independently publishable g
 - **Backend**: Express + TypeScript on port 5000 (serves APIs + static landing page)
 - **State**: AsyncStorage for persistence, React useState for local state
 - **Fonts**: @expo-google-fonts/outfit (400/500/600/700/800 weights)
-- **Subscriptions**: RevenueCat (`react-native-purchases`) — Surge Pro entitlement, purchase, restore
+- **IAP**: RevenueCat (`react-native-purchases`) — Surge "Remove Ads" one-time purchase (`no_ads` entitlement, `$rc_lifetime` package), restore
 - **Ads**: Google AdMob (`react-native-google-mobile-ads`) — Surge rewarded ad (revive after game over); `expo-tracking-transparency` for iOS ATT permission
 - **Packages**: expo-av, expo-sharing, expo-crypto, expo-haptics, expo-linear-gradient
 
@@ -38,7 +38,7 @@ A React Native (Expo) mobile arcade suite with three independently publishable g
 If these secrets are absent the config falls back to **Google's official test App IDs / test ad unit IDs**, so development and CI builds still work correctly — only production ad delivery requires the real values.
 
 ### Ad unit used
-- Placement: revive after game over (one per session, skipped for Pro subscribers)
+- Placement: revive after game over (one per session, skipped for Remove Ads purchasers)
 - Format: rewarded (user watches to completion to earn 1 extra life)
 - Development test ID: `ca-app-pub-3940256099942544/1712485313` (iOS rewarded)
 
@@ -61,7 +61,7 @@ app/
   +not-found.tsx           - 404 screen
 components/
   SurgeHome.tsx            - Surge home — mode picker, XP bar, streak, daily card, ring themes
-  SurgePaywallSheet.tsx    - Surge Pro subscription paywall sheet
+  SurgePaywallSheet.tsx    - Surge "Remove Ads" one-time purchase paywall sheet
   SurgePowerUpSelect.tsx   - Pre-game power-up selection UI
   VelocityHome.tsx         - Velocity home screen
   VelocityBackgroundFX.tsx - Velocity animated arena background
@@ -86,7 +86,7 @@ lib/
   surge-daily.ts           - Daily challenge seeding, state tracking, attempt recording
   surge-progression.ts     - 9-tier Surge XP title system (Novice → Surge Master)
   surge-cosmetics.ts       - Ring theme definitions, unlock conditions, equip persistence
-  surge-subscription.tsx   - RevenueCat integration — Surge Pro entitlement, purchase, restore
+  surge-subscription.tsx   - RevenueCat integration — no_ads entitlement, one-time purchase, restore
   surge-ads.ts             - Rewarded ad integration (revive after game over)
   sounds.ts                - Web Audio sound manager (tap, wrong, combo, countdown, game over, new best)
   analytics.ts             - Privacy-friendly event tracking (console only)

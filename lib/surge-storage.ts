@@ -11,7 +11,6 @@ const KEYS = {
   GAME_MODE:                "surge_game_mode",
   SETTINGS:                 "surge_settings",
   POWER_UPS:                "surge_power_ups",
-  PRO_WEEKLY_BONUS_DATE:    "surge_pro_weekly_bonus_date",
   STREAK:                   "surge_streak_data",
 };
 
@@ -173,7 +172,7 @@ export async function getStreak(): Promise<SurgeStreakData> {
   }
 }
 
-export async function recordPlayToday(isPro: boolean): Promise<SurgeStreakData> {
+export async function recordPlayToday(): Promise<SurgeStreakData> {
   const today = new Date().toISOString().slice(0, 10);
   const streak = await getStreak();
 
@@ -183,11 +182,8 @@ export async function recordPlayToday(isPro: boolean): Promise<SurgeStreakData> 
 
   const msPerDay = 86400000;
   const yesterday = new Date(Date.now() - msPerDay).toISOString().slice(0, 10);
-  const twoDaysAgo = new Date(Date.now() - 2 * msPerDay).toISOString().slice(0, 10);
 
   if (streak.lastPlayedDate === yesterday) {
-    streak.current += 1;
-  } else if (isPro && streak.lastPlayedDate === twoDaysAgo) {
     streak.current += 1;
   } else if (!streak.lastPlayedDate) {
     streak.current = 1;
@@ -202,18 +198,3 @@ export async function recordPlayToday(isPro: boolean): Promise<SurgeStreakData> 
 }
 
 export const updateStreakOnPlay = recordPlayToday;
-
-const BONUS_POWER_UP_TYPES: SurgePowerUpType[] = ["slow_ring", "extra_life", "double_score"];
-
-export async function checkAndGrantProWeeklyBonus(): Promise<SurgePowerUpType | null> {
-  const lastStr = await AsyncStorage.getItem(KEYS.PRO_WEEKLY_BONUS_DATE);
-  const now = Date.now();
-  const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-  if (lastStr && now - parseInt(lastStr, 10) < SEVEN_DAYS) {
-    return null;
-  }
-  await AsyncStorage.setItem(KEYS.PRO_WEEKLY_BONUS_DATE, now.toString());
-  const type = BONUS_POWER_UP_TYPES[Math.floor(Math.random() * BONUS_POWER_UP_TYPES.length)];
-  await earnSurgePowerUp(type, 1);
-  return type;
-}
