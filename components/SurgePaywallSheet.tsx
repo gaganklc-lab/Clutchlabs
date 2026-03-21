@@ -40,7 +40,7 @@ function TestConfirmModal({
           <Ionicons name="storefront-outline" size={36} color={SURGE_PURPLE} />
           <Text testID="surge-test-confirm-title" style={pw.confirmTitle}>Test Purchase</Text>
           <Text style={pw.confirmBody}>
-            {"You're in the RevenueCat Test Store. This simulates a real purchase of Surge Pro (" + price + "/mo) without charging you."}
+            {"You're in the RevenueCat Test Store. This simulates a real purchase of Remove Ads (" + price + ") without charging you."}
           </Text>
           <View style={pw.confirmRow}>
             <Pressable
@@ -82,7 +82,7 @@ export default function SurgePaywallSheet({
   onSuccess,
 }: Props) {
   const insets = useSafeAreaInsets();
-  const { offerings, purchasePro, restorePurchases, isPurchasing, isRestoring } =
+  const { offerings, purchaseRemoveAds, restorePurchases, isPurchasing, isRestoring } =
     useSurgeSubscription();
 
   const [showTestConfirm, setShowTestConfirm] = useState(false);
@@ -90,32 +90,14 @@ export default function SurgePaywallSheet({
 
   const currentOffering = offerings?.current;
   const pkg = currentOffering?.availablePackages[0];
-  const price = pkg?.product.priceString ?? "$4.99";
+  const price = pkg?.product.priceString ?? "$2.99";
 
   const features = [
     {
-      icon: "flash",
-      color: Colors.warning,
-      title: "Double XP",
-      desc: "Earn 2× XP on every run",
-    },
-    {
       icon: "eye-off",
       color: SURGE_PURPLE,
-      title: "Ad-Free",
-      desc: "No revive ads, ever",
-    },
-    {
-      icon: "color-palette",
-      color: SURGE_MAGENTA,
-      title: "Pro Ring Themes",
-      desc: "Exclusive Pro-only cosmetics",
-    },
-    {
-      icon: "trophy",
-      color: Colors.warning,
-      title: "Pro Badge",
-      desc: "Stand out on the leaderboard",
+      title: "Ad-Free Experience",
+      desc: "No ads, ever",
     },
   ];
 
@@ -124,7 +106,7 @@ export default function SurgePaywallSheet({
     Platform.OS === "web" ||
     Constants.executionEnvironment === "storeClient";
 
-  const handleSubscribePress = () => {
+  const handlePurchasePress = () => {
     if (!pkg) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setError(null);
@@ -139,7 +121,7 @@ export default function SurgePaywallSheet({
     setShowTestConfirm(false);
     if (!pkg) return;
     try {
-      await purchasePro(pkg);
+      await purchaseRemoveAds(pkg);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onSuccess?.();
       onClose();
@@ -193,9 +175,9 @@ export default function SurgePaywallSheet({
               colors={[SURGE_PURPLE + "22", "transparent"]}
               style={pw.gradientBanner}
             >
-              <Ionicons name="radio-button-on" size={32} color={SURGE_PURPLE} />
-              <Text testID="surge-paywall-title" style={pw.surgeLogo}>SURGE PRO</Text>
-              <Text style={pw.surgeTagline}>Take your game to the next level</Text>
+              <Ionicons name="eye-off" size={32} color={SURGE_PURPLE} />
+              <Text testID="surge-paywall-title" style={pw.surgeLogo}>REMOVE ADS</Text>
+              <Text style={pw.surgeTagline}>Play without interruptions</Text>
             </LinearGradient>
 
             <View testID="surge-paywall-features" style={pw.featureList}>
@@ -233,14 +215,13 @@ export default function SurgePaywallSheet({
             )}
 
             <View testID="surge-paywall-price-block" style={pw.priceBlock}>
-              <Text style={pw.priceLabel}>Monthly subscription</Text>
+              <Text style={pw.priceLabel}>One-time purchase</Text>
               <Text testID="surge-paywall-price-text" style={pw.price}>{price}</Text>
-              <Text style={pw.priceNote}>Cancel anytime · No free trial in test mode</Text>
             </View>
 
             <Pressable
               testID="surge-paywall-subscribe"
-              onPress={handleSubscribePress}
+              onPress={handlePurchasePress}
               disabled={isPurchasing || !pkg}
               style={({ pressed }) => [
                 pw.subscribeBtn,
@@ -257,9 +238,9 @@ export default function SurgePaywallSheet({
                   end={{ x: 1, y: 1 }}
                   style={pw.subscribeBtnGradient}
                 >
-                  <Ionicons name="flash" size={20} color={Colors.text} />
+                  <Ionicons name="eye-off" size={20} color={Colors.text} />
                   <Text style={pw.subscribeBtnText}>
-                    Subscribe · {price}/mo
+                    Remove Ads · {price}
                   </Text>
                 </LinearGradient>
               )}
@@ -404,12 +385,6 @@ const pw = StyleSheet.create({
     fontSize: 36,
     fontFamily: "Outfit_800ExtraBold",
     color: Colors.text,
-  },
-  priceNote: {
-    fontSize: 11,
-    fontFamily: "Outfit_400Regular",
-    color: Colors.textMuted,
-    textAlign: "center",
   },
   subscribeBtn: {
     borderRadius: 16,

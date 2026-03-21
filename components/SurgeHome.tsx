@@ -35,7 +35,6 @@ import {
   getSurgeSettings,
   saveSurgeSettings,
   getSurgePowerUps,
-  checkAndGrantProWeeklyBonus,
   getStreak,
   totalPowerUps,
   type SurgeGameMode,
@@ -57,7 +56,6 @@ import {
   getEquippedRingTheme,
   setEquippedRingTheme,
   getUnlockedRingThemes,
-  unlockProThemes,
   getRingTheme,
   RING_THEMES,
   type RingThemeId,
@@ -151,14 +149,14 @@ function SettingsModal({
   onClose,
   settings,
   onSettingsChange,
-  isPro,
+  hasNoAds,
   onOpenPaywall,
 }: {
   visible: boolean;
   onClose: () => void;
   settings: SurgeSettings;
   onSettingsChange: (s: SurgeSettings) => void;
-  isPro: boolean;
+  hasNoAds: boolean;
   onOpenPaywall: () => void;
 }) {
   const insets = useSafeAreaInsets();
@@ -202,14 +200,14 @@ function SettingsModal({
               <View style={[cs.toggleKnob, settings.hapticsEnabled && cs.toggleKnobOn]} />
             </Pressable>
           </View>
-          {isPro ? (
+          {hasNoAds ? (
             <View testID="surge-settings-pro-active" style={cs.settingRow}>
               <View style={cs.settingLeft}>
-                <Ionicons name="flash" size={22} color="#7C3AED" />
-                <Text style={[cs.settingLabel, { color: "#7C3AED" }]}>Surge Pro Active</Text>
+                <Ionicons name="eye-off" size={22} color="#7C3AED" />
+                <Text style={[cs.settingLabel, { color: "#7C3AED" }]}>Ads Removed</Text>
               </View>
               <View style={[cs.proBadgeSmall]}>
-                <Text style={cs.proBadgeSmallText}>PRO</Text>
+                <Text style={cs.proBadgeSmallText}>✓</Text>
               </View>
             </View>
           ) : (
@@ -219,8 +217,8 @@ function SettingsModal({
               style={({ pressed }) => [cs.settingRow, cs.upgradeRow, { opacity: pressed ? 0.8 : 1 }]}
             >
               <View style={cs.settingLeft}>
-                <Ionicons name="flash" size={22} color="#7C3AED" />
-                <Text style={[cs.settingLabel, { color: "#7C3AED" }]}>Upgrade to Pro</Text>
+                <Ionicons name="eye-off" size={22} color="#7C3AED" />
+                <Text style={[cs.settingLabel, { color: "#7C3AED" }]}>Remove Ads</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#7C3AED" />
             </Pressable>
@@ -241,7 +239,7 @@ export default function SurgeHome() {
   const topInset = Platform.OS === "web" ? 67 : insets.top;
   const bottomInset = Platform.OS === "web" ? 34 : insets.bottom;
 
-  const { isPro } = useSurgeSubscription();
+  const { hasNoAds } = useSurgeSubscription();
   const [bestClassic, setBestClassic] = useState(0);
   const [bestEndless, setBestEndless] = useState(0);
   const [mode, setMode] = useState<SurgeGameMode>("classic");
@@ -269,21 +267,6 @@ export default function SurgeHome() {
 
   const theme = getRingTheme(equippedThemeId);
 
-  useEffect(() => {
-    if (isPro) {
-      unlockProThemes().catch((e) =>
-        console.warn("[SurgeHome] Pro theme unlock failed:", e)
-      );
-      checkAndGrantProWeeklyBonus().then((grantedType) => {
-        if (grantedType) {
-          getSurgePowerUps().then((inv) => {
-            setPowerUpInventory(inv);
-            setPowerUpTotal(totalPowerUps(inv));
-          });
-        }
-      }).catch(() => {});
-    }
-  }, [isPro]);
 
   useEffect(() => {
     trackEvent("screen_viewed", { screen: "surge_home" });
@@ -421,22 +404,16 @@ export default function SurgeHome() {
             <View style={styles.titleBadge}>
               <View style={[styles.titleDot, { backgroundColor: surgeTitleColor }]} />
               <Text style={[styles.titleText, { color: surgeTitleColor }]}>{surgeTitle.toUpperCase()}</Text>
-              {isPro && (
-                <View style={styles.proBadge}>
-                  <Text style={styles.proBadgeText}>PRO</Text>
-                </View>
-              )}
             </View>
 
             <View style={styles.topBarRight}>
-              {!isPro && (
+              {!hasNoAds && (
                 <Pressable
                   testID="surge-pro-button"
                   onPress={() => { if (settings.hapticsEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowPaywall(true); }}
                   style={({ pressed }) => [styles.proBtn, { opacity: pressed ? 0.7 : 1 }]}
                 >
-                  <Ionicons name="flash" size={12} color="#fff" />
-                  <Text style={styles.proBtnText}>PRO</Text>
+                  <Ionicons name="eye-off" size={14} color="#fff" />
                 </Pressable>
               )}
               <Pressable
@@ -469,11 +446,6 @@ export default function SurgeHome() {
             <View style={styles.streakRow}>
               <Text style={styles.streakFire}>🔥</Text>
               <Text style={styles.streakText}>{streak.current} day streak</Text>
-              {isPro && streak.best === streak.current && streak.current > 1 && (
-                <View style={styles.streakBestBadge}>
-                  <Text style={styles.streakBestText}>BEST</Text>
-                </View>
-              )}
             </View>
           )}
 
@@ -657,7 +629,7 @@ export default function SurgeHome() {
         onClose={() => setShowSettings(false)}
         settings={settings}
         onSettingsChange={(s) => { setSettings(s); saveSurgeSettings(s); }}
-        isPro={isPro}
+        hasNoAds={hasNoAds}
         onOpenPaywall={() => setShowPaywall(true)}
       />
       <SurgePaywallSheet

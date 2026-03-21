@@ -103,7 +103,7 @@ export default function SurgeScreen() {
   const doubleScoreActiveRef = useRef(false);
   const powerUpTimerRef = useRef<ReturnType<typeof setTimeout> | ReturnType<typeof setInterval> | null>(null);
 
-  const { isPro } = useSurgeSubscription();
+  const { hasNoAds } = useSurgeSubscription();
   const { isAdReady, watchAd } = useRewardedAd();
 
   const isPlayingRef = useRef(false);
@@ -209,12 +209,12 @@ export default function SurgeScreen() {
       timeSurvived: elapsedRef.current,
     });
 
-    if (!isPro && !hasRevivedRef.current && scoreRef.current > 0) {
+    if (!hasNoAds && !hasRevivedRef.current && scoreRef.current > 0) {
       setShowRevivePrompt(true);
     } else {
       goToResults();
     }
-  }, [cleanup, mode, isPro, goToResults]);
+  }, [cleanup, mode, hasNoAds, goToResults]);
 
   const handleRevive = useCallback(async () => {
     setShowRevivePrompt(false);

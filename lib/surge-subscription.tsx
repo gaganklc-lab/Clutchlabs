@@ -10,7 +10,7 @@ const REVENUECAT_IOS_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY;
 const REVENUECAT_ANDROID_API_KEY =
   process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY;
 
-export const SURGE_PRO_ENTITLEMENT = "surge_pro";
+export const NO_ADS_ENTITLEMENT = "no_ads";
 
 function getRevenueCatApiKey(): string {
   const isDevOrTestEnv =
@@ -43,9 +43,9 @@ export function initializeSurgeRevenueCat() {
     const apiKey = getRevenueCatApiKey();
     Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
     Purchases.configure({ apiKey });
-    console.log("[SurgePro] RevenueCat configured");
+    console.log("[SurgeAds] RevenueCat configured");
   } catch (err) {
-    console.warn("[SurgePro] RevenueCat init failed:", err);
+    console.warn("[SurgeAds] RevenueCat init failed:", err);
   }
 }
 
@@ -83,8 +83,8 @@ function useSurgeSubscriptionContext() {
     onSuccess: () => customerInfoQuery.refetch(),
   });
 
-  const isPro =
-    customerInfoQuery.data?.entitlements.active?.[SURGE_PRO_ENTITLEMENT] !==
+  const hasNoAds =
+    customerInfoQuery.data?.entitlements.active?.[NO_ADS_ENTITLEMENT] !==
     undefined;
 
   const currentOffering = offeringsQuery.data?.current ?? null;
@@ -93,9 +93,9 @@ function useSurgeSubscriptionContext() {
     customerInfo: customerInfoQuery.data,
     offerings: offeringsQuery.data,
     currentOffering,
-    isPro,
+    hasNoAds,
     isLoading: customerInfoQuery.isLoading || offeringsQuery.isLoading,
-    purchasePro: purchaseMutation.mutateAsync,
+    purchaseRemoveAds: purchaseMutation.mutateAsync,
     restorePurchases: restoreMutation.mutateAsync,
     isPurchasing: purchaseMutation.isPending,
     isRestoring: restoreMutation.isPending,

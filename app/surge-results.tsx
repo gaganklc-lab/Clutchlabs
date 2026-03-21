@@ -50,7 +50,6 @@ import {
 } from "@/lib/surge-progression";
 import {
   checkAndUnlockRingThemes,
-  unlockProThemes,
   getRingTheme,
   type RingThemeId,
 } from "@/lib/surge-cosmetics";
@@ -270,7 +269,7 @@ export default function SurgeResultsScreen() {
   const topInset = Platform.OS === "web" ? 67 : insets.top;
   const bottomInset = Platform.OS === "web" ? 34 : insets.bottom;
 
-  const { isPro, isLoading: isSubLoading } = useSurgeSubscription();
+  const { hasNoAds, isLoading: isSubLoading } = useSurgeSubscription();
   const [xpEarned, setXpEarned] = useState(0);
   const [isNewBest, setIsNewBest] = useState(false);
   const [totalXP, setTotalXP] = useState(0);
@@ -319,8 +318,7 @@ export default function SurgeResultsScreen() {
 
     const dailyMultiplier = mode === "daily" ? DAILY_XP_MULTIPLIER : 1;
     const baseXP = Math.max(15, Math.round(score / 8) + maxCombo * 2 + perfectHits);
-    const proMultiplier = isPro ? 2 : 1;
-    const xp = Math.round(baseXP * rankInfo.xpMultiplier * proMultiplier * dailyMultiplier);
+    const xp = Math.round(baseXP * rankInfo.xpMultiplier * dailyMultiplier);
     setXpEarned(xp);
 
     const process = async () => {
@@ -333,7 +331,7 @@ export default function SurgeResultsScreen() {
         if (newPersonalBest) {
           setIsNewBest(true);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          if (!isPro) {
+          if (!hasNoAds) {
             setTimeout(() => setShowPaywall(true), 1800);
           }
         }
@@ -350,7 +348,7 @@ export default function SurgeResultsScreen() {
         setLevelUpData({ from: prevTitle, to: newTitle });
       }
 
-      const newStreak = await updateStreakOnPlay(isPro);
+      const newStreak = await updateStreakOnPlay(false);
       setStreakData(newStreak);
 
       if (mode === "daily") {
@@ -366,17 +364,8 @@ export default function SurgeResultsScreen() {
         mode: mode === "daily" ? "classic" : mode,
       });
 
-      if (isPro) {
-        const proUnlocks = await unlockProThemes();
-        const allUnlocks = [...unlocks.newThemes, ...proUnlocks];
-        if (allUnlocks.length > 0) setNewThemes(allUnlocks);
-      } else {
-        if (unlocks.newThemes.length > 0) {
-          setNewThemes(unlocks.newThemes);
-        }
-        if (unlocks.hasProOnlyThemes) {
-          setTimeout(() => setShowPaywall(true), 1800);
-        }
+      if (unlocks.newThemes.length > 0) {
+        setNewThemes(unlocks.newThemes);
       }
 
       if (mode !== "daily") {
@@ -393,19 +382,19 @@ export default function SurgeResultsScreen() {
         );
       }
 
-      const earnsPowerUp = rankInfo.rank === "S" || (rankInfo.rank === "A" && isPro);
+      const earnsPowerUp = rankInfo.rank === "S";
       if (earnsPowerUp) {
         const type = randomPowerUpType();
         await earnSurgePowerUp(type, 1);
         setEarnedPowerUp(type);
       }
 
-      trackEvent("surge_results_viewed", { score, maxCombo, mode, perfectAccuracy, rank: rankInfo.rank, isPro });
+      trackEvent("surge_results_viewed", { score, maxCombo, mode, perfectAccuracy, rank: rankInfo.rank });
     };
 
     process().catch((err) => console.error("[surge-results] process error:", err));
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  }, [isSubLoading, isPro]);
+  }, [isSubLoading, hasNoAds]);
 
   const handleShare = async () => {
     const text = [
@@ -487,10 +476,7 @@ export default function SurgeResultsScreen() {
                   {mode === "daily" && (
                     <Text style={rs.xpMultiplier}>1.5× Daily</Text>
                   )}
-                  {isPro && mode !== "daily" && (
-                    <Text style={rs.xpMultiplier}>2× Pro</Text>
-                  )}
-                  {!isPro && mode !== "daily" && rankInfo.xpMultiplier > 1 && (
+                  {mode !== "daily" && rankInfo.xpMultiplier > 1 && (
                     <Text style={rs.xpMultiplier}>{rankInfo.xpMultiplier}× bonus</Text>
                   )}
                 </View>
