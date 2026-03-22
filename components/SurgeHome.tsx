@@ -866,6 +866,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.warning + "40",
     paddingHorizontal: 14,
     paddingVertical: 6,
+    minHeight: 44,
   },
   powerUpCountText: {
     fontSize: 13,
@@ -1073,8 +1074,8 @@ const cs = StyleSheet.create({
     letterSpacing: 2,
   },
   closeBtn: {
-    width: 36,
-    height: 36,
+    width: 44,
+    height: 44,
     alignItems: "center",
     justifyContent: "center",
   },
