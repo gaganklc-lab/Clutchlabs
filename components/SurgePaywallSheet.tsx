@@ -291,10 +291,13 @@ const pw = StyleSheet.create({
   },
   closeBtn: {
     position: "absolute",
-    top: 12,
-    right: 16,
+    top: 8,
+    right: 8,
     zIndex: 10,
-    padding: 6,
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
   },
   handle: {
     width: 40,
@@ -412,7 +415,7 @@ const pw = StyleSheet.create({
   },
   restoreBtn: {
     alignItems: "center",
-    paddingVertical: 12,
+    paddingVertical: 15,
   },
   restoreText: {
     fontSize: 13,

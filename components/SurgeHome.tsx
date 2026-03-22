@@ -708,6 +708,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     marginRight: 4,
+    minHeight: 44,
   },
   proBtnText: {
     fontSize: 11,
@@ -721,8 +722,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   iconBtn: {
-    width: 38,
-    height: 38,
+    width: 44,
+    height: 44,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",

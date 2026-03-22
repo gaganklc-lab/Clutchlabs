@@ -72,6 +72,7 @@ export default function SurgeScreen() {
 
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
+  const isTablet = width >= 600;
 
   const topInset = Platform.OS === "web" ? 67 : insets.top;
   const bottomInset = Platform.OS === "web" ? 34 : insets.bottom;
@@ -556,36 +557,70 @@ export default function SurgeScreen() {
         <ParticleBurst bursts={bursts} onBurstComplete={(id) => setBursts((p) => p.filter((b) => b.id !== id))} />
         <ScorePopup popups={popups} onComplete={(id) => setPopups((p) => p.filter((e) => e.id !== id))} />
 
-        {/* Header */}
-        <View style={styles.header}>
-          <Pressable
-            onPress={() => { cleanup(); router.replace("/"); }}
-            style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.6 : 1 }]}
-            hitSlop={16}
-          >
-            <Ionicons name="close" size={22} color={Colors.textSecondary} />
-          </Pressable>
+        {/* Centered content column — constrained to 560px on tablet */}
+        <View style={[styles.innerColumn, isTablet && { maxWidth: 560 }]}>
 
-          <View testID="surge-game-score-block" style={styles.scoreBlock}>
-            {mode === "rush" && (
-              <Text style={[styles.modeLabel, { color: RUSH_COLOR }]}>RUSH</Text>
-            )}
-            {mode === "daily" && (
-              <Text style={[styles.modeLabel, { color: DAILY_COLOR }]}>DAILY {dailyAttemptNum}/3</Text>
-            )}
-            <Text testID="surge-game-score-text" style={[styles.scoreText, { color: theme.ringColor }]}>{score}</Text>
-            {combo >= 2 && (
-              <Text style={[styles.comboText, { color: theme.glowColor }]}>{combo}x</Text>
+          {/* Header */}
+          <View style={styles.header}>
+            <Pressable
+              onPress={() => { cleanup(); router.replace("/"); }}
+              style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.6 : 1 }]}
+            >
+              <Ionicons name="home" size={22} color={Colors.textSecondary} />
+            </Pressable>
+
+            <View testID="surge-game-score-block" style={styles.scoreBlock}>
+              {mode === "rush" && (
+                <Text style={[styles.modeLabel, { color: RUSH_COLOR }]}>RUSH</Text>
+              )}
+              {mode === "daily" && (
+                <Text style={[styles.modeLabel, { color: DAILY_COLOR }]}>DAILY {dailyAttemptNum}/3</Text>
+              )}
+              <Text testID="surge-game-score-text" style={[styles.scoreText, { color: theme.ringColor }]}>{score}</Text>
+              {combo >= 2 && (
+                <Text style={[styles.comboText, { color: theme.glowColor }]}>{combo}x</Text>
+              )}
+            </View>
+
+            {mode === "classic" ? (
+              <View style={styles.timerBlock}>
+                <Ionicons name="timer" size={14} color={Colors.textMuted} />
+                <Text style={[styles.timerText, timeLeft <= 5 && { color: Colors.secondary }]}>{timeLeft}s</Text>
+              </View>
+            ) : (
+              <View style={styles.livesRow}>
+                {Array.from({ length: maxPips }).map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.pip,
+                      { backgroundColor: i < lives ? theme.ringColor : Colors.border },
+                    ]}
+                  />
+                ))}
+              </View>
             )}
           </View>
 
-          {mode === "classic" ? (
-            <View style={styles.timerBlock}>
-              <Ionicons name="timer" size={14} color={Colors.textMuted} />
-              <Text style={[styles.timerText, timeLeft <= 5 && { color: Colors.secondary }]}>{timeLeft}s</Text>
+          {activePowerUp && (
+            <View style={styles.powerUpBadge} pointerEvents="none">
+              <Ionicons
+                name={activePowerUp === "slow_ring" ? "hourglass-outline" : activePowerUp === "double_score" ? "flash" : "heart"}
+                size={13}
+                color={activePowerUp === "slow_ring" ? "#00B0FF" : activePowerUp === "double_score" ? Colors.warning : "#FF4081"}
+              />
+              <Text style={[styles.powerUpBadgeText, { color: activePowerUp === "slow_ring" ? "#00B0FF" : activePowerUp === "double_score" ? Colors.warning : "#FF4081" }]}>
+                {activePowerUp === "slow_ring"
+                  ? `SLOW — ${powerUpSecsLeft}s`
+                  : activePowerUp === "double_score"
+                  ? `2× SCORE — ${powerUpSecsLeft}s`
+                  : "+1 LIFE ACTIVE"}
+              </Text>
             </View>
-          ) : (
-            <View style={styles.livesRow}>
+          )}
+
+          {mode === "classic" && (
+            <View style={styles.livesRowBottom}>
               {Array.from({ length: maxPips }).map((_, i) => (
                 <View
                   key={i}
@@ -597,97 +632,74 @@ export default function SurgeScreen() {
               ))}
             </View>
           )}
-        </View>
 
-        {activePowerUp && (
-          <View style={styles.powerUpBadge} pointerEvents="none">
-            <Ionicons
-              name={activePowerUp === "slow_ring" ? "hourglass-outline" : activePowerUp === "double_score" ? "flash" : "heart"}
-              size={13}
-              color={activePowerUp === "slow_ring" ? "#00B0FF" : activePowerUp === "double_score" ? Colors.warning : "#FF4081"}
+          {/* Game area */}
+          <View style={styles.gameArea}>
+            {/* Shockwave */}
+            <Animated.View
+              style={[
+                styles.shockwave,
+                {
+                  borderColor: theme.ringColor,
+                  width: ORB_RADIUS * 2,
+                  height: ORB_RADIUS * 2,
+                  borderRadius: ORB_RADIUS,
+                },
+                shockwaveStyle,
+              ]}
             />
-            <Text style={[styles.powerUpBadgeText, { color: activePowerUp === "slow_ring" ? "#00B0FF" : activePowerUp === "double_score" ? Colors.warning : "#FF4081" }]}>
-              {activePowerUp === "slow_ring"
-                ? `SLOW — ${powerUpSecsLeft}s`
-                : activePowerUp === "double_score"
-                ? `2× SCORE — ${powerUpSecsLeft}s`
-                : "+1 LIFE ACTIVE"}
-            </Text>
-          </View>
-        )}
 
-        {mode === "classic" && (
-          <View style={styles.livesRowBottom}>
-            {Array.from({ length: maxPips }).map((_, i) => (
-              <View
-                key={i}
-                style={[
-                  styles.pip,
-                  { backgroundColor: i < lives ? theme.ringColor : Colors.border },
-                ]}
+            {/* Target ring (fixed) */}
+            <Animated.View
+              style={[
+                styles.targetRing,
+                {
+                  width: TARGET_RADIUS * 2,
+                  height: TARGET_RADIUS * 2,
+                  borderRadius: TARGET_RADIUS,
+                  borderColor: theme.targetColor,
+                },
+                targetRingOpacityStyle,
+              ]}
+            />
+
+            {/* Expanding ring */}
+            <Animated.View
+              style={[
+                styles.expandingRing,
+                { borderColor: theme.ringColor },
+                ringAnimStyle,
+              ]}
+            />
+
+            {/* Orb */}
+            <Animated.View style={[styles.orbContainer, orbAnimStyle]}>
+              <View style={[styles.orbAura, { backgroundColor: theme.glowColor + "28", width: ORB_RADIUS * 2 + 24, height: ORB_RADIUS * 2 + 24, borderRadius: ORB_RADIUS + 12 }]} />
+              <View style={[styles.orbMid, { backgroundColor: theme.glowColor + "55", width: ORB_RADIUS * 2 + 10, height: ORB_RADIUS * 2 + 10, borderRadius: ORB_RADIUS + 5 }]} />
+              <LinearGradient
+                colors={[theme.ringColor, theme.glowColor]}
+                style={[styles.orbCore, { width: ORB_RADIUS * 2, height: ORB_RADIUS * 2, borderRadius: ORB_RADIUS }]}
               />
-            ))}
+            </Animated.View>
+
+            {/* Hit label */}
+            {hitLabel && (
+              <View style={styles.hitLabelContainer} pointerEvents="none">
+                <Text style={[styles.hitLabel, { color: hitLabelColor }]}>{hitLabel}</Text>
+              </View>
+            )}
           </View>
-        )}
 
-        {/* Game area */}
-        <View style={styles.gameArea}>
-          {/* Shockwave */}
-          <Animated.View
-            style={[
-              styles.shockwave,
-              {
-                borderColor: theme.ringColor,
-                width: ORB_RADIUS * 2,
-                height: ORB_RADIUS * 2,
-                borderRadius: ORB_RADIUS,
-              },
-              shockwaveStyle,
-            ]}
-          />
-
-          {/* Target ring (fixed) */}
-          <Animated.View
-            style={[
-              styles.targetRing,
-              {
-                width: TARGET_RADIUS * 2,
-                height: TARGET_RADIUS * 2,
-                borderRadius: TARGET_RADIUS,
-                borderColor: theme.targetColor,
-              },
-              targetRingOpacityStyle,
-            ]}
-          />
-
-          {/* Expanding ring */}
-          <Animated.View
-            style={[
-              styles.expandingRing,
-              { borderColor: theme.ringColor },
-              ringAnimStyle,
-            ]}
-          />
-
-          {/* Orb */}
-          <Animated.View style={[styles.orbContainer, orbAnimStyle]}>
-            <View style={[styles.orbAura, { backgroundColor: theme.glowColor + "28", width: ORB_RADIUS * 2 + 24, height: ORB_RADIUS * 2 + 24, borderRadius: ORB_RADIUS + 12 }]} />
-            <View style={[styles.orbMid, { backgroundColor: theme.glowColor + "55", width: ORB_RADIUS * 2 + 10, height: ORB_RADIUS * 2 + 10, borderRadius: ORB_RADIUS + 5 }]} />
-            <LinearGradient
-              colors={[theme.ringColor, theme.glowColor]}
-              style={[styles.orbCore, { width: ORB_RADIUS * 2, height: ORB_RADIUS * 2, borderRadius: ORB_RADIUS }]}
-            />
-          </Animated.View>
-
-          {/* Hit label */}
-          {hitLabel && (
-            <View style={styles.hitLabelContainer} pointerEvents="none">
-              <Text style={[styles.hitLabel, { color: hitLabelColor }]}>{hitLabel}</Text>
+          {/* Bottom hint */}
+          {isPlaying && (
+            <View style={styles.bottomHint} pointerEvents="none">
+              <Text style={styles.hintText}>TAP ANYWHERE</Text>
             </View>
           )}
+
         </View>
 
-        {/* Countdown overlay */}
+        {/* Countdown overlay — full screen, outside the column */}
         {countdown !== null && (
           <View testID="surge-countdown-overlay" style={styles.countdownOverlay} pointerEvents="none">
             <Text testID="surge-countdown-text" style={[styles.countdownText, { color: theme.ringColor }]}>
@@ -697,14 +709,7 @@ export default function SurgeScreen() {
           </View>
         )}
 
-        {/* Bottom hint */}
-        {isPlaying && (
-          <View style={styles.bottomHint} pointerEvents="none">
-            <Text style={styles.hintText}>TAP ANYWHERE</Text>
-          </View>
-        )}
-
-        {/* Revive prompt */}
+        {/* Revive prompt — full screen, outside the column */}
         {showRevivePrompt && (
           <View testID="surge-revive-overlay" style={styles.reviveOverlay}>
             <View testID="surge-revive-card" style={styles.reviveCard}>
@@ -738,6 +743,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  innerColumn: {
+    flex: 1,
+    width: "100%",
+    alignSelf: "center",
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -746,8 +756,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   backBtn: {
-    width: 36,
-    height: 36,
+    width: 44,
+    height: 44,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -952,7 +962,8 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   reviveSkipBtn: {
-    paddingVertical: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
   },
   reviveSkipText: {
     fontSize: 14,
