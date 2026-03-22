@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 5.0.0"
+    "version": ">= 5.0.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
@@ -20,13 +21,18 @@
     "production-surge": {
       "env": {
         "APP_VARIANT": "surge"
-      }
+      },
+      "autoIncrement": true
     }
   },
   "submit": {
     "production": {},
     "production-clutchtap": {},
     "production-velocity": {},
-    "production-surge": {}
+    "production-surge": {
+      "ios": {
+        "ascAppId": "6760904482"
+      }
+    }
   }
 }

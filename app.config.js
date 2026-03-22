@@ -67,6 +67,7 @@ module.exports = {
         ? {
             NSUserTrackingUsageDescription:
               "This allows us to show you more relevant ads and support the free version of Surge.",
+          ITSAppUsesNonExemptEncryption: false,
           }
         : undefined,
     },
