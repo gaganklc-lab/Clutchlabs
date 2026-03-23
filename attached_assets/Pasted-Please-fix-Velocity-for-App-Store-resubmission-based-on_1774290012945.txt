@@ -1,0 +1,121 @@
+Please fix Velocity for App Store resubmission based on Apple’s rejection and also verify app-specific config/secrets.
+
+Context:
+Apple rejected Velocity for Guideline 4 - Design:
+- UI felt crowded on iPad Air 11-inch
+- reviewer could not exit Zen Mode
+- relaunch was required
+
+Goals:
+1. Fix iPad usability
+2. Ensure there is always a visible way to exit gameplay, especially Zen Mode
+3. Verify Velocity-specific config is correct and not accidentally using Surge-only monetization/ad setup
+
+==================================================
+PART 1 — Fix exit / navigation issue
+==================================================
+
+In Velocity game screen(s), especially Zen Mode:
+
+1. Add a persistent visible Exit / Back / Home button
+   - top-left
+   - safe-area aware
+   - minimum touch size 44x44
+   - visible on iPhone and iPad
+   - always accessible during gameplay
+
+2. Exit behavior:
+   - router.back() or router.replace("/")
+   - user must never be trapped in any mode
+   - no force-close required
+
+3. Ensure results screen also has clear navigation:
+   - replay
+   - home/back
+
+==================================================
+PART 2 — Fix iPad layout / crowding
+==================================================
+
+1. Detect tablet:
+   const isTablet = width >= 768;
+
+2. Constrain content width:
+   const contentMaxWidth = isTablet ? 560 : undefined;
+
+3. Center gameplay layout:
+   - max width container
+   - proper horizontal padding
+   - avoid stretched UI
+   - avoid controls too close to edges
+
+4. Improve spacing/readability on iPad:
+   - HUD spacing
+   - button spacing
+   - readable text sizing where needed
+   - minimum tap target 44px for controls
+
+==================================================
+PART 3 — Config and secrets sanity check
+==================================================
+
+Please verify Velocity is not accidentally depending on Surge-only secrets or monetization config.
+
+Check all of the following:
+
+1. Search for any Velocity runtime path using:
+   - EXPO_PUBLIC_REVENUECAT_IOS_API_KEY
+   - EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY
+   - EXPO_PUBLIC_ADMOB_IOS_APP_ID
+   - EXPO_PUBLIC_ADMOB_ANDROID_APP_ID
+   - rewarded ad unit IDs
+   - ATT / tracking permission text
+   - RevenueCat purchase logic
+   - Surge-only no_ads entitlement logic
+
+2. Confirm whether Velocity actually needs any secrets.
+   - If Velocity does not use RevenueCat or AdMob, make sure it does not reference those secrets at runtime.
+   - If any Surge-only code leaked into Velocity, remove or isolate it safely.
+
+3. Verify APP_VARIANT=velocity resolves correctly:
+   - app name
+   - slug
+   - bundle identifier
+   - icon/splash if applicable
+
+4. Confirm Velocity can build and run independently from Surge config.
+
+==================================================
+PART 4 — QA checks
+==================================================
+
+Please verify:
+
+1. On iPad Air-sized layout:
+   - UI is centered
+   - not crowded
+   - all buttons tappable
+   - Zen Mode can be exited
+
+2. On iPhone:
+   - no regression
+   - exit button is visible but not intrusive
+
+3. No gameplay regression:
+   - controls still work
+   - score logic intact
+   - transitions intact
+
+==================================================
+PART 5 — Output required
+==================================================
+
+Please summarize:
+1. files checked
+2. files changed
+3. where exit/back button was added
+4. what iPad layout fixes were made
+5. whether Velocity references any Surge-only secrets/config
+6. whether any secret/env issues were found
+7. confirmation that Zen Mode is no longer a trap
+8. confirmation that Velocity is ready for App Store resubmission

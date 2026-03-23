@@ -228,6 +228,11 @@ export default function VelocityScreen() {
     cancelAnimation(arenaGlow);
   }, []);
 
+  const handleExit = useCallback(() => {
+    cleanup();
+    router.replace("/");
+  }, [cleanup]);
+
   const endGame = useCallback(() => {
     if (gameOverRef.current) return;
     gameOverRef.current = true;
@@ -709,7 +714,8 @@ export default function VelocityScreen() {
   const maxLivesDisplay = mode === "zen" ? 1 : diffCfg.lives;
 
   return (
-    <View style={styles.fullScreen} {...panResponder.panHandlers}>
+    <View style={styles.fullScreen}>
+      <View style={StyleSheet.absoluteFill} {...panResponder.panHandlers}>
       <LinearGradient
         colors={[Colors.backgroundGradientStart, Colors.backgroundGradientEnd]}
         style={[styles.container, { paddingTop: topInset, paddingBottom: bottomInset }]}
@@ -990,6 +996,16 @@ export default function VelocityScreen() {
           onBurstComplete={(id) => setBursts(prev => prev.filter(b => b.id !== id))}
         />
       </LinearGradient>
+      </View>
+
+      {/* Persistent home button — outside panResponder to guarantee tappability */}
+      <Pressable
+        onPress={handleExit}
+        style={[styles.exitBtn, { top: topInset + 4 }]}
+        hitSlop={8}
+      >
+        <Ionicons name="home" size={20} color={Colors.textSecondary} />
+      </Pressable>
     </View>
   );
 }
@@ -1200,11 +1216,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 8,
-    height: 36,
+    height: 44,
   },
   powerUpBtn: {
-    width: 40,
-    height: 36,
+    width: 44,
+    height: 44,
     borderRadius: 10,
     borderWidth: 1.5,
     borderColor: Colors.border,
@@ -1477,5 +1493,18 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     textAlign: "center",
     letterSpacing: 0.3,
+  },
+  exitBtn: {
+    position: "absolute",
+    left: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "rgba(0,0,0,0.50)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 300,
   },
 });
