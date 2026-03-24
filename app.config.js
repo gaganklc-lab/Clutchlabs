@@ -107,21 +107,27 @@ module.exports = {
       ["expo-router", { origin: "https://replit.com/" }],
       "expo-font",
       "expo-web-browser",
-      ...(IS_SURGE
-        ? [
-            [
-              "react-native-google-mobile-ads",
-              {
-                androidAppId:
-                  process.env.EXPO_PUBLIC_ADMOB_ANDROID_APP_ID ||
-                  "ca-app-pub-3940256099942544~3347511713",
-                iosAppId:
-                  process.env.EXPO_PUBLIC_ADMOB_IOS_APP_ID ||
-                  "ca-app-pub-3940256099942544~1458002511",
+      [
+        "react-native-google-mobile-ads",
+        {
+          androidAppId: IS_SURGE
+            ? process.env.EXPO_PUBLIC_ADMOB_ANDROID_APP_ID ||
+              "ca-app-pub-3940256099942544~3347511713"
+            : "ca-app-pub-3940256099942544~3347511713",
+          iosAppId: IS_SURGE
+            ? process.env.EXPO_PUBLIC_ADMOB_IOS_APP_ID ||
+              "ca-app-pub-3940256099942544~1458002511"
+            : "ca-app-pub-3940256099942544~1458002511",
+          ...(IS_SURGE
+            ? {
                 userTrackingUsageDescription:
                   "This allows us to show you more relevant ads and support the free version of Surge.",
-              },
-            ],
+              }
+            : {}),
+        },
+      ],
+      ...(IS_SURGE
+        ? [
             [
               "expo-tracking-transparency",
               {

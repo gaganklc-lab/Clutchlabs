@@ -106,8 +106,10 @@ interface Obstacle {
 
 export default function VelocityScreen() {
   const { mode: modeParam, difficulty: diffParam } = useLocalSearchParams<{ mode: string; difficulty: string }>();
-  const mode = (modeParam ?? "regular") as GameMode;
-  const difficulty = ((diffParam ?? "normal") as VelocityDifficulty);
+  const rawMode = Array.isArray(modeParam) ? modeParam[0] : modeParam;
+  const rawDiff = Array.isArray(diffParam) ? diffParam[0] : diffParam;
+  const mode = (["regular", "endless", "zen"].includes(rawMode ?? "") ? rawMode : "regular") as GameMode;
+  const difficulty = (["easy", "normal", "hard"].includes(rawDiff ?? "") ? rawDiff : "normal") as VelocityDifficulty;
   const diffCfg = DIFFICULTY_SETTINGS[difficulty] ?? DIFFICULTY_SETTINGS.normal;
 
   const insets = useSafeAreaInsets();
@@ -191,6 +193,10 @@ export default function VelocityScreen() {
 
   const screenCenterX = contentMaxWidth ? Math.min(width, contentMaxWidth) / 2 : width / 2;
   const screenCenterY = (height - topInset - bottomInset) / 2;
+
+  useEffect(() => {
+    console.log("[VelocityScreen] mount", { mode, difficulty });
+  }, []);
 
   useEffect(() => {
     getVelocityPowerUps().then(setPowerUpInventory);

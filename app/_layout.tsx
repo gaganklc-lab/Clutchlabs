@@ -14,13 +14,15 @@ import {
   Outfit_700Bold,
   Outfit_800ExtraBold,
 } from "@expo-google-fonts/outfit";
-import { IS_VELOCITY, IS_SURGE } from "@/constants/appVariant";
+import { APP_VARIANT, IS_VELOCITY, IS_SURGE } from "@/constants/appVariant";
 import {
   initializeSurgeRevenueCat,
   SurgeSubscriptionProvider,
 } from "@/lib/surge-subscription";
 
 SplashScreen.preventAutoHideAsync();
+
+console.log("[AppVariant]", APP_VARIANT);
 
 if (IS_SURGE) {
   initializeSurgeRevenueCat();
@@ -62,7 +64,7 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Outfit_400Regular,
     Outfit_500Medium,
     Outfit_600SemiBold,
@@ -71,12 +73,12 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded) {
+    if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded]);
+  }, [fontsLoaded, fontError]);
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded && !fontError) return null;
 
   const inner = (
     <ErrorBoundary>

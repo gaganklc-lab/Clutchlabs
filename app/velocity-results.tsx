@@ -270,14 +270,16 @@ export default function VelocityResultsScreen() {
     difficulty: string;
   }>();
 
-  const score = parseInt(params.score ?? "0");
-  const maxCombo = parseInt(params.maxCombo ?? "0");
-  const mistakes = parseInt(params.mistakes ?? "0");
-  const totalDodges = parseInt(params.totalDodges ?? "0");
-  const timeSurvived = parseInt(params.timeSurvived ?? "0");
-  const speedLevel = parseInt(params.speedLevel ?? "0");
-  const mode = params.mode ?? "regular";
-  const difficulty = params.difficulty ?? "normal";
+  const score = parseInt((Array.isArray(params.score) ? params.score[0] : params.score) ?? "0");
+  const maxCombo = parseInt((Array.isArray(params.maxCombo) ? params.maxCombo[0] : params.maxCombo) ?? "0");
+  const mistakes = parseInt((Array.isArray(params.mistakes) ? params.mistakes[0] : params.mistakes) ?? "0");
+  const totalDodges = parseInt((Array.isArray(params.totalDodges) ? params.totalDodges[0] : params.totalDodges) ?? "0");
+  const timeSurvived = parseInt((Array.isArray(params.timeSurvived) ? params.timeSurvived[0] : params.timeSurvived) ?? "0");
+  const speedLevel = parseInt((Array.isArray(params.speedLevel) ? params.speedLevel[0] : params.speedLevel) ?? "0");
+  const rawMode = Array.isArray(params.mode) ? params.mode[0] : params.mode;
+  const rawDifficulty = Array.isArray(params.difficulty) ? params.difficulty[0] : params.difficulty;
+  const mode = (["regular", "endless", "zen"].includes(rawMode ?? "") ? rawMode : "regular") as string;
+  const difficulty = (["easy", "normal", "hard"].includes(rawDifficulty ?? "") ? rawDifficulty : "normal") as string;
 
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -303,6 +305,10 @@ export default function VelocityResultsScreen() {
 
   const containerOpacity = useSharedValue(0);
   const headerScale = useSharedValue(0.85);
+
+  useEffect(() => {
+    console.log("[VelocityResults] mount", { score, mode, difficulty });
+  }, []);
 
   useEffect(() => {
     containerOpacity.value = withTiming(1, { duration: 500 });
