@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "ie8oZeJtEWzD3Tk5xv_KA"
+uri = "file://attached_assets/generated_images/surge_remove_ads_iap.png"
+type = "image"
+title = "Surge — Remove Ads IAP Promotional Image (1024×1024)"
