@@ -78,7 +78,7 @@ ensurePreviewReachable = "/status"
 [userenv]
 
 [userenv.shared]
-APP_VARIANT = "surge"
+APP_VARIANT = "velocity"
 EXPO_PUBLIC_REVENUECAT_TEST_API_KEY = "test_XtKBxoFsRVhhzRidlqqkNLeBtAO"
 EXPO_PUBLIC_REVENUECAT_IOS_API_KEY = "appl_PYLTaTqAeaizBJMKQDnVfdqAOzv "
 EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY = "goog_JbEcUqhaHNjbkcvxKrEKysapOSk"
