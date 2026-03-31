@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Modal,
   View,
@@ -82,7 +82,7 @@ export default function SurgePaywallSheet({
   onSuccess,
 }: Props) {
   const insets = useSafeAreaInsets();
-  const { offerings, purchaseRemoveAds, restorePurchases, isPurchasing, isRestoring } =
+  const { offerings, purchaseRemoveAds, restorePurchases, isPurchasing, isRestoring, isLoading } =
     useSurgeSubscription();
 
   const [showTestConfirm, setShowTestConfirm] = useState(false);
@@ -93,6 +93,9 @@ export default function SurgePaywallSheet({
     currentOffering?.availablePackages.find(
       (p) => p.identifier === "$rc_lifetime"
     ) ?? currentOffering?.availablePackages[0];
+
+  // priceString from RevenueCat SDK — localized, e.g. "$0.99".
+  // Fallback: "$0.99". Never "$2.99". Never "...".
   const price = pkg?.product.priceString ?? "$0.99";
 
   const features = [
@@ -104,13 +107,34 @@ export default function SurgePaywallSheet({
     },
   ];
 
+  // isTestEnv: true in Expo Go (storeClient) and local dev (__DEV__).
+  // In TestFlight / App Store (standalone, __DEV__=false), isTestEnv=false → real purchase runs.
+  // Apple reviewer will always hit the real RevenueCat purchase path.
   const isTestEnv =
     __DEV__ ||
     Platform.OS === "web" ||
     Constants.executionEnvironment === "storeClient";
 
+  // Diagnostic log when sheet opens — grep [SurgePaywall] in crash logs to trace RC state.
+  useEffect(() => {
+    if (!visible) return;
+    const offering = offerings?.current;
+    console.log("[SurgePaywall] sheet opened");
+    console.log("[SurgePaywall] currentOffering:", offering?.identifier ?? "null");
+    console.log("[SurgePaywall] availablePackages:", offering?.availablePackages.map(p => p.identifier) ?? []);
+    console.log("[SurgePaywall] selected pkg:", pkg?.identifier ?? "none");
+    console.log("[SurgePaywall] selected product:", pkg?.product.identifier ?? "none");
+    console.log("[SurgePaywall] price:", price);
+    console.log("[SurgePaywall] isLoading:", isLoading);
+  }, [visible]);
+
   const handlePurchasePress = () => {
-    if (!pkg) return;
+    console.log("[SurgePaywall] purchase button pressed. pkg:", pkg?.identifier ?? "none");
+    // Guard: button is disabled when !pkg, but log and setError defensively in case it fires.
+    if (!pkg) {
+      setError("Purchase not available right now. Please try again.");
+      return;
+    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setError(null);
     if (isTestEnv) {
@@ -122,9 +146,16 @@ export default function SurgePaywallSheet({
 
   const handleConfirmPurchase = async () => {
     setShowTestConfirm(false);
-    if (!pkg) return;
+    // Guard: never proceed silently with missing package — always surface an error.
+    if (!pkg) {
+      console.log("[SurgePaywall] handleConfirmPurchase: pkg missing, aborting");
+      setError("Purchase not available right now. Please try again.");
+      return;
+    }
+    console.log("[SurgePaywall] calling purchaseRemoveAds:", pkg.identifier, pkg.product.identifier, pkg.product.priceString);
     try {
       await purchaseRemoveAds(pkg);
+      console.log("[SurgePaywall] purchase flow completed");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onSuccess?.();
       onClose();
@@ -135,8 +166,10 @@ export default function SurgePaywallSheet({
         "userCancelled" in err &&
         (err as { userCancelled: boolean }).userCancelled
       ) {
+        console.log("[SurgePaywall] purchase cancelled by user");
         return;
       }
+      console.log("[SurgePaywall] purchase error:", err);
       setError("Purchase failed. Please try again.");
     }
   };
@@ -217,6 +250,15 @@ export default function SurgePaywallSheet({
               </View>
             )}
 
+            {/* Proactive message when offerings loaded but no package found */}
+            {!isLoading && !pkg && (
+              <View style={pw.errorBox}>
+                <Text style={pw.errorText}>
+                  Purchase not available right now. Please try again.
+                </Text>
+              </View>
+            )}
+
             <View testID="surge-paywall-price-block" style={pw.priceBlock}>
               <Text style={pw.priceLabel}>One-time purchase</Text>
               <Text testID="surge-paywall-price-text" style={pw.price}>{price}</Text>
@@ -225,15 +267,15 @@ export default function SurgePaywallSheet({
             <Pressable
               testID="surge-paywall-subscribe"
               onPress={handlePurchasePress}
-              disabled={isPurchasing || !pkg}
+              disabled={isPurchasing || isLoading || !pkg}
               style={({ pressed }) => [
                 pw.subscribeBtn,
                 { transform: [{ scale: pressed ? 0.97 : 1 }] },
-                (isPurchasing || !pkg) && pw.subscribeBtnDisabled,
+                (isPurchasing || isLoading || !pkg) && pw.subscribeBtnDisabled,
               ]}
             >
-              {isPurchasing ? (
-                <ActivityIndicator color={Colors.text} />
+              {isPurchasing || isLoading ? (
+                <ActivityIndicator color={Colors.text} style={pw.buttonSpinner} />
               ) : (
                 <LinearGradient
                   colors={[SURGE_PURPLE, SURGE_MAGENTA]}
@@ -406,6 +448,9 @@ const pw = StyleSheet.create({
     gap: 10,
     paddingVertical: 16,
     paddingHorizontal: 24,
+  },
+  buttonSpinner: {
+    paddingVertical: 16,
   },
   subscribeBtnText: {
     fontSize: 17,

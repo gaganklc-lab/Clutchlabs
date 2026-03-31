@@ -1,0 +1,112 @@
+Please fix the Surge IAP flow for App Store review reliability.
+
+Context:
+- App: Surge
+- RevenueCat offering: default
+- Package: $rc_lifetime
+- Product: surge_remove_ads
+- Entitlement: no_ads
+- Apple review said the purchase button was unresponsive
+- We now know the current paywall can silently do nothing if pkg is missing
+- The app must NEVER appear unresponsive to the reviewer
+
+Please audit and update the codebase with the following goals:
+
+==================================================
+PART 1 — Make the purchase button review-safe
+==================================================
+
+In the Surge paywall:
+
+1. Do NOT allow silent no-op behavior when pkg is missing
+   - If pkg is missing, show a visible user-facing error:
+     "Purchase not available right now. Please try again."
+   - Do NOT just `return` silently
+
+2. Ensure the button always gives feedback
+   - If purchase is loading, show loading state
+   - If offering/package is unavailable, show a clear inline message
+   - Reviewer should never tap and see nothing happen
+
+3. Keep the display price logic safe
+   - Use RevenueCat localized priceString when available
+   - Fallback to "$0.99"
+   - Never show "$2.99"
+   - Never show "..." in production/TestFlight review builds
+
+==================================================
+PART 2 — Add explicit RevenueCat diagnostics
+==================================================
+
+Add temporary logs around the Surge paywall and purchase flow:
+
+Log:
+- current offering identifier
+- all available package identifiers
+- selected package identifier
+- selected product identifier
+- selected localized price string
+- whether button was pressed
+- whether purchasePackage was called
+- whether purchase succeeded or failed
+- active entitlements after purchase / restore
+
+Make logs easy to grep, e.g. prefix with:
+[SurgePaywall]
+
+==================================================
+PART 3 — Verify correct RevenueCat key usage
+==================================================
+
+Audit the Surge subscription setup and confirm:
+
+1. TestFlight / App Store iOS builds use:
+   EXPO_PUBLIC_REVENUECAT_IOS_API_KEY
+
+2. They do NOT use:
+   EXPO_PUBLIC_REVENUECAT_TEST_API_KEY
+
+3. Remove or isolate any environment logic that could accidentally use the Test Store key for TestFlight / production iOS builds
+
+4. Keep Test Store logic only if truly needed for local/internal testing, but never for real iOS review builds
+
+==================================================
+PART 4 — Harden package lookup
+==================================================
+
+Ensure package selection is robust:
+
+1. Prefer:
+   $rc_lifetime
+
+2. Fallback:
+   first available package if needed
+
+3. If no package is found:
+   - show error state
+   - optionally show retry action
+   - do not leave button appearing active but doing nothing
+
+==================================================
+PART 5 — Review App Store / RevenueCat assumptions in comments
+==================================================
+
+Add short comments where helpful so future edits do not reintroduce the same issue:
+- first IAP / App Store review needs reliable purchase flow
+- no silent returns on missing package
+- iOS production must use the real RevenueCat iOS SDK key
+
+==================================================
+PART 6 — Output required
+==================================================
+
+Please summarize:
+
+1. files checked
+2. files changed
+3. whether any silent no-op purchase path was found
+4. whether Test Store key was incorrectly used anywhere for iOS builds
+5. final package selection logic
+6. final price fallback logic
+7. what the reviewer will now see if offerings/package are unavailable
+8. whether the Surge IAP flow is now Apple-review safe
