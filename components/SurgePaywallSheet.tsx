@@ -82,8 +82,16 @@ export default function SurgePaywallSheet({
   onSuccess,
 }: Props) {
   const insets = useSafeAreaInsets();
-  const { offerings, purchaseRemoveAds, restorePurchases, isPurchasing, isRestoring, isLoading } =
-    useSurgeSubscription();
+  const {
+    offerings,
+    purchaseRemoveAds,
+    restorePurchases,
+    isPurchasing,
+    isRestoring,
+    isLoading,
+    isOfferingsError,
+    retryOfferings,
+  } = useSurgeSubscription();
 
   const [showTestConfirm, setShowTestConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -250,12 +258,35 @@ export default function SurgePaywallSheet({
               </View>
             )}
 
+            {/* Error loading offerings — show retry button so reviewer is not stuck */}
+            {isOfferingsError && (
+              <View style={pw.errorBox}>
+                <Text style={pw.errorText}>
+                  Could not load purchase options. Please check your connection.
+                </Text>
+                <Pressable
+                  testID="surge-paywall-retry"
+                  onPress={() => { retryOfferings(); setError(null); }}
+                  style={({ pressed }) => [pw.retryBtn, { opacity: pressed ? 0.7 : 1 }]}
+                >
+                  <Text style={pw.retryText}>Try Again</Text>
+                </Pressable>
+              </View>
+            )}
+
             {/* Proactive message when offerings loaded but no package found */}
-            {!isLoading && !pkg && (
+            {!isLoading && !isOfferingsError && !pkg && (
               <View style={pw.errorBox}>
                 <Text style={pw.errorText}>
                   Purchase not available right now. Please try again.
                 </Text>
+                <Pressable
+                  testID="surge-paywall-retry"
+                  onPress={() => { retryOfferings(); setError(null); }}
+                  style={({ pressed }) => [pw.retryBtn, { opacity: pressed ? 0.7 : 1 }]}
+                >
+                  <Text style={pw.retryText}>Try Again</Text>
+                </Pressable>
               </View>
             )}
 
@@ -466,6 +497,21 @@ const pw = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Outfit_500Medium",
     color: Colors.textMuted,
+  },
+  retryBtn: {
+    alignSelf: "center",
+    marginTop: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  retryText: {
+    fontSize: 13,
+    fontFamily: "Outfit_600SemiBold",
+    color: Colors.text,
   },
   confirmOverlay: {
     flex: 1,

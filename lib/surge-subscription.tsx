@@ -66,6 +66,8 @@ function useSurgeSubscriptionContext() {
       return info;
     },
     staleTime: 60 * 1000,
+    retry: 2,
+    retryDelay: 2000,
   });
 
   const offeringsQuery = useQuery({
@@ -77,12 +79,16 @@ function useSurgeSubscriptionContext() {
       return offerings;
     },
     staleTime: 300 * 1000,
+    // Retry 3 times with 2s delay — transient network errors at app startup are common
+    // and must not permanently prevent the reviewer from seeing the purchase button.
+    retry: 3,
+    retryDelay: 2000,
   });
 
   const purchaseMutation = useMutation({
     mutationFn: async (pkg: PurchasesPackage) => {
       // pkg.identifier = RC package ID (e.g. "$rc_lifetime")
-      // pkg.product.identifier = App Store product ID (e.g. "surge_remove_ads")
+      // pkg.product.identifier = App Store product ID (e.g. "surge_remove_ads_v2")
       // pkg.product.priceString = localized price (e.g. "$0.99")
       console.log(
         "[SurgePaywall] purchasePackage called — pkg:", pkg.identifier,
@@ -121,6 +127,8 @@ function useSurgeSubscriptionContext() {
     currentOffering,
     hasNoAds,
     isLoading: customerInfoQuery.isLoading || offeringsQuery.isLoading,
+    isOfferingsError: offeringsQuery.isError,
+    retryOfferings: () => offeringsQuery.refetch(),
     purchaseRemoveAds: purchaseMutation.mutateAsync,
     restorePurchases: restoreMutation.mutateAsync,
     isPurchasing: purchaseMutation.isPending,
