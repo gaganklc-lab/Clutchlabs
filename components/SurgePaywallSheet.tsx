@@ -274,8 +274,8 @@ export default function SurgePaywallSheet({
               </View>
             )}
 
-            {/* Proactive message when offerings loaded but no package found */}
-            {!isLoading && !isOfferingsError && !pkg && (
+            {/* Proactive message when offerings loaded but no package found (also shown when isOfferingsError) */}
+            {!isLoading && !pkg && (
               <View style={pw.errorBox}>
                 <Text style={pw.errorText}>
                   Purchase not available right now. Please try again.
