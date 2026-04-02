@@ -258,25 +258,14 @@ export default function SurgePaywallSheet({
               </View>
             )}
 
-            {/* Error loading offerings — show retry button so reviewer is not stuck */}
-            {isOfferingsError && (
-              <View style={pw.errorBox}>
-                <Text style={pw.errorText}>
-                  Could not load purchase options. Please check your connection.
-                </Text>
-                <Pressable
-                  testID="surge-paywall-retry"
-                  onPress={() => { retryOfferings(); setError(null); }}
-                  style={({ pressed }) => [pw.retryBtn, { opacity: pressed ? 0.7 : 1 }]}
-                >
-                  <Text style={pw.retryText}>Try Again</Text>
-                </Pressable>
-              </View>
-            )}
-
-            {/* Proactive message when offerings loaded but no package found (also shown when isOfferingsError) */}
+            {/* No package available — covers both offerings error and missing package */}
             {!isLoading && !pkg && (
               <View style={pw.errorBox}>
+                {isOfferingsError && (
+                  <Text style={[pw.errorText, { marginBottom: 4 }]}>
+                    Could not load purchase options. Please check your connection.
+                  </Text>
+                )}
                 <Text style={pw.errorText}>
                   Purchase not available right now. Please try again.
                 </Text>
