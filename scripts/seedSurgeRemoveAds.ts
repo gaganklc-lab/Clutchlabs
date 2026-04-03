@@ -30,7 +30,7 @@ if (!APPLE_APP_STORE_APP_ID)
   throw new Error("REVENUECAT_APPLE_APP_STORE_APP_ID env var is missing");
 
 // New one-time purchase identifiers (what the app code expects)
-const NEW_PRODUCT_IDENTIFIER = "surge_remove_ads_v2";
+const NEW_PRODUCT_IDENTIFIER = "surge_remove_ads_v3";
 const NEW_PRODUCT_DISPLAY_NAME = "Remove Ads";
 const NEW_ENTITLEMENT_IDENTIFIER = "no_ads";
 const NEW_ENTITLEMENT_DISPLAY_NAME = "No Ads";
@@ -39,8 +39,8 @@ const NEW_PACKAGE_DISPLAY_NAME = "Remove Ads (Lifetime)";
 const OFFERING_IDENTIFIER = "default";
 const OFFERING_DISPLAY_NAME = "Default Offering";
 
-// Old subscription identifiers (to clean up)
-const OLD_PRODUCT_IDENTIFIER = "surge_pro_monthly";
+// Old identifiers to clean up (v2 superseded by v3; old subscription also removed)
+const OLD_PRODUCT_IDENTIFIER = "surge_remove_ads_v2";
 const OLD_ENTITLEMENT_IDENTIFIER = "surge_pro";
 
 // Test Store price: $0.99 one-time
@@ -58,21 +58,119 @@ async function seedSurgeRemoveAds() {
   console.log("Test Store App ID:", TEST_STORE_APP_ID);
   console.log("App Store App ID:", APPLE_APP_STORE_APP_ID);
 
-  // ─── Load all existing products ───────────────────────────────────────────────
-  const { data: allProducts, error: listProductsError } = await listProducts({
-    client,
-    path: { project_id: PROJECT_ID },
-    query: { limit: 100 },
-  });
-  if (listProductsError)
-    throw new Error("Failed to list products: " + JSON.stringify(listProductsError));
+  // ─── Phase 1: Load all existing products ──────────────────────────────────────
+  const loadProducts = async (): Promise<Product[]> => {
+    const { data, error } = await listProducts({
+      client,
+      path: { project_id: PROJECT_ID },
+      query: { limit: 100 },
+    });
+    if (error) throw new Error("Failed to list products: " + JSON.stringify(error));
+    return data.items ?? [];
+  };
 
-  const findProduct = (storeId: string, appId: string): Product | undefined =>
-    allProducts.items?.find(
-      (p) => p.store_identifier === storeId && p.app_id === appId
+  // ─── Phase 2: Clean up old products BEFORE creating new ones ──────────────────
+  // Must run first so the Test Store doesn't reject the new product
+  // due to a duplicate display_name from the old product.
+  console.log("\n--- Phase 2: Cleaning up old products ---");
+
+  const existingEntitlements_pre = await (async () => {
+    const { data, error } = await listEntitlements({
+      client,
+      path: { project_id: PROJECT_ID },
+      query: { limit: 20 },
+    });
+    if (error) throw new Error("Failed to list entitlements: " + JSON.stringify(error));
+    return data.items ?? [];
+  })();
+
+  const initialProducts = await loadProducts();
+  const oldProductIds: string[] = initialProducts
+    .filter((p) => p.store_identifier === OLD_PRODUCT_IDENTIFIER)
+    .map((p) => p.id);
+
+  if (oldProductIds.length === 0) {
+    console.log("No old products found (", OLD_PRODUCT_IDENTIFIER, ") — skipping cleanup");
+  } else {
+    console.log("Old products to clean up:", oldProductIds);
+
+    // Detach from old entitlement (surge_pro) if it exists
+    const oldEntitlement = existingEntitlements_pre.find(
+      (e) => e.lookup_key === OLD_ENTITLEMENT_IDENTIFIER
     );
+    if (oldEntitlement) {
+      const { error } = await detachProductsFromEntitlement({
+        client,
+        path: { project_id: PROJECT_ID, entitlement_id: oldEntitlement.id },
+        body: { product_ids: oldProductIds },
+      });
+      if (error)
+        throw new Error("Failed to detach old products from surge_pro: " + JSON.stringify(error));
+      console.log("Detached old products from surge_pro entitlement");
+    }
 
-  // ─── Create new products ─────────────────────────────────────────────────────
+    // Detach from no_ads entitlement if attached
+    const noAdsEnt_pre = existingEntitlements_pre.find(
+      (e) => e.lookup_key === NEW_ENTITLEMENT_IDENTIFIER
+    );
+    if (noAdsEnt_pre) {
+      await detachProductsFromEntitlement({
+        client,
+        path: { project_id: PROJECT_ID, entitlement_id: noAdsEnt_pre.id },
+        body: { product_ids: oldProductIds },
+      }).catch(() => {});
+    }
+
+    // Detach from all packages across all offerings
+    const { data: allOfferings } = await listOfferings({
+      client,
+      path: { project_id: PROJECT_ID },
+      query: { limit: 20 },
+    });
+    for (const offering of allOfferings?.items ?? []) {
+      const { data: pkgList } = await listPackages({
+        client,
+        path: { project_id: PROJECT_ID, offering_id: offering.id },
+        query: { limit: 20 },
+      });
+      for (const pkg of pkgList?.items ?? []) {
+        const { error } = await detachProductsFromPackage({
+          client,
+          path: { project_id: PROJECT_ID, package_id: pkg.id },
+          body: { product_ids: oldProductIds },
+        });
+        if (error) {
+          const errType = (error as { type?: string }).type;
+          if (errType !== "unprocessable_entity_error") {
+            throw new Error(
+              `Failed to detach old products from package ${pkg.id}: ` + JSON.stringify(error)
+            );
+          }
+        } else {
+          console.log(`Detached old products from package ${pkg.lookup_key} (${pkg.id})`);
+        }
+      }
+    }
+
+    // Delete old products
+    for (const productId of oldProductIds) {
+      const { error } = await deleteProduct({
+        client,
+        path: { project_id: PROJECT_ID, product_id: productId },
+      });
+      if (error)
+        throw new Error(`Failed to delete old product ${productId}: ` + JSON.stringify(error));
+      console.log("Deleted old product:", productId);
+    }
+  }
+
+  // ─── Phase 3: Create new products ────────────────────────────────────────────
+  // Reload product list now that old products have been removed
+  console.log("\n--- Phase 3: Creating new products ---");
+  const freshProducts = await loadProducts();
+  const findProduct = (storeId: string, appId: string): Product | undefined =>
+    freshProducts.find((p) => p.store_identifier === storeId && p.app_id === appId);
+
   const ensureProduct = async (
     appId: string,
     label: string,
@@ -80,11 +178,7 @@ async function seedSurgeRemoveAds() {
   ): Promise<Product> => {
     const existing = findProduct(NEW_PRODUCT_IDENTIFIER, appId);
     if (existing) {
-      console.log(
-        label + " product already exists:",
-        existing.id,
-        existing.store_identifier
-      );
+      console.log(label + " product already exists:", existing.id, existing.store_identifier);
       return existing;
     }
     const body: Record<string, unknown> = {
@@ -94,7 +188,6 @@ async function seedSurgeRemoveAds() {
       display_name: NEW_PRODUCT_DISPLAY_NAME,
     };
     if (isTestStore) {
-      // Test Store requires a user-facing title
       body.title = NEW_PRODUCT_DISPLAY_NAME;
     }
     const { data: created, error } = await createProduct({
@@ -103,21 +196,16 @@ async function seedSurgeRemoveAds() {
       body: body as Parameters<typeof createProduct>[0]["body"],
     });
     if (error)
-      throw new Error(
-        "Failed to create " + label + " product: " + JSON.stringify(error)
-      );
-    console.log(
-      "Created " + label + " product:",
-      created.id,
-      created.store_identifier
-    );
+      throw new Error("Failed to create " + label + " product: " + JSON.stringify(error));
+    console.log("Created " + label + " product:", created.id, created.store_identifier);
     return created;
   };
 
   const testStoreProduct = await ensureProduct(TEST_STORE_APP_ID, "Test Store", true);
   const appStoreProduct = await ensureProduct(APPLE_APP_STORE_APP_ID, "App Store", false);
 
-  // ─── Add Test Store price ($0.99) ─────────────────────────────────────────────
+  // ─── Phase 4: Add Test Store price ($0.99) ────────────────────────────────────
+  console.log("\n--- Phase 4: Setting test store price ---");
   console.log("Adding test store price for product:", testStoreProduct.id);
   const { error: priceError } = await client.post<TestStorePricesResponse>({
     url: "/projects/{project_id}/products/{product_id}/test_store_prices",
@@ -129,15 +217,14 @@ async function seedSurgeRemoveAds() {
     if (errType === "resource_already_exists") {
       console.log("Test store prices already set — skipping");
     } else {
-      throw new Error(
-        "Failed to add test store price: " + JSON.stringify(priceError)
-      );
+      throw new Error("Failed to add test store price: " + JSON.stringify(priceError));
     }
   } else {
     console.log("Test store price $0.99 set");
   }
 
-  // ─── Ensure no_ads entitlement ────────────────────────────────────────────────
+  // ─── Phase 5: Ensure no_ads entitlement ──────────────────────────────────────
+  console.log("\n--- Phase 5: Ensuring no_ads entitlement ---");
   const { data: existingEntitlements, error: listEntitlementsError } =
     await listEntitlements({
       client,
@@ -145,9 +232,7 @@ async function seedSurgeRemoveAds() {
       query: { limit: 20 },
     });
   if (listEntitlementsError)
-    throw new Error(
-      "Failed to list entitlements: " + JSON.stringify(listEntitlementsError)
-    );
+    throw new Error("Failed to list entitlements: " + JSON.stringify(listEntitlementsError));
 
   let noAdsEntitlement = existingEntitlements.items?.find(
     (e) => e.lookup_key === NEW_ENTITLEMENT_IDENTIFIER
@@ -165,14 +250,11 @@ async function seedSurgeRemoveAds() {
       },
     });
     if (error)
-      throw new Error(
-        "Failed to create no_ads entitlement: " + JSON.stringify(error)
-      );
+      throw new Error("Failed to create no_ads entitlement: " + JSON.stringify(error));
     console.log("Created no_ads entitlement:", created.id);
     noAdsEntitlement = created;
   }
 
-  // Attach new products to no_ads entitlement
   const { error: attachEntitlementError } = await attachProductsToEntitlement({
     client,
     path: { project_id: PROJECT_ID, entitlement_id: noAdsEntitlement.id },
@@ -192,17 +274,15 @@ async function seedSurgeRemoveAds() {
     console.log("Attached both products to no_ads entitlement");
   }
 
-  // ─── Ensure default offering ──────────────────────────────────────────────────
-  const { data: existingOfferings, error: listOfferingsError } =
-    await listOfferings({
-      client,
-      path: { project_id: PROJECT_ID },
-      query: { limit: 20 },
-    });
+  // ─── Phase 6: Ensure default offering ────────────────────────────────────────
+  console.log("\n--- Phase 6: Ensuring default offering ---");
+  const { data: existingOfferings, error: listOfferingsError } = await listOfferings({
+    client,
+    path: { project_id: PROJECT_ID },
+    query: { limit: 20 },
+  });
   if (listOfferingsError)
-    throw new Error(
-      "Failed to list offerings: " + JSON.stringify(listOfferingsError)
-    );
+    throw new Error("Failed to list offerings: " + JSON.stringify(listOfferingsError));
 
   let defaultOffering = existingOfferings.items?.find(
     (o) => o.lookup_key === OFFERING_IDENTIFIER
@@ -222,9 +302,7 @@ async function seedSurgeRemoveAds() {
       body: { lookup_key: OFFERING_IDENTIFIER, display_name: OFFERING_DISPLAY_NAME },
     });
     if (error)
-      throw new Error(
-        "Failed to create default offering: " + JSON.stringify(error)
-      );
+      throw new Error("Failed to create default offering: " + JSON.stringify(error));
     console.log("Created default offering:", created.id);
     defaultOffering = created;
   }
@@ -236,25 +314,21 @@ async function seedSurgeRemoveAds() {
       body: { is_current: true },
     });
     if (error)
-      throw new Error(
-        "Failed to set offering as current: " + JSON.stringify(error)
-      );
+      throw new Error("Failed to set offering as current: " + JSON.stringify(error));
     console.log("Marked default offering as current");
   } else {
     console.log("Default offering is already current");
   }
 
-  // ─── Ensure $rc_lifetime package ─────────────────────────────────────────────
-  const { data: existingPackages, error: listPackagesError } =
-    await listPackages({
-      client,
-      path: { project_id: PROJECT_ID, offering_id: defaultOffering.id },
-      query: { limit: 20 },
-    });
+  // ─── Phase 7: Ensure $rc_lifetime package ────────────────────────────────────
+  console.log("\n--- Phase 7: Ensuring $rc_lifetime package ---");
+  const { data: existingPackages, error: listPackagesError } = await listPackages({
+    client,
+    path: { project_id: PROJECT_ID, offering_id: defaultOffering.id },
+    query: { limit: 20 },
+  });
   if (listPackagesError)
-    throw new Error(
-      "Failed to list packages: " + JSON.stringify(listPackagesError)
-    );
+    throw new Error("Failed to list packages: " + JSON.stringify(listPackagesError));
 
   let lifetimePkg = existingPackages.items?.find(
     (p) => p.lookup_key === NEW_PACKAGE_IDENTIFIER
@@ -272,14 +346,11 @@ async function seedSurgeRemoveAds() {
       },
     });
     if (error)
-      throw new Error(
-        "Failed to create $rc_lifetime package: " + JSON.stringify(error)
-      );
+      throw new Error("Failed to create $rc_lifetime package: " + JSON.stringify(error));
     console.log("Created $rc_lifetime package:", created.id);
     lifetimePkg = created;
   }
 
-  // Attach new products to $rc_lifetime package
   const { error: attachPkgError } = await attachProductsToPackage({
     client,
     path: { project_id: PROJECT_ID, package_id: lifetimePkg.id },
@@ -299,122 +370,11 @@ async function seedSurgeRemoveAds() {
       console.log("Products already attached to $rc_lifetime package — skipping");
     } else {
       throw new Error(
-        "Failed to attach products to $rc_lifetime package: " +
-          JSON.stringify(attachPkgError)
+        "Failed to attach products to $rc_lifetime package: " + JSON.stringify(attachPkgError)
       );
     }
   } else {
     console.log("Attached both products to $rc_lifetime package");
-  }
-
-  // ─── Clean up old subscription products ───────────────────────────────────────
-  console.log("\n--- Cleaning up old subscription products ---");
-
-  // Reload products to be sure we have the latest list (creation above may have changed state)
-  const { data: refreshedProducts, error: refreshError } = await listProducts({
-    client,
-    path: { project_id: PROJECT_ID },
-    query: { limit: 100 },
-  });
-  if (refreshError)
-    throw new Error(
-      "Failed to refresh product list: " + JSON.stringify(refreshError)
-    );
-
-  const oldProductIds: string[] = (refreshedProducts.items ?? [])
-    .filter((p) => p.store_identifier === OLD_PRODUCT_IDENTIFIER)
-    .map((p) => p.id);
-
-  if (oldProductIds.length === 0) {
-    console.log("No old subscription products found — nothing to clean up");
-  } else {
-    console.log("Old products to clean up:", oldProductIds);
-
-    // Detach from old entitlement (surge_pro) if it exists
-    const oldEntitlement = existingEntitlements.items?.find(
-      (e) => e.lookup_key === OLD_ENTITLEMENT_IDENTIFIER
-    );
-    if (oldEntitlement) {
-      const { error: detachEntError } = await detachProductsFromEntitlement({
-        client,
-        path: { project_id: PROJECT_ID, entitlement_id: oldEntitlement.id },
-        body: { product_ids: oldProductIds },
-      });
-      if (detachEntError) {
-        throw new Error(
-          "Failed to detach old products from surge_pro entitlement: " +
-            JSON.stringify(detachEntError)
-        );
-      }
-      console.log("Detached old products from surge_pro entitlement");
-    } else {
-      console.log(
-        "surge_pro entitlement not found — skipping detach from entitlement"
-      );
-    }
-
-    // Detach from no_ads entitlement too (in case old products were inadvertently attached)
-    const { error: detachNoAdsError } = await detachProductsFromEntitlement({
-      client,
-      path: { project_id: PROJECT_ID, entitlement_id: noAdsEntitlement.id },
-      body: { product_ids: oldProductIds },
-    }).catch(() => ({ error: null }));
-    if (detachNoAdsError) {
-      console.log(
-        "Note: could not detach old products from no_ads entitlement (may not be attached) — continuing"
-      );
-    }
-
-    // Detach from ALL packages across all offerings so stale products can't interfere
-    const { data: allOfferings } = await listOfferings({
-      client,
-      path: { project_id: PROJECT_ID },
-      query: { limit: 20 },
-    });
-    for (const offering of allOfferings?.items ?? []) {
-      const { data: pkgList } = await listPackages({
-        client,
-        path: { project_id: PROJECT_ID, offering_id: offering.id },
-        query: { limit: 20 },
-      });
-      for (const pkg of pkgList?.items ?? []) {
-        const { error: detachPkgErr } = await detachProductsFromPackage({
-          client,
-          path: { project_id: PROJECT_ID, package_id: pkg.id },
-          body: { product_ids: oldProductIds },
-        });
-        if (detachPkgErr) {
-          const errType = (detachPkgErr as { type?: string }).type;
-          if (errType === "unprocessable_entity_error") {
-            // Products were never attached to this package — expected
-          } else {
-            throw new Error(
-              `Failed to detach old products from package ${pkg.id} (${pkg.lookup_key}): ` +
-                JSON.stringify(detachPkgErr)
-            );
-          }
-        } else {
-          console.log(
-            `Detached old products from package ${pkg.lookup_key} (${pkg.id})`
-          );
-        }
-      }
-    }
-
-    // Delete old products — must succeed
-    for (const productId of oldProductIds) {
-      const { error: deleteError } = await deleteProduct({
-        client,
-        path: { project_id: PROJECT_ID, product_id: productId },
-      });
-      if (deleteError) {
-        throw new Error(
-          `Failed to delete old product ${productId}: ` +
-            JSON.stringify(deleteError)
-        );
-      }
-      console.log("Deleted old product:", productId);
-    }
   }
 
   // ─── Summary ─────────────────────────────────────────────────────────────────
@@ -452,12 +412,12 @@ async function seedSurgeRemoveAds() {
   console.log(
     "\nNEXT STEP: Go to Replit Publishing pane → 'Sync to App Store'"
   );
-  console.log("to push surge_remove_ads_v2 to Apple App Store Connect.");
+  console.log("to push surge_remove_ads_v3 to Apple App Store Connect.");
   console.log(
     "Then in App Store Connect, mark it 'Ready to Submit' and"
   );
   console.log(
-    "attach it to the Surge app version before resubmitting."
+    "attach it to the Surge 1.0.1 version before resubmitting."
   );
 }
 

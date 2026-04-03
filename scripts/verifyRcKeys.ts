@@ -152,12 +152,12 @@ The RC configuration and API keys are correct. To unblock the reviewer:
 
 1. SYNC IAP TO APP STORE CONNECT
    In the Replit Publishing pane, click "Sync to App Store".
-   This pushes "surge_remove_ads_v2" to Apple App Store Connect.
+   This pushes "surge_remove_ads_v3" to Apple App Store Connect.
 
 2. MARK IAP READY TO SUBMIT (App Store Connect)
    a. https://appstoreconnect.apple.com → app 6760904482
    b. App Store → In-App Purchases
-   c. Open "surge_remove_ads_v2" (Remove Ads — Non-Consumable)
+   c. Open "surge_remove_ads_v3" (Remove Ads — Non-Consumable)
    d. Set status to "Ready to Submit" → Save
 
 3. ATTACH IAP TO v1.0.1 VERSION
