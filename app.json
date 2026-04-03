@@ -1,0 +1,66 @@
+{
+  "expo": {
+    "name": "Surge",
+    "slug": "surge",
+    "version": "1.0.1",
+    "orientation": "portrait",
+    "icon": "./assets/images/surge-icon.png",
+    "scheme": "surge",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/surge-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0A1A"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "app.replit.surge",
+      "infoPlist": {
+        "NSUserTrackingUsageDescription": "This allows us to show you more relevant ads and support the free version of Surge.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "app.replit.surge",
+      "adaptiveIcon": {
+        "backgroundColor": "#0A0A1A",
+        "foregroundImage": "./assets/images/surge-android-icon-foreground.png",
+        "backgroundImage": "./assets/images/surge-android-icon-background.png",
+        "monochromeImage": "./assets/images/surge-android-icon-monochrome.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      ["expo-router", { "origin": "https://replit.com/" }],
+      "expo-font",
+      "expo-web-browser",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-8066217004146663~5996324131",
+          "iosAppId": "ca-app-pub-8066217004146663~5996324131",
+          "userTrackingUsageDescription": "This allows us to show you more relevant ads and support the free version of Surge."
+        }
+      ],
+      [
+        "expo-tracking-transparency",
+        {
+          "userTrackingPermission": "This allows us to show you more relevant ads and support the free version of Surge."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "appVariant": "surge",
+      "eas": {
+        "projectId": "bdce0786-1e60-490f-939e-2e696c61b392"
+      }
+    }
+  }
+}
