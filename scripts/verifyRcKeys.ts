@@ -162,7 +162,7 @@ The RC configuration and API keys are correct. To unblock the reviewer:
 
 3. ATTACH IAP TO v1.0.1 VERSION
    a. ASC → App Store → select the 1.0.1 version
-   b. "In-App Purchases" section → add surge_remove_ads_v2
+   b. "In-App Purchases" section → add surge_remove_ads_v3
    c. Save
 
 4. SUBMIT FOR REVIEW
