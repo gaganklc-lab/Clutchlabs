@@ -126,33 +126,6 @@ export default function SurgePaywallSheet({
     Platform.OS === "web" ||
     Constants.executionEnvironment === "storeClient";
 
-  // Display-only diagnostics — reuse isTestEnv to avoid duplicating routing logic.
-  // Only the first 8 chars of the key are shown; the full value is never rendered.
-  const keyType = isTestEnv
-    ? "TEST"
-    : Platform.OS === "ios"
-      ? "IOS"
-      : Platform.OS === "android"
-        ? "ANDROID"
-        : "TEST";
-  const rawKey = isTestEnv
-    ? ((Constants.expoConfig?.extra?.revenueCatTestKey as string | undefined) ??
-       process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY)
-    : Platform.OS === "ios"
-      ? ((Constants.expoConfig?.extra?.revenueCatIosKey as string | undefined) ??
-         process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY)
-      : process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY;
-  const keyPrefix = rawKey ? rawKey.slice(0, 8) + "..." : "missing";
-  const executionEnv = Constants.executionEnvironment ?? "unknown";
-  const bundleId = Constants.expoConfig?.ios?.bundleIdentifier ?? "unknown";
-
-  useEffect(() => {
-    if (isOfferingsError) {
-      console.warn("[SURGE_DEBUG] ❌ isOfferingsError — setting error state");
-      setError(UNAVAILABLE_MSG);
-    }
-  }, [isOfferingsError]);
-
   useEffect(() => {
     if (!visible) return;
     const offering = offerings?.current;
@@ -290,22 +263,6 @@ export default function SurgePaywallSheet({
                   />
                 </View>
               ))}
-            </View>
-
-            {/* DEBUG panel — remove before final App Store submission */}
-            <View style={pw.debugPanel}>
-              <Text style={pw.debugText}>Offering: {currentOffering?.identifier ?? "null"}</Text>
-              <Text style={pw.debugText}>Packages: {currentOffering?.availablePackages?.map(p => p.identifier).join(", ") || "none"}</Text>
-              <Text style={pw.debugText}>Selected: {pkg?.identifier ?? "none"}</Text>
-              <Text style={pw.debugText}>Product: {pkg?.product.identifier ?? "none"}</Text>
-              <Text style={pw.debugText}>Price: {price} ({pkg ? "RevenueCat" : "Fallback"})</Text>
-            </View>
-            <View style={{ marginTop: 8 }}>
-              <Text style={pw.debugText}>DBG KeyType: {keyType}</Text>
-              <Text style={pw.debugText}>DBG KeyPrefix: {keyPrefix}</Text>
-              <Text style={pw.debugText}>DBG Env: {executionEnv}</Text>
-              <Text style={pw.debugText}>DBG Platform: {Platform.OS}</Text>
-              <Text style={pw.debugText}>DBG Bundle: {bundleId}</Text>
             </View>
 
             {error && (

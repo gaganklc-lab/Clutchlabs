@@ -58,6 +58,7 @@ import {
   getUnlockedRingThemes,
   getRingTheme,
   RING_THEMES,
+  unlockProThemes,
   type RingThemeId,
 } from "@/lib/surge-cosmetics";
 import { useSurgeSubscription } from "@/lib/surge-subscription";
@@ -240,6 +241,13 @@ export default function SurgeHome() {
   const bottomInset = Platform.OS === "web" ? 34 : insets.bottom;
 
   const { hasNoAds } = useSurgeSubscription();
+
+  useEffect(() => {
+    if (hasNoAds) {
+      unlockProThemes().catch(() => {});
+    }
+  }, [hasNoAds]);
+
   const [bestClassic, setBestClassic] = useState(0);
   const [bestEndless, setBestEndless] = useState(0);
   const [mode, setMode] = useState<SurgeGameMode>("classic");
