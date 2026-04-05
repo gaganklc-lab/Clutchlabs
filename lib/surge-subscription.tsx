@@ -74,10 +74,15 @@ function useSurgeSubscriptionContext() {
   const offeringsQuery = useQuery({
     queryKey: ["surge", "revenuecat", "offerings"],
     queryFn: async () => {
-      const offerings = await Purchases.getOfferings();
-      console.warn("[SURGE_DEBUG] Offering:", offerings.current?.identifier ?? "null");
-      console.warn("[SURGE_DEBUG] Packages:", offerings.current?.availablePackages.map(p => p.identifier) ?? []);
-      return offerings;
+      try {
+        const offerings = await Purchases.getOfferings();
+        console.warn("[SURGE_DEBUG] Offering:", offerings.current?.identifier ?? "null");
+        console.warn("[SURGE_DEBUG] Packages:", offerings.current?.availablePackages.map(p => p.identifier) ?? []);
+        return offerings;
+      } catch (err) {
+        console.warn("[SURGE_DEBUG] ❌ Offerings load failed", err);
+        throw err;
+      }
     },
     staleTime: 300 * 1000,
     // Retry 3 times with 2s delay — transient network errors at app startup are common

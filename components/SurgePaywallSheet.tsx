@@ -126,6 +126,13 @@ export default function SurgePaywallSheet({
     Constants.executionEnvironment === "storeClient";
 
   useEffect(() => {
+    if (isOfferingsError) {
+      console.warn("[SURGE_DEBUG] ❌ isOfferingsError — setting error state");
+      setError(UNAVAILABLE_MSG);
+    }
+  }, [isOfferingsError]);
+
+  useEffect(() => {
     if (!visible) return;
     const offering = offerings?.current;
     console.warn("[SURGE_DEBUG] Paywall opened");
