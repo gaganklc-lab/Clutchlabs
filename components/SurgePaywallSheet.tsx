@@ -92,7 +92,6 @@ export default function SurgePaywallSheet({
     isPurchasing,
     isRestoring,
     isLoading,
-    isOfferingsError,
     retryOfferings,
   } = useSurgeSubscription();
 
@@ -430,19 +429,6 @@ const pw = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Outfit_400Regular",
     color: Colors.textMuted,
-  },
-  debugPanel: {
-    backgroundColor: "#00000040",
-    borderRadius: 8,
-    padding: 8,
-    borderWidth: 1,
-    borderColor: "#FFFFFF20",
-  },
-  debugText: {
-    fontSize: 10,
-    fontFamily: "Outfit_400Regular",
-    color: "#FFFFFF80",
-    marginBottom: 2,
   },
   errorBox: {
     backgroundColor: Colors.secondary + "20",
