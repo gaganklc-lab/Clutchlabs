@@ -1,0 +1,184 @@
+# 🔧 TASK: Fix IAP Messaging + Add Debug Observability (Surge)
+
+## 🎯 Objective
+
+1. Replace current long/technical error message:
+   "Could not load purchase options. Please check your connection. Purchase not available right now. Please try again."
+
+2. Add consistent debug logs for:
+   - RevenueCat init
+   - Offerings loading
+   - Package selection
+   - Purchase flow
+
+3. Ensure NO silent failures
+
+---
+
+# 🧠 PART 1 — Replace User-Facing Error Messages
+
+## ❌ REMOVE (everywhere):
+
+"Could not load purchase options. Please check your connection. Purchase not available right now. Please try again."
+
+---
+
+## ✅ REPLACE WITH:
+
+"Purchases are temporarily unavailable. Please try again."
+
+---
+
+## 📍 Update in:
+
+### 1. SurgePaywallSheet.tsx
+
+Replace all:
+
+setError("...")
+
+WITH:
+
+setError("Purchases are temporarily unavailable. Please try again.");
+
+---
+
+## 🎯 Reason
+
+- Short, clear, reviewer-safe
+- Does not blame network incorrectly
+- Avoids rejection under "App Completeness"
+
+---
+
+# 🧩 PART 2 — Add Debug Logs (CRITICAL)
+
+## Use consistent prefix:
+
+[SURGE_DEBUG]
+
+---
+
+## 2.1 — Paywall open log
+
+Inside useEffect:
+
+console.warn("[SURGE_DEBUG] Paywall opened");
+
+---
+
+## 2.2 — Offerings state log
+
+After offerings load:
+
+console.warn("[SURGE_DEBUG] Offering:",
+  currentOffering?.identifier ?? "null"
+);
+
+console.warn("[SURGE_DEBUG] Packages:",
+  currentOffering?.availablePackages.map(p => p.identifier) ?? []
+);
+
+---
+
+## 2.3 — Package selection log
+
+console.warn("[SURGE_DEBUG] Selected pkg:",
+  pkg?.identifier ?? "none"
+);
+
+console.warn("[SURGE_DEBUG] Product:",
+  pkg?.product.identifier ?? "none"
+);
+
+---
+
+## 2.4 — Purchase button pressed
+
+Inside handlePurchasePress:
+
+console.warn("[SURGE_DEBUG] Purchase pressed");
+
+---
+
+## 2.5 — Missing package log
+
+if (!pkg) {
+  console.warn("[SURGE_DEBUG] ❌ pkg missing — blocking purchase");
+  setError("Purchases are temporarily unavailable. Please try again.");
+  return;
+}
+
+---
+
+## 2.6 — Purchase success/failure
+
+console.warn("[SURGE_DEBUG] Purchase started:", pkg.identifier);
+
+console.warn("[SURGE_DEBUG] Purchase success");
+
+console.warn("[SURGE_DEBUG] Purchase failed:", err);
+
+---
+
+## 2.7 — Restore logs
+
+console.warn("[SURGE_DEBUG] Restore pressed");
+
+---
+
+# 🧩 PART 3 — RevenueCat Init Logs
+
+In initializeSurgeRevenueCat():
+
+console.warn("[SURGE_DEBUG] RC init started");
+
+On success:
+console.warn("[SURGE_DEBUG] RC initialized");
+
+On failure:
+console.warn("[SURGE_DEBUG] ❌ RC init failed", err);
+
+---
+
+# 🧪 PART 4 — Optional (Highly Recommended)
+
+Add temporary debug UI in paywall:
+
+<View>
+  <Text>Offering: {currentOffering?.identifier ?? "null"}</Text>
+  <Text>Packages: {currentOffering?.availablePackages?.map(p => p.identifier).join(", ") || "none"}</Text>
+  <Text>Selected: {pkg?.identifier ?? "none"}</Text>
+  <Text>Product: {pkg?.product.identifier ?? "none"}</Text>
+</View>
+
+---
+
+# 🚀 PART 5 — Expected Outcomes
+
+## CASE 1 — Current issue
+
+Packages: none  
+👉 Apple not returning IAP
+
+---
+
+## CASE 2 — Success
+
+Packages: $rc_lifetime  
+👉 Purchase flow should work
+
+---
+
+# ⚠️ IMPORTANT
+
+- DO NOT remove debug logs yet
+- Remove debug UI before final App Store submission
+
+---
+
+# ✅ OUTPUT REQUIRED
+
+- Updated SurgePaywallSheet.tsx
+- Updated surge-subscription.tsx
+- Confirmation logs added
