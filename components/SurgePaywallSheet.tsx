@@ -109,28 +109,6 @@ export default function SurgePaywallSheet({
   // Fallback: "$0.99". Never "$2.99". Never "...".
   const price = pkg?.product.priceString ?? "$0.99";
 
-  // Display-only diagnostics — mirror the key routing logic for on-screen visibility.
-  // Only the first 8 chars of the key are shown; the full value is never rendered.
-  const isDevOrTestEnv =
-    __DEV__ ||
-    Platform.OS === "web" ||
-    Constants.executionEnvironment === "storeClient";
-  const keyType = isDevOrTestEnv
-    ? "TEST"
-    : Platform.OS === "ios"
-      ? "IOS"
-      : Platform.OS === "android"
-        ? "ANDROID"
-        : "TEST";
-  const rawKey = isDevOrTestEnv
-    ? process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY
-    : Platform.OS === "ios"
-      ? process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY
-      : process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY;
-  const keyPrefix = rawKey ? rawKey.slice(0, 8) + "..." : "missing";
-  const executionEnv = Constants.executionEnvironment ?? "unknown";
-  const bundleId = Constants.expoConfig?.ios?.bundleIdentifier ?? "unknown";
-
   const features = [
     {
       icon: "eye-off",
@@ -147,6 +125,24 @@ export default function SurgePaywallSheet({
     __DEV__ ||
     Platform.OS === "web" ||
     Constants.executionEnvironment === "storeClient";
+
+  // Display-only diagnostics — reuse isTestEnv to avoid duplicating routing logic.
+  // Only the first 8 chars of the key are shown; the full value is never rendered.
+  const keyType = isTestEnv
+    ? "TEST"
+    : Platform.OS === "ios"
+      ? "IOS"
+      : Platform.OS === "android"
+        ? "ANDROID"
+        : "TEST";
+  const rawKey = isTestEnv
+    ? process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY
+    : Platform.OS === "ios"
+      ? process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY
+      : process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY;
+  const keyPrefix = rawKey ? rawKey.slice(0, 8) + "..." : "missing";
+  const executionEnv = Constants.executionEnvironment ?? "unknown";
+  const bundleId = Constants.expoConfig?.ios?.bundleIdentifier ?? "unknown";
 
   useEffect(() => {
     if (isOfferingsError) {
