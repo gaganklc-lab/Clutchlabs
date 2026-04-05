@@ -51,7 +51,7 @@ export function initializeSurgeRevenueCat() {
     const apiKey = getRevenueCatApiKey();
     Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
     Purchases.configure({ apiKey });
-    console.warn("[SURGE_DEBUG] RC initialized, key prefix:", apiKey.slice(0, 12) + "...");
+    console.warn("[SURGE_DEBUG] RC initialized");
   } catch (err) {
     // CRITICAL: if RC fails to configure, getOfferings() will fail, offerings stay null,
     // pkg stays undefined, and the purchase button appears disabled with no explanation.

@@ -189,7 +189,8 @@ export default function SurgePaywallSheet({
       await restorePurchases();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onClose();
-    } catch {
+    } catch (err) {
+      console.warn("[SURGE_DEBUG] Restore failed", err);
       setError(UNAVAILABLE_MSG);
     }
   };
