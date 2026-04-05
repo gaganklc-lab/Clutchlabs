@@ -4,11 +4,17 @@ import Purchases, { type PurchasesPackage } from "react-native-purchases";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import Constants from "expo-constants";
 
-// Trim keys at read time — trailing whitespace causes RevenueCat to silently reject the key,
-// resulting in getOfferings() failing and the purchase button appearing permanently disabled.
+// Primary read path: Constants.expoConfig?.extra (always baked into any Expo/EAS build via
+// app.json's static extra block — reliable in Expo Go, TestFlight, and App Store).
+// Fallback: process.env.EXPO_PUBLIC_* (inlined by Metro's babel plugin at bundle time —
+// only reliable in local dev; Replit's Expo Launch does not forward Replit env vars to EAS).
+// RC API keys are designed to be embedded in app binaries and are not secrets.
+// Trim at read time — trailing whitespace causes RC to silently reject the key.
 const REVENUECAT_TEST_API_KEY =
+  (Constants.expoConfig?.extra?.revenueCatTestKey as string | undefined)?.trim() ??
   process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY?.trim();
 const REVENUECAT_IOS_API_KEY =
+  (Constants.expoConfig?.extra?.revenueCatIosKey as string | undefined)?.trim() ??
   process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY?.trim();
 const REVENUECAT_ANDROID_API_KEY =
   process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY?.trim();

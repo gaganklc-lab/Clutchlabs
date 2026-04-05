@@ -136,9 +136,11 @@ export default function SurgePaywallSheet({
         ? "ANDROID"
         : "TEST";
   const rawKey = isTestEnv
-    ? process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY
+    ? ((Constants.expoConfig?.extra?.revenueCatTestKey as string | undefined) ??
+       process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY)
     : Platform.OS === "ios"
-      ? process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY
+      ? ((Constants.expoConfig?.extra?.revenueCatIosKey as string | undefined) ??
+         process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY)
       : process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY;
   const keyPrefix = rawKey ? rawKey.slice(0, 8) + "..." : "missing";
   const executionEnv = Constants.executionEnvironment ?? "unknown";

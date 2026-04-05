@@ -58,6 +58,8 @@
     },
     "extra": {
       "appVariant": "surge",
+      "revenueCatIosKey": "appl_PYLTaTqAeaizBJMKQDnVfdqAOzv",
+      "revenueCatTestKey": "test_XtKBxoFsRVhhzRidlqqkNLeBtAO",
       "eas": {
         "projectId": "bdce0786-1e60-490f-939e-2e696c61b392"
       }
