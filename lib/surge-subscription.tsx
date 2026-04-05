@@ -47,14 +47,15 @@ function getRevenueCatApiKey(): string {
 
 export function initializeSurgeRevenueCat() {
   try {
+    console.warn("[SURGE_DEBUG] RC init started");
     const apiKey = getRevenueCatApiKey();
     Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
     Purchases.configure({ apiKey });
-    console.log("[SurgePaywall] RevenueCat configured, key prefix:", apiKey.slice(0, 12) + "...");
+    console.warn("[SURGE_DEBUG] RC initialized, key prefix:", apiKey.slice(0, 12) + "...");
   } catch (err) {
     // CRITICAL: if RC fails to configure, getOfferings() will fail, offerings stay null,
     // pkg stays undefined, and the purchase button appears disabled with no explanation.
-    console.warn("[SurgePaywall] CRITICAL: RevenueCat init failed — IAP will not work:", err);
+    console.warn("[SURGE_DEBUG] ❌ RC init failed", err);
   }
 }
 
@@ -74,8 +75,8 @@ function useSurgeSubscriptionContext() {
     queryKey: ["surge", "revenuecat", "offerings"],
     queryFn: async () => {
       const offerings = await Purchases.getOfferings();
-      console.log("[SurgePaywall] offerings loaded. current:", offerings.current?.identifier ?? "null");
-      console.log("[SurgePaywall] available packages:", offerings.current?.availablePackages.map(p => p.identifier) ?? []);
+      console.warn("[SURGE_DEBUG] Offering:", offerings.current?.identifier ?? "null");
+      console.warn("[SURGE_DEBUG] Packages:", offerings.current?.availablePackages.map(p => p.identifier) ?? []);
       return offerings;
     },
     staleTime: 300 * 1000,
@@ -88,28 +89,28 @@ function useSurgeSubscriptionContext() {
   const purchaseMutation = useMutation({
     mutationFn: async (pkg: PurchasesPackage) => {
       // pkg.identifier = RC package ID (e.g. "$rc_lifetime")
-      // pkg.product.identifier = App Store product ID (e.g. "surge_remove_ads_v2")
+      // pkg.product.identifier = App Store product ID (e.g. "surge_remove_ads_v3")
       // pkg.product.priceString = localized price (e.g. "$0.99")
-      console.log(
-        "[SurgePaywall] purchasePackage called — pkg:", pkg.identifier,
+      console.warn(
+        "[SURGE_DEBUG] Purchase started:", pkg.identifier,
         "product:", pkg.product.identifier,
         "price:", pkg.product.priceString,
       );
       const { customerInfo } = await Purchases.purchasePackage(pkg);
-      console.log("[SurgePaywall] purchase succeeded. active entitlements:", Object.keys(customerInfo.entitlements.active));
+      console.warn("[SURGE_DEBUG] Purchase success, active entitlements:", Object.keys(customerInfo.entitlements.active));
       return customerInfo;
     },
     onSuccess: () => customerInfoQuery.refetch(),
     onError: (err: unknown) => {
-      console.log("[SurgePaywall] purchase failed:", err);
+      console.warn("[SURGE_DEBUG] Purchase failed:", err);
     },
   });
 
   const restoreMutation = useMutation({
     mutationFn: async () => {
-      console.log("[SurgePaywall] restorePurchases called");
+      console.warn("[SURGE_DEBUG] Restore pressed");
       const info = await Purchases.restorePurchases();
-      console.log("[SurgePaywall] restore done. active entitlements:", Object.keys(info.entitlements?.active ?? {}));
+      console.warn("[SURGE_DEBUG] Restore done, active entitlements:", Object.keys(info.entitlements?.active ?? {}));
       return info;
     },
     onSuccess: () => customerInfoQuery.refetch(),

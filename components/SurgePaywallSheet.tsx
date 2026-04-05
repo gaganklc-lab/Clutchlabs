@@ -20,6 +20,8 @@ import { useSurgeSubscription } from "@/lib/surge-subscription";
 const SURGE_PURPLE = "#7C3AED";
 const SURGE_MAGENTA = "#E040FB";
 
+const UNAVAILABLE_MSG = "Purchases are temporarily unavailable. Please try again.";
+
 interface ConfirmModalProps {
   visible: boolean;
   price: string;
@@ -123,24 +125,23 @@ export default function SurgePaywallSheet({
     Platform.OS === "web" ||
     Constants.executionEnvironment === "storeClient";
 
-  // Diagnostic log when sheet opens — grep [SurgePaywall] in crash logs to trace RC state.
   useEffect(() => {
     if (!visible) return;
     const offering = offerings?.current;
-    console.log("[SurgePaywall] sheet opened");
-    console.log("[SurgePaywall] currentOffering:", offering?.identifier ?? "null");
-    console.log("[SurgePaywall] availablePackages:", offering?.availablePackages.map(p => p.identifier) ?? []);
-    console.log("[SurgePaywall] selected pkg:", pkg?.identifier ?? "none");
-    console.log("[SurgePaywall] selected product:", pkg?.product.identifier ?? "none");
-    console.log("[SurgePaywall] price:", price);
-    console.log("[SurgePaywall] isLoading:", isLoading);
+    console.warn("[SURGE_DEBUG] Paywall opened");
+    console.warn("[SURGE_DEBUG] Offering:", offering?.identifier ?? "null");
+    console.warn("[SURGE_DEBUG] Packages:", offering?.availablePackages.map(p => p.identifier) ?? []);
+    console.warn("[SURGE_DEBUG] Selected pkg:", pkg?.identifier ?? "none");
+    console.warn("[SURGE_DEBUG] Product:", pkg?.product.identifier ?? "none");
+    console.warn("[SURGE_DEBUG] Price:", price);
+    console.warn("[SURGE_DEBUG] isLoading:", isLoading);
   }, [visible]);
 
   const handlePurchasePress = () => {
-    console.log("[SurgePaywall] purchase button pressed. pkg:", pkg?.identifier ?? "none");
-    // Guard: button is disabled when !pkg, but log and setError defensively in case it fires.
+    console.warn("[SURGE_DEBUG] Purchase pressed");
     if (!pkg) {
-      setError("Purchase not available right now. Please try again.");
+      console.warn("[SURGE_DEBUG] ❌ pkg missing — blocking purchase");
+      setError(UNAVAILABLE_MSG);
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -154,16 +155,15 @@ export default function SurgePaywallSheet({
 
   const handleConfirmPurchase = async () => {
     setShowTestConfirm(false);
-    // Guard: never proceed silently with missing package — always surface an error.
     if (!pkg) {
-      console.log("[SurgePaywall] handleConfirmPurchase: pkg missing, aborting");
-      setError("Purchase not available right now. Please try again.");
+      console.warn("[SURGE_DEBUG] ❌ pkg missing — blocking purchase");
+      setError(UNAVAILABLE_MSG);
       return;
     }
-    console.log("[SurgePaywall] calling purchaseRemoveAds:", pkg.identifier, pkg.product.identifier, pkg.product.priceString);
+    console.warn("[SURGE_DEBUG] Purchase started:", pkg.identifier);
     try {
       await purchaseRemoveAds(pkg);
-      console.log("[SurgePaywall] purchase flow completed");
+      console.warn("[SURGE_DEBUG] Purchase success");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onSuccess?.();
       onClose();
@@ -174,22 +174,23 @@ export default function SurgePaywallSheet({
         "userCancelled" in err &&
         (err as { userCancelled: boolean }).userCancelled
       ) {
-        console.log("[SurgePaywall] purchase cancelled by user");
+        console.warn("[SURGE_DEBUG] Purchase cancelled by user");
         return;
       }
-      console.log("[SurgePaywall] purchase error:", err);
-      setError("Purchase failed. Please try again.");
+      console.warn("[SURGE_DEBUG] Purchase failed:", err);
+      setError(UNAVAILABLE_MSG);
     }
   };
 
   const handleRestore = async () => {
+    console.warn("[SURGE_DEBUG] Restore pressed");
     setError(null);
     try {
       await restorePurchases();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onClose();
     } catch {
-      setError("Restore failed. Please try again.");
+      setError(UNAVAILABLE_MSG);
     }
   };
 
@@ -252,23 +253,24 @@ export default function SurgePaywallSheet({
               ))}
             </View>
 
+            {/* DEBUG panel — remove before final App Store submission */}
+            <View style={pw.debugPanel}>
+              <Text style={pw.debugText}>Offering: {currentOffering?.identifier ?? "null"}</Text>
+              <Text style={pw.debugText}>Packages: {currentOffering?.availablePackages?.map(p => p.identifier).join(", ") || "none"}</Text>
+              <Text style={pw.debugText}>Selected: {pkg?.identifier ?? "none"}</Text>
+              <Text style={pw.debugText}>Product: {pkg?.product.identifier ?? "none"}</Text>
+            </View>
+
             {error && (
               <View style={pw.errorBox}>
                 <Text style={pw.errorText}>{error}</Text>
               </View>
             )}
 
-            {/* No package available — covers both offerings error and missing package */}
+            {/* No package available — single clear message */}
             {!isLoading && !pkg && (
               <View style={pw.errorBox}>
-                {isOfferingsError && (
-                  <Text style={[pw.errorText, { marginBottom: 4 }]}>
-                    Could not load purchase options. Please check your connection.
-                  </Text>
-                )}
-                <Text style={pw.errorText}>
-                  Purchase not available right now. Please try again.
-                </Text>
+                <Text style={pw.errorText}>{UNAVAILABLE_MSG}</Text>
                 <Pressable
                   testID="surge-paywall-retry"
                   onPress={() => { retryOfferings(); setError(null); }}
@@ -424,6 +426,19 @@ const pw = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Outfit_400Regular",
     color: Colors.textMuted,
+  },
+  debugPanel: {
+    backgroundColor: "#00000040",
+    borderRadius: 8,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: "#FFFFFF20",
+  },
+  debugText: {
+    fontSize: 10,
+    fontFamily: "Outfit_400Regular",
+    color: "#FFFFFF80",
+    marginBottom: 2,
   },
   errorBox: {
     backgroundColor: Colors.secondary + "20",
