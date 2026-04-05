@@ -1,0 +1,155 @@
+Please diagnose why Surge TestFlight still cannot load the Remove Ads IAP, even though App Store Connect and RevenueCat appear configured correctly.
+
+Current symptoms in TestFlight:
+- Paywall opens
+- After a short delay, it shows:
+  - "Purchases are temporarily unavailable. Please try again."
+- Debug UI shows:
+  - Offering: null
+  - Packages: none
+  - Selected: none
+  - Product: none
+- This means RevenueCat is not returning offerings/packages on-device
+
+Current intended setup:
+- App bundle ID: app.replit.surge
+- RevenueCat iOS app: Surge iOS
+- RevenueCat offering: default
+- Package: $rc_lifetime
+- Product: surge_remove_ads_v3
+- Entitlement: no_ads
+- App Store IAP: surge_remove_ads_v3
+- App version: 1.0.1
+- Build: latest TestFlight build for 1.0.1
+- IAP is attached to the app version in App Store Connect
+
+Important:
+- Do NOT change the product ID again
+- Do NOT create another IAP
+- Focus on diagnosis and minimal fixes only
+
+==================================================
+PART 1 — Audit RevenueCat initialization path
+==================================================
+
+Please inspect the Surge RevenueCat setup and confirm all of the following:
+
+1. initializeSurgeRevenueCat() is definitely called for APP_VARIANT=surge
+2. The actual API key used in TestFlight/iOS standalone builds is EXPO_PUBLIC_REVENUECAT_IOS_API_KEY
+3. The key is trimmed and not empty
+4. No test key is used in TestFlight / standalone iOS
+5. Add explicit logs with prefix [SurgePaywall] for:
+   - initialization start
+   - execution environment
+   - platform
+   - which key type is selected (only log safe prefix, e.g. first 8–10 chars)
+   - initialization success/failure
+
+Example desired logs:
+- [SurgePaywall] init starting
+- [SurgePaywall] platform: ios
+- [SurgePaywall] executionEnvironment: standalone
+- [SurgePaywall] using RC key prefix: appl_xxx
+- [SurgePaywall] RevenueCat configured successfully
+
+==================================================
+PART 2 — Audit offerings fetch path
+==================================================
+
+Please inspect the offerings query and add logs to distinguish:
+
+A. RevenueCat returned null/empty offerings
+B. RevenueCat returned an offering but no packages
+C. RevenueCat returned packages but package selection failed
+
+Add logs for:
+- full offerings.current identifier
+- all available package identifiers
+- each package’s product identifier
+- selected package identifier
+- selected product identifier
+- whether the UI is showing fallback price vs real price
+
+Example desired logs:
+- [SurgePaywall] offerings.current: default
+- [SurgePaywall] availablePackages: ["$rc_lifetime"]
+- [SurgePaywall] package->product map: [{"package":"$rc_lifetime","product":"surge_remove_ads_v3"}]
+- [SurgePaywall] selected pkg: $rc_lifetime
+- [SurgePaywall] selected product: surge_remove_ads_v3
+- [SurgePaywall] price source: RevenueCat
+or
+- [SurgePaywall] price source: Fallback
+
+==================================================
+PART 3 — Audit hidden app/config mismatches
+==================================================
+
+Please check for any hidden mismatch between:
+- Expo config bundle ID
+- native iOS bundle ID
+- RevenueCat app bundle ID
+- App Store Connect bundle ID
+
+Verify all are exactly:
+app.replit.surge
+
+Also search the codebase for any hardcoded or malformed app identifier references that could affect store resolution, including:
+- app.replit.surge
+- surge:
+- iapp.replit.surge
+- bundleIdentifier
+- product identifiers v1/v2/v3
+
+Summarize anything suspicious.
+
+==================================================
+PART 4 — Audit current paywall UI/debug behavior
+==================================================
+
+Please review the current Surge paywall and confirm:
+1. The purchase button is disabled only because pkg is missing
+2. The displayed $0.99 may be fallback-only
+3. The current error state is correctly triggered when offerings/packages are missing
+4. There is no longer any silent no-op purchase path
+
+If useful, add one temporary on-screen debug line:
+- "Price source: RevenueCat" or "Price source: Fallback"
+
+==================================================
+PART 5 — Add one temporary deep diagnostic helper
+==================================================
+
+Please add a temporary diagnostic function that runs when the Surge paywall opens and logs:
+
+- APP_VARIANT
+- Platform.OS
+- Constants.executionEnvironment
+- whether RevenueCat init has run
+- whether currentOffering exists
+- whether availablePackages exists
+- whether selected pkg exists
+- whether selected product exists
+
+Prefix all logs with:
+[SurgePaywall][DIAG]
+
+==================================================
+PART 6 — Output required
+==================================================
+
+Please summarize:
+
+1. files checked
+2. files changed
+3. whether RevenueCat init in standalone iOS looks correct
+4. whether offerings.current is null vs packages empty vs package selection failing
+5. whether any bundle ID / identifier mismatch was found
+6. whether the displayed $0.99 is currently fallback-only
+7. the most likely root cause now
+8. the minimal next fix to test in TestFlight
+
+Do not make broad refactors.
+Do not change product IDs.
+Do not change business logic unless required for diagnosis.
+Focus on identifying exactly why TestFlight still shows:
+Offering: null / Packages: none / Selected: none / Product: none
