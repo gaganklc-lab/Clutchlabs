@@ -1,0 +1,91 @@
+Please add a temporary on-screen debug panel to the Surge paywall to diagnose RevenueCat configuration issues.
+
+DO NOT change any purchase logic.
+DO NOT change product IDs.
+Only add diagnostics.
+
+==================================================
+PART 1 — Add runtime diagnostics variables
+==================================================
+
+In the paywall component (SurgePaywallSheet.tsx or equivalent), import:
+
+- expo-constants
+- Platform
+- getRevenueCatApiKey()
+
+Then define:
+
+- apiKey = getRevenueCatApiKey()
+- keyPrefix = first 8 characters of apiKey (or "missing")
+- isDevOrTestEnv using same logic as initialization
+- keyType:
+    TEST → if dev/test env
+    IOS → if Platform.OS === "ios"
+    ANDROID → if Platform.OS === "android"
+- bundleId = Constants.expoConfig?.ios?.bundleIdentifier ?? "unknown"
+- executionEnv = Constants.executionEnvironment
+
+==================================================
+PART 2 — Add UI debug block (below existing debug panel)
+==================================================
+
+Add this EXACT UI block:
+
+<View style={{ marginTop: 8 }}>
+  <Text style={{ color: "white", fontSize: 12 }}>
+    DBG KeyType: {keyType}
+  </Text>
+  <Text style={{ color: "white", fontSize: 12 }}>
+    DBG KeyPrefix: {keyPrefix}
+  </Text>
+  <Text style={{ color: "white", fontSize: 12 }}>
+    DBG Env: {executionEnv}
+  </Text>
+  <Text style={{ color: "white", fontSize: 12 }}>
+    DBG Platform: {Platform.OS}
+  </Text>
+  <Text style={{ color: "white", fontSize: 12 }}>
+    DBG Bundle: {bundleId}
+  </Text>
+</View>
+
+==================================================
+PART 3 — Ensure safety
+==================================================
+
+- DO NOT print full API key
+- Only print prefix (first 6–8 chars)
+- Do not log secrets anywhere else
+- Keep changes minimal
+
+==================================================
+PART 4 — Output required
+==================================================
+
+After implementing, confirm:
+
+1. File modified
+2. Where block was added
+3. That no business logic was changed
+4. That UI will show:
+   - Offering
+   - Packages
+   - Product
+   - PriceSource
+   - KeyType
+   - KeyPrefix
+   - Env
+   - Platform
+   - Bundle
+
+==================================================
+
+Goal:
+Make it possible to diagnose:
+- wrong API key
+- wrong environment
+- wrong bundle ID
+- RevenueCat offering resolution
+
+purely from one screenshot of the paywall.
