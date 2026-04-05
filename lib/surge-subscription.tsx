@@ -46,16 +46,36 @@ function getRevenueCatApiKey(): string {
 }
 
 export function initializeSurgeRevenueCat() {
+  // Mirror getRevenueCatApiKey()'s routing logic here purely for logging.
+  const isDevOrTestEnvCheck =
+    __DEV__ ||
+    Platform.OS === "web" ||
+    Constants.executionEnvironment === "storeClient";
+
+  console.warn("[SurgePaywall] init starting");
+  console.warn("[SurgePaywall] platform:", Platform.OS);
+  console.warn("[SurgePaywall] executionEnvironment:", Constants.executionEnvironment);
+  console.warn("[SurgePaywall] __DEV__:", __DEV__);
+  console.warn("[SurgePaywall] isDevOrTestEnv:", isDevOrTestEnvCheck);
+
   try {
-    console.warn("[SURGE_DEBUG] RC init started");
     const apiKey = getRevenueCatApiKey();
+    const keyType = isDevOrTestEnvCheck
+      ? "TEST"
+      : Platform.OS === "ios"
+        ? "IOS"
+        : Platform.OS === "android"
+          ? "ANDROID"
+          : "TEST";
+    console.warn("[SurgePaywall] using RC key type:", keyType);
+    console.warn("[SurgePaywall] using RC key prefix:", apiKey.slice(0, 10) + "...");
     Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
     Purchases.configure({ apiKey });
-    console.warn("[SURGE_DEBUG] RC initialized");
+    console.warn("[SurgePaywall] RevenueCat configured successfully");
   } catch (err) {
     // CRITICAL: if RC fails to configure, getOfferings() will fail, offerings stay null,
     // pkg stays undefined, and the purchase button appears disabled with no explanation.
-    console.warn("[SURGE_DEBUG] ❌ RC init failed", err);
+    console.warn("[SurgePaywall] RC init FAILED", err);
   }
 }
 
@@ -76,10 +96,23 @@ function useSurgeSubscriptionContext() {
     queryFn: async () => {
       try {
         const offerings = await Purchases.getOfferings();
+        if (offerings.current == null) {
+          console.warn("[SurgePaywall] offerings.current is null — no default offering set in RC");
+        } else {
+          const pkgs = offerings.current.availablePackages;
+          console.warn("[SurgePaywall] offerings.current:", offerings.current.identifier);
+          if (pkgs.length === 0) {
+            console.warn("[SurgePaywall] availablePackages is empty — StoreKit may have filtered products");
+          } else {
+            console.warn("[SurgePaywall] availablePackages:", pkgs.map(p => p.identifier));
+            console.warn("[SurgePaywall] package->product map:", JSON.stringify(pkgs.map(p => ({ package: p.identifier, product: p.product.identifier }))));
+          }
+        }
         console.warn("[SURGE_DEBUG] Offering:", offerings.current?.identifier ?? "null");
         console.warn("[SURGE_DEBUG] Packages:", offerings.current?.availablePackages.map(p => p.identifier) ?? []);
         return offerings;
       } catch (err) {
+        console.warn("[SurgePaywall] offerings load FAILED:", err);
         console.warn("[SURGE_DEBUG] ❌ Offerings load failed", err);
         throw err;
       }

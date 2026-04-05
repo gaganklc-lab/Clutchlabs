@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import Constants from "expo-constants";
 import Colors from "@/constants/colors";
+import { APP_VARIANT } from "@/constants/appVariant";
 import { useSurgeSubscription } from "@/lib/surge-subscription";
 
 const SURGE_PURPLE = "#7C3AED";
@@ -142,6 +143,16 @@ export default function SurgePaywallSheet({
     console.warn("[SURGE_DEBUG] Product:", pkg?.product.identifier ?? "none");
     console.warn("[SURGE_DEBUG] Price:", price);
     console.warn("[SURGE_DEBUG] isLoading:", isLoading);
+    console.warn("[SurgePaywall][DIAG] ---");
+    console.warn("[SurgePaywall][DIAG] APP_VARIANT:", APP_VARIANT);
+    console.warn("[SurgePaywall][DIAG] Platform.OS:", Platform.OS);
+    console.warn("[SurgePaywall][DIAG] executionEnvironment:", Constants.executionEnvironment);
+    console.warn("[SurgePaywall][DIAG] offerings.current:", offerings?.current?.identifier ?? "null");
+    console.warn("[SurgePaywall][DIAG] availablePackages.length:", offerings?.current?.availablePackages?.length ?? 0);
+    console.warn("[SurgePaywall][DIAG] selected pkg:", pkg?.identifier ?? "none");
+    console.warn("[SurgePaywall][DIAG] selected product:", pkg?.product?.identifier ?? "none");
+    console.warn("[SurgePaywall][DIAG] price source:", pkg ? "RevenueCat" : "Fallback");
+    console.warn("[SurgePaywall][DIAG] ---");
   }, [visible]);
 
   const handlePurchasePress = () => {
@@ -267,6 +278,7 @@ export default function SurgePaywallSheet({
               <Text style={pw.debugText}>Packages: {currentOffering?.availablePackages?.map(p => p.identifier).join(", ") || "none"}</Text>
               <Text style={pw.debugText}>Selected: {pkg?.identifier ?? "none"}</Text>
               <Text style={pw.debugText}>Product: {pkg?.product.identifier ?? "none"}</Text>
+              <Text style={pw.debugText}>Price: {price} ({pkg ? "RevenueCat" : "Fallback"})</Text>
             </View>
 
             {error && (
