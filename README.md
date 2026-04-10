@@ -13,7 +13,7 @@ A fast-paced tap game. Follow rotating rules under time pressure — tap the rig
 A survival swipe game. Obstacles approach from four directions; swipe the opposite way to dodge. Survive as long as possible while the spawn rate ramps up. Features a glowing player orb, directional obstacle walls, combo-based scoring, and an unlockable cosmetics system (orb styles + trail effects).
 
 ### Surge — Precision Ring Tap
-A timing-skill arcade game. An expanding ring grows outward from a central orb — tap when it reaches the target zone for a Perfect or Good hit, miss and lose a life. The ring accelerates as you build combo, demanding sharper precision each cycle. Features four game modes, a 9-tier XP progression system, a daily challenge, power-ups, ring cosmetics, and a Pro subscription.
+A timing-skill arcade game. An expanding ring grows outward from a central orb — tap when it reaches the target zone for a Perfect or Good hit, miss and lose a life. The ring accelerates as you build combo, demanding sharper precision each cycle. Features four game modes, a 9-tier XP progression system, a daily challenge, power-ups, ring cosmetics, and a one-time Remove Ads purchase.
 
 ---
 
@@ -157,7 +157,7 @@ Ring themes affect the orb color, ring color, glow color, and shockwave. Daily c
 | `/velocity-leaderboard` | Velocity top scores |
 | `/surge` | Surge game |
 | `/surge-results` | Surge results |
-| `/surge-leaderboard` | Surge leaderboard (Classic + Endless) |
+| `/surge-leaderboard` | Surge leaderboard (Classic + Endless + Rush) |
 | `/leaderboard` | ClutchTap top scores |
 | `/badges` | 12 achievement badges |
 | `/stats` | ClutchTap personal stats dashboard |
@@ -202,10 +202,10 @@ app/
   velocity-leaderboard.tsx Velocity top scores
   surge.tsx                Surge game screen
   surge-results.tsx        Surge results (XP, rank, daily state, level-up banner)
-  surge-leaderboard.tsx    Surge leaderboard (Classic + Endless)
+  surge-leaderboard.tsx    Surge leaderboard (Classic + Endless + Rush)
 components/
   SurgeHome.tsx            Surge home — mode picker, XP bar, streak, daily card, ring themes
-  SurgePaywallSheet.tsx    Surge Pro subscription paywall sheet
+  SurgePaywallSheet.tsx    Surge Remove Ads paywall sheet
   SurgePowerUpSelect.tsx   Pre-game power-up selection UI
   VelocityHome.tsx         Velocity home screen
   VelocityBackgroundFX.tsx Velocity animated arena background
@@ -230,7 +230,7 @@ lib/
   surge-daily.ts           Daily challenge seeding, state tracking, attempt recording
   surge-progression.ts     9-tier Surge XP title system (Novice → Surge Master)
   surge-cosmetics.ts       Ring theme definitions, unlock conditions, equip persistence
-  surge-subscription.tsx   RevenueCat integration — Surge Pro entitlement, purchase, restore
+  surge-subscription.tsx   RevenueCat integration — Remove Ads entitlement, purchase, restore
   surge-ads.ts             Rewarded ad integration (revive after game over)
   sounds.ts                Web Audio sound manager
   analytics.ts             Privacy-friendly event tracking
