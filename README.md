@@ -26,8 +26,8 @@ A timing-skill arcade game. An expanding ring grows outward from a central orb �
 | Daily Challenge | ClutchTap (rule-seeded), Surge (param-seeded, 3 attempts/day, 1.5× XP) |
 | Power-ups | ClutchTap (Shield, Time Freeze, 2× Points), Surge (Slow Ring, Extra Life, Double Score) |
 | Cosmetics | Velocity (orb styles + trail effects), Surge (7 ring themes with unlock conditions) |
-| Streak Tracking | Surge — daily play streak with Pro grace day |
-| In-App Subscription | Surge Pro via RevenueCat — Pro ring themes, weekly power-up bonus, ad-free, streak grace |
+| Streak Tracking | Surge — daily play streak |
+| In-App Purchases | Remove Ads (one-time) via RevenueCat — exclusive ring themes (Obsidian Pro + Aurora Pro), ad-free gameplay |
 | Rewarded Ads | Surge — watch ad to revive after game over |
 | Visual Effects | ParticleBurst, ScreenFlash, ScorePopup, AmbientParticles, Confetti |
 | Sound System | Web Audio API tones for hits, misses, combos, countdowns, game over |
@@ -51,7 +51,7 @@ A timing-skill arcade game. An expanding ring grows outward from a central orb �
 - **Performance Ranking** — S/A/B/C/D rank based on score, accuracy, combo, and difficulty
 
 ### Tile Themes
-6 unlockable color palettes (Default, Neon, Pastel, Earth, Candy, Midnight). Unlock at levels 3, 5, 8, 12, 16, 20.
+6 color palettes: Default (always unlocked), Neon (level 3), Pastel (level 5), Earth (level 8), Candy (level 12), Midnight (level 16).
 
 ---
 
@@ -69,7 +69,7 @@ A timing-skill arcade game. An expanding ring grows outward from a central orb �
 - **Shake & Flash** — Missed obstacles shake the orb and flash the screen red.
 
 ### Cosmetics
-3 orb styles (CoreBlue, NeonPulse, OverdriveGold) and 3 trail effects (CyanTrail, VioletTrail, GoldSpark), each with unlock conditions based on score, combo, or time survived.
+3 orb styles (Core Blue, Neon Pulse, Overdrive Gold) and 3 trail effects (Cyan Trail, Violet Trail, Gold Spark), each with unlock conditions based on score, combo, XP rank, or speed level in Endless.
 
 ### Scoring
 - Successful dodge = 10 × combo multiplier
@@ -100,7 +100,7 @@ Every 3 successful hits (2 in Rush), the ring cycle accelerates. The game ends w
 | Extra Life | Adds +1 life (max 4) | Instant |
 | Double Score | All hit points are doubled | 20 seconds |
 
-Power-ups are earned via gameplay milestones and the Pro weekly bonus. One power-up can be selected before each run.
+Power-ups are earned via gameplay milestones (S rank, score thresholds). One power-up can be selected before each run.
 
 ### XP Progression — 9 Tiers
 
@@ -120,10 +120,9 @@ XP is earned each run based on score, combos, and perfect hits. Daily challenge 
 
 ### Streak System
 - Play daily to build a streak. Displayed on the home screen and results screen.
-- Pro users get a 1-day grace period — missing a single day does not reset the streak.
 
 ### Leaderboard
-Classic and Endless modes each maintain a local top-20 leaderboard (score, max combo, perfect hits, date). Rush mode scores are tracked as personal best but not ranked on the leaderboard. Daily challenge scores are tracked separately in daily state and do not enter the leaderboard.
+Classic, Endless, and Rush modes each maintain a local top-20 leaderboard (score, max combo, perfect hits, date). Daily challenge scores are tracked separately and do not enter the leaderboard.
 
 ### Ring Cosmetics — 7 Themes
 
@@ -134,16 +133,15 @@ Classic and Endless modes each maintain a local top-20 leaderboard (score, max c
 | Void | Accumulate 500 XP total |
 | Ember | Hit a 20× combo in one run |
 | Ice Crystal | Survive 60 seconds in Endless mode |
-| Obsidian Pro ⚡ | Surge Pro only |
-| Aurora Pro ⚡ | Surge Pro only |
+| Obsidian Pro ⚡ | Remove Ads to unlock |
+| Aurora Pro ⚡ | Remove Ads to unlock |
 
 Ring themes affect the orb color, ring color, glow color, and shockwave. Daily challenges use a seeded theme that overrides the equipped theme for that run.
 
-### Surge Pro Subscription (RevenueCat)
+### Remove Ads Purchase (RevenueCat)
 - Unlocks Obsidian Pro and Aurora Pro ring themes
-- Weekly random power-up bonus (one per week, chosen at random)
-- 1-day streak grace period
-- Ad-free gameplay (no revive ad prompt)
+- Ad-free gameplay (no rewarded-ad revive prompt)
+- One-time lifetime purchase via Apple App Store (no subscription)
 
 ---
 
@@ -181,7 +179,7 @@ All screens use `useWindowDimensions` with a 560pt max-width centering wrapper. 
 | Persistence | AsyncStorage |
 | Fonts | Outfit (Google Fonts via @expo-google-fonts) |
 | Backend | Express + TypeScript (port 5000) |
-| Subscriptions | RevenueCat (`react-native-purchases`) — Surge Pro |
+| In-App Purchases | RevenueCat (`react-native-purchases`) — Surge Remove Ads (one-time IAP) |
 | Haptics | expo-haptics |
 | Gradients | expo-linear-gradient |
 | Gestures | PanResponder (React Native built-in) |
@@ -279,8 +277,8 @@ Dark navy gaming aesthetic with vibrant accents:
 The project uses an environment-variable-driven variant system to build independent apps from one codebase.
 
 ### App Variant Config
-- `app.config.js` — reads `APP_VARIANT` at build time; sets app name, slug, bundle ID, scheme
-- `constants/appVariant.ts` — runtime variant detection via `expo-constants`; exports `APP_VARIANT`, `IS_CLUTCHTAP`, `IS_VELOCITY`
+- `app.json` — declares `appVariant` in the `extra` block; sets app name, slug, bundle ID, scheme per variant
+- `constants/appVariant.ts` — runtime variant detection via `expo-constants`; exports `APP_VARIANT`, `IS_CLUTCHTAP`, `IS_VELOCITY`, `IS_SURGE`
 - `app/index.tsx` — routes to the correct home screen based on variant; production builds show only the target game
 
 ### Storage Namespacing
